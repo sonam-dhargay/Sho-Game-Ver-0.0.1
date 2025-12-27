@@ -229,9 +229,14 @@ const App: React.FC = () => {
     const currentMovesList = getAvailableMoves(s.turnIndex, s.board, s.players, s.pendingMoveValues, s.isNinerMode, s.isOpeningPaRa);
     let move = currentMovesList.find(m => m.sourceIndex === sourceIdx && m.targetIndex === targetIdx);
     
+    // Remote consistency: if it's a remote request, trust the source/target even if local moves list differs slightly
     if (!move && isRemote) {
         const potential = calculatePotentialMoves(sourceIdx, s.pendingMoveValues, s.board, s.players[s.turnIndex], s.isNinerMode, s.isOpeningPaRa);
         move = potential.find(m => m.targetIndex === targetIdx);
+        // Final fallback: if move still null, force creation to avoid desync
+        if (!move) {
+           move = { sourceIndex: sourceIdx, targetIndex: targetIdx, consumedValues: [s.pendingMoveValues[0] || 0], type: MoveResultType.PLACE };
+        }
     }
     
     if (!move) return;
@@ -352,7 +357,7 @@ const App: React.FC = () => {
 
   const setupPeerEvents = (conn: DataConnection, isHost: boolean) => {
     if (!isHost) {
-      conn.send({ type: 'SYNC', payload: { playerName, color: selectedColor } });
+      conn.send({ type: 'SYNC', payload: { playerName, color: selectedColor, isNinerMode } });
     }
 
     conn.on('data', (data: any) => {
@@ -430,19 +435,29 @@ const App: React.FC = () => {
   const handleFromHandClick = () => {
     if (phase !== GamePhase.MOVING || !isLocalTurn) return;
     const player = players[turnIndex];
+    
+    // Check if coins are in hand
     if (player.coinsInHand <= 0) {
       SFX.playBlocked();
       setHandShake(true);
       setTimeout(() => setHandShake(false), 400);
       return;
     }
-    
-    // Set selection to hand (0) to show available placement points on the board
-    if (selectedSourceIndex === 0) {
-      setSelectedSourceIndex(null);
-    } else {
-      setSelectedSourceIndex(0);
+
+    // Check if ALL potential moves from hand are blocked by larger stacks
+    const handMoves = currentValidMovesList.filter(m => m.sourceIndex === 0);
+    if (handMoves.length === 0) {
+      SFX.playBlocked();
+      setHandShake(true);
+      addLog("BLOCKED! Opponent stacks prevent any entry. བཀག། ཁ་གཏད་ཀྱི་ལག་ཁྱི་མང་བས་བགྲོད་ལམ་བཀག་འདུག", 'alert');
+      setTimeout(() => setHandShake(false), 400);
+      return;
     }
+    
+    // Automatic placement: Execute the 'best' valid move starting from hand
+    // 'Best' is defined as the move that reaches the furthest target index
+    const sortedHandMoves = [...handMoves].sort((a, b) => b.targetIndex - a.targetIndex);
+    performMove(0, sortedHandMoves[0].targetIndex);
   };
 
   return (
@@ -638,7 +653,8 @@ const App: React.FC = () => {
                         <Board 
                             boardState={board} players={players} validMoves={visualizedMoves} onSelectMove={(m) => { if (isLocalTurn) performMove(m.sourceIndex, m.targetIndex); }} 
                             currentPlayer={players[turnIndex].id} turnPhase={phase} onShellClick={(i) => { if (isLocalTurn) { board.get(i)?.owner === players[turnIndex].id ? setSelectedSourceIndex(i) : setSelectedSourceIndex(null) } }} 
-                            selectedSource={selectedSourceIndex} lastMove={lastMove} currentRoll={lastRoll} isRolling={isRolling} isNinerMode={isNinerMode} onInvalidMoveAttempt={() => SFX.playBlocked()} 
+                            selectedSource={selectedSourceIndex} lastMove={lastMove} currentRoll={lastRoll} isRolling={isRolling} isNinerMode={isNinerMode} onInvalidMoveAttempt={() => { SFX.playBlocked(); }} 
+                            isOpeningPaRa={isOpeningPaRa}
                         />
                     </div>
                 </div>

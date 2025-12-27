@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { BoardState, PlayerColor, MoveOption, MoveResultType, DiceRoll, GamePhase } from '../types';
-import { CENTER_X, CENTER_Y, TOTAL_SHELLS } from '../constants';
+import { CENTER_X, CENTER_Y, TOTAL_SHELLS, COINS_PER_PLAYER } from '../constants';
 import * as d3 from 'd3';
 
 interface BoardProps {
@@ -17,6 +17,7 @@ interface BoardProps {
   isRolling?: boolean;
   onInvalidMoveAttempt?: (sourceIdx: number, targetIdx: number) => void;
   isNinerMode?: boolean; 
+  isOpeningPaRa?: boolean;
 }
 
 // Localized Synthesizer for Blocked Feedback
@@ -137,7 +138,7 @@ const BoardDie: React.FC<{ value: number; x: number; y: number; rotation: number
 
 const pseudoRandom = (seed: number) => { const x = Math.sin(seed) * 10000; return x - Math.floor(x); };
 
-export const Board: React.FC<BoardProps> = ({ boardState, players, validMoves, onSelectMove, currentPlayer, turnPhase, onShellClick, selectedSource, lastMove, currentRoll, isRolling, onInvalidMoveAttempt, isNinerMode }) => {
+export const Board: React.FC<BoardProps> = ({ boardState, players, validMoves, onSelectMove, currentPlayer, turnPhase, onShellClick, selectedSource, lastMove, currentRoll, isRolling, onInvalidMoveAttempt, isNinerMode, isOpeningPaRa }) => {
   const [finishingParticles, setFinishingParticles] = useState<{id: number, x: number, y: number, color: string}[]>([]);
   const [stackingAnim, setStackingAnim] = useState<{ id: number, startX: number, startY: number, endX: number, endY: number, color: string } | null>(null);
   const [shakeShellId, setShakeShellId] = useState<number | null>(null);
@@ -200,11 +201,23 @@ export const Board: React.FC<BoardProps> = ({ boardState, players, validMoves, o
     
     if (sourceIdx === null) {
         if (targetShell?.owner && targetShell.owner !== currentPlayer) {
-            msg = "SELECT PIECE ལག་ཁྱི་འདོམ།";
+            msg = "SELECT YOUR STACK རང་གི་ལག་ཁྱི་འདོམ།";
             playBlocked = true;
         } else return;
     } else {
-        const moverSize = sourceIdx === 0 ? (p1?.coinsInHand === 9 ? 2 : 1) : (boardState.get(sourceIdx)?.stackSize || 1);
+        // Calculate the moving stack size accurately based on game rules
+        let moverSize = 0;
+        if (sourceIdx === 0) {
+            // Check for Opening Move (Lak-khyi 2 or 3)
+            if (p1?.coinsInHand === COINS_PER_PLAYER) {
+                moverSize = isOpeningPaRa ? 3 : 2;
+            } else {
+                moverSize = 1;
+            }
+        } else {
+            moverSize = boardState.get(sourceIdx)?.stackSize || 0;
+        }
+
         if (targetShell) {
             if (targetShell.owner && targetShell.owner !== currentPlayer) {
                 if (targetShell.stackSize > moverSize) {
@@ -217,7 +230,7 @@ export const Board: React.FC<BoardProps> = ({ boardState, players, validMoves, o
                 if (!isNinerMode && targetShell.stackSize + moverSize === 9) {
                     msg = "9 LIMIT དགུ་བརྩེགས་མི་ཆོག།";
                     playBlocked = true;
-                } else {
+                } else if (targetId !== sourceIdx) {
                     msg = "INVALID DISTANCE ཐག་རིང་ཐུང་མ་འགྲིག།";
                 }
             } else {
@@ -229,7 +242,7 @@ export const Board: React.FC<BoardProps> = ({ boardState, players, validMoves, o
     if (msg) {
         setShakeShellId(targetId); 
         setBlockedFeedback({ shellId: targetId, message: msg, id: Date.now() });
-        if (playBlocked) playBlockedSFX();
+        playBlockedSFX();
         setTimeout(() => setShakeShellId(null), 500); 
         setTimeout(() => setBlockedFeedback(null), 1800);
         onInvalidMoveAttempt?.(sourceIdx || 0, targetId);
@@ -261,6 +274,13 @@ export const Board: React.FC<BoardProps> = ({ boardState, players, validMoves, o
                             onShellClick?.(shell.id);
                         } else if (selectedSource !== null && selectedSource !== undefined && selectedSource !== shell.id) {
                             triggerBlockedFeedback(shell.id, selectedSource);
+                        } else if (selectedSource === null) {
+                            // Provide helper feedback if player clicks opponent without selecting source
+                            if (owner && owner !== currentPlayer) {
+                                triggerBlockedFeedback(shell.id, null);
+                            } else {
+                                onShellClick?.(shell.id);
+                            }
                         } else {
                             onShellClick?.(shell.id);
                         }
