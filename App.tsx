@@ -229,9 +229,7 @@ const App: React.FC = () => {
     const currentMovesList = getAvailableMoves(s.turnIndex, s.board, s.players, s.pendingMoveValues, s.isNinerMode, s.isOpeningPaRa);
     let move = currentMovesList.find(m => m.sourceIndex === sourceIdx && m.targetIndex === targetIdx);
     
-    // Remote moves should always be trusted to keep state in sync
     if (!move && isRemote) {
-        // Fallback move calculation if local state is slightly off
         const potential = calculatePotentialMoves(sourceIdx, s.pendingMoveValues, s.board, s.players[s.turnIndex], s.isNinerMode, s.isOpeningPaRa);
         move = potential.find(m => m.targetIndex === targetIdx);
     }
@@ -439,13 +437,9 @@ const App: React.FC = () => {
       return;
     }
     
-    // Auto-placement logic: if only one valid sourceIndex=0 move exists, do it. 
-    // Or just pick the move with the highest targetIndex for convenience.
-    const handMoves = currentValidMovesList.filter(m => m.sourceIndex === 0);
-    if (handMoves.length > 0) {
-      // Sort by targetIndex descending to pick most advantageous placement
-      const bestMove = [...handMoves].sort((a, b) => b.targetIndex - a.targetIndex)[0];
-      performMove(bestMove.sourceIndex, bestMove.targetIndex);
+    // Set selection to hand (0) to show available placement points on the board
+    if (selectedSourceIndex === 0) {
+      setSelectedSourceIndex(null);
     } else {
       setSelectedSourceIndex(0);
     }
