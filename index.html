@@ -1,0 +1,111 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Sho - Traditional Tibetan Dice Game</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Play the traditional Tibetan game of Sho. Race through 64 shells, stack your coins, and roll Pa Ra for bonus turns in this high-quality digital experience." />
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#1a1a1a" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Sho" />
+    <link rel="apple-touch-icon" href="sho_logo.png" />
+    <link rel="icon" type="image/png" href="sho_logo.png" />
+    <link rel="manifest" href="manifest.json" />
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-JP0RJN1V46"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-JP0RJN1V46');
+    </script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@400;700&display=swap');
+      
+      body {
+        font-family: 'Lato', sans-serif;
+        background-color: #1a1a1a;
+        color: #f3f4f6;
+        margin: 0;
+        overflow: hidden;
+        /* Prevent elastic scrolling on iOS */
+        position: fixed;
+        width: 100%;
+        height: 100%;
+      }
+      
+      h1, h2, h3, button {
+        font-family: 'Cinzel', serif;
+      }
+
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent; 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(168, 85, 247, 0.2); 
+        border-radius: 4px;
+      }
+
+      /* Mobile Landscape Optimization */
+      @media (orientation: landscape) and (max-height: 500px) {
+        .mobile-landscape-row {
+          flex-direction: row !important;
+        }
+        .mobile-landscape-sidebar {
+          width: 35% !important;
+          height: 100vh !important;
+          border-right: 1px solid #2d2d2d;
+          border-bottom: none !important;
+        }
+        .mobile-landscape-board {
+          width: 65% !important;
+          height: 100vh !important;
+        }
+        .mobile-landscape-hide-logs {
+          display: none !important;
+        }
+        .mobile-landscape-compact-stats {
+          padding: 0.25rem !important;
+          gap: 0.25rem !important;
+        }
+      }
+      
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "d3": "https://aistudiocdn.com/d3@^7.9.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "peerjs": "https://esm.sh/peerjs@1.5.4?bundle-deps"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
