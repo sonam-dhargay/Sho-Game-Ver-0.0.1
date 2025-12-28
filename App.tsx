@@ -82,13 +82,11 @@ const calculatePotentialMoves = (sourceIdx: number, moveVals: number[], currentB
     return { sourceIndex: sourceIdx, targetIndex: targetIdx, consumedValues: consumed, type: MoveResultType.PLACE };
   };
 
-  // Flexible Rule: Calculate all possible subset sums of the current pool
   const generateSubsetSums = (index: number, currentSum: number, currentConsumed: number[]) => {
     if (index === moveVals.length) {
       if (currentSum > 0) {
         const result = evaluateTarget(currentSum, [...currentConsumed]);
         if (result) {
-          // If we have multiple ways to reach a target, keep the one using fewer dice (or specific preference)
           const existing = options.get(result.targetIndex);
           if (!existing || result.consumedValues.length < existing.consumedValues.length) {
             options.set(result.targetIndex, result);
@@ -97,10 +95,7 @@ const calculatePotentialMoves = (sourceIdx: number, moveVals: number[], currentB
       }
       return;
     }
-
-    // Option A: Include the current value in this move
     generateSubsetSums(index + 1, currentSum + moveVals[index], [...currentConsumed, moveVals[index]]);
-    // Option B: Skip current value (to be used by another piece)
     generateSubsetSums(index + 1, currentSum, currentConsumed);
   };
 
@@ -141,7 +136,6 @@ const App: React.FC = () => {
   const [handShake, setHandShake] = useState(false);
   const boardContainerRef = useRef<HTMLDivElement>(null);
 
-  // Online Multiplayer State
   const [peer, setPeer] = useState<Peer | null>(null);
   const [connection, setConnection] = useState<DataConnection | null>(null);
   const [myPeerId, setMyPeerId] = useState<string>('');
@@ -185,11 +179,9 @@ const App: React.FC = () => {
     const s = gameStateRef.current;
     setPendingMoveValues([]);
     setIsOpeningPaRa(false);
-    
     if (!isRemote && (gameMode === GameMode.ONLINE_HOST || gameMode === GameMode.ONLINE_GUEST)) {
       broadcastPacket({ type: 'SKIP_REQ' });
     }
-
     if (s.extraRolls > 0) {
         setExtraRolls(prev => prev - 1);
         setPhase(GamePhase.ROLLING);
@@ -204,7 +196,6 @@ const App: React.FC = () => {
   const performRoll = async (forcedRoll?: DiceRoll) => {
     const s = gameStateRef.current; if (s.phase !== GamePhase.ROLLING) return;
     setIsRolling(true); SFX.playShake(); await new Promise(resolve => setTimeout(resolve, 800)); 
-    
     let d1, d2;
     if (forcedRoll) {
         d1 = forcedRoll.die1;
@@ -213,12 +204,9 @@ const App: React.FC = () => {
         d1 = Math.floor(Math.random() * 6) + 1;
         d2 = Math.floor(Math.random() * 6) + 1;
     }
-
     if (s.gameMode === GameMode.TUTORIAL && s.tutorialStep === 2) { d1 = 2; d2 = 6; }
-    
     const pos1 = forcedRoll?.visuals ? { x: forcedRoll.visuals.d1x, y: forcedRoll.visuals.d1y, r: forcedRoll.visuals.d1r } : getRandomDicePos();
     let pos2 = forcedRoll?.visuals ? { x: forcedRoll.visuals.d2x, y: forcedRoll.visuals.d2y, r: forcedRoll.visuals.d2r } : getRandomDicePos();
-    
     if (!forcedRoll) {
         let attempts = 0;
         while (Math.sqrt((pos1.x - pos2.x)**2 + (pos1.y - pos2.y)**2) < 45 && attempts < 15) {
@@ -226,16 +214,12 @@ const App: React.FC = () => {
             attempts++;
         }
     }
-
     const isPaRa = (d1 === 1 && d2 === 1), total = d1 + d2;
     const newRoll: DiceRoll = { die1: d1, die2: d2, isPaRa, total, visuals: { d1x: pos1.x, d1y: pos1.y, d1r: pos1.r, d2x: pos2.x, d2y: pos2.y, d2r: pos2.r } };
-    
     if (!forcedRoll && (s.gameMode === GameMode.ONLINE_HOST || s.gameMode === GameMode.ONLINE_GUEST)) {
         broadcastPacket({ type: 'ROLL_REQ', payload: newRoll });
     }
-
     setLastRoll(newRoll); setIsRolling(false); SFX.playLand();
-    
     if (isPaRa) { 
         SFX.playPaRa(); 
         const newCount = s.paRaCount + 1;
@@ -265,7 +249,6 @@ const App: React.FC = () => {
     const s = gameStateRef.current;
     const currentMovesList = getAvailableMoves(s.turnIndex, s.board, s.players, s.pendingMoveValues, s.isNinerMode, s.isOpeningPaRa);
     let move = currentMovesList.find(m => m.sourceIndex === sourceIdx && m.targetIndex === targetIdx);
-    
     if (!move && isRemote) {
         const potential = calculatePotentialMoves(sourceIdx, s.pendingMoveValues, s.board, s.players[s.turnIndex], s.isNinerMode, s.isOpeningPaRa);
         move = potential.find(m => m.targetIndex === targetIdx);
@@ -273,19 +256,15 @@ const App: React.FC = () => {
            move = { sourceIndex: sourceIdx, targetIndex: targetIdx, consumedValues: [s.pendingMoveValues[0] || 0], type: MoveResultType.PLACE };
         }
     }
-    
     if (!move) return;
-
     if (!isRemote && (s.gameMode === GameMode.ONLINE_HOST || s.gameMode === GameMode.ONLINE_GUEST)) {
         broadcastPacket({ type: 'MOVE_REQ', payload: { sourceIdx, targetIdx } });
     }
-
     const nb: BoardState = new Map(s.board); 
     const player = s.players[s.turnIndex]; 
     let localExtraRollInc = 0; 
     let movingStackSize = 0; 
     let newPlayers = [...s.players];
-
     if (move.sourceIndex === 0) { 
         const isOpening = newPlayers[s.turnIndex].coinsInHand === COINS_PER_PLAYER; 
         movingStackSize = isOpening ? (s.isOpeningPaRa ? 3 : 2) : 1; 
@@ -296,7 +275,6 @@ const App: React.FC = () => {
         movingStackSize = source.stackSize; 
         nb.set(move.sourceIndex, { ...source, stackSize: 0, owner: null, isShoMo: false }); 
     }
-
     if (move.type === MoveResultType.FINISH) { 
         SFX.playFinish();
         newPlayers[s.turnIndex].coinsFinished += movingStackSize; 
@@ -320,23 +298,16 @@ const App: React.FC = () => {
             nb.set(move.targetIndex, { ...target, stackSize: movingStackSize, owner: player.id, isShoMo: (move.sourceIndex === 0 && movingStackSize >= 2) });
         }
     }
-
     setPlayers(newPlayers); setBoard(nb); setSelectedSourceIndex(null); 
     setLastMove({ ...move, id: Date.now() });
-
-    // Correctly consume the pool values used for this move
     let nextMoves = [...s.pendingMoveValues]; 
     move.consumedValues.forEach(val => { 
       const idx = nextMoves.indexOf(val); 
       if (idx > -1) nextMoves.splice(idx, 1); 
     });
-
     if (newPlayers[s.turnIndex].coinsFinished >= COINS_PER_PLAYER) { setPhase(GamePhase.GAME_OVER); return; }
-
     const movesLeft = getAvailableMoves(s.turnIndex, nb, newPlayers, nextMoves, s.isNinerMode, s.isOpeningPaRa);
-    
     if (localExtraRollInc > 0) setExtraRolls(prev => prev + localExtraRollInc);
-
     if (nextMoves.length === 0 || movesLeft.length === 0) {
         setPendingMoveValues([]); 
         setIsOpeningPaRa(false);
@@ -352,6 +323,9 @@ const App: React.FC = () => {
     } else {
         setPendingMoveValues(nextMoves);
     }
+    if (s.gameMode === GameMode.TUTORIAL && s.tutorialStep === 3) {
+      setTutorialStep(4);
+    }
   };
 
   const startOnlineHost = () => {
@@ -360,7 +334,6 @@ const App: React.FC = () => {
     const newPeer = new Peer(roomCode, {
       config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
     });
-    
     newPeer.on('open', (id) => setMyPeerId(id));
     newPeer.on('connection', (conn) => {
       setConnection(conn);
@@ -398,7 +371,6 @@ const App: React.FC = () => {
     if (!isHost) {
       conn.send({ type: 'SYNC', payload: { playerName, color: selectedColor, isNinerMode } });
     }
-
     conn.on('data', (data: any) => {
       const packet = data as NetworkPacket;
       switch (packet.type) {
@@ -427,7 +399,6 @@ const App: React.FC = () => {
         case 'SKIP_REQ': handleSkipTurn(true); break;
       }
     });
-
     conn.on('close', () => {
       addLog("Connection closed. མཐུད་ལམ་ཆད་སོང་།", 'alert');
       setOnlineLobbyStatus('IDLE');
@@ -463,7 +434,6 @@ const App: React.FC = () => {
   const currentValidMovesList = phase === GamePhase.MOVING ? getAvailableMoves(turnIndex, board, players, pendingMoveValues, isNinerMode, isOpeningPaRa) : [];
   const visualizedMoves = selectedSourceIndex !== null ? currentValidMovesList.filter(m => m.sourceIndex === selectedSourceIndex) : [];
   const shouldHighlightHand = phase === GamePhase.MOVING && (gameMode !== GameMode.AI || turnIndex === 0) && players[turnIndex].coinsInHand > 0;
-
   const isLocalTurn = (() => {
     if (gameMode === GameMode.ONLINE_HOST) return turnIndex === 0;
     if (gameMode === GameMode.ONLINE_GUEST) return turnIndex === 1;
@@ -474,14 +444,12 @@ const App: React.FC = () => {
   const handleFromHandClick = () => {
     if (phase !== GamePhase.MOVING || !isLocalTurn) return;
     const player = players[turnIndex];
-    
     if (player.coinsInHand <= 0) {
       SFX.playBlocked();
       setHandShake(true);
-      setTimeout(() => setHandShake(false), 400);
+      setTimeout(() => setHandShake(false), 400); 
       return;
     }
-
     const handMoves = currentValidMovesList.filter(m => m.sourceIndex === 0);
     if (handMoves.length === 0) {
       SFX.playBlocked();
@@ -490,8 +458,6 @@ const App: React.FC = () => {
       setTimeout(() => setHandShake(false), 400);
       return;
     }
-    
-    // Automatic placement: Execute the 'best' valid move starting from hand
     const sortedHandMoves = [...handMoves].sort((a, b) => b.targetIndex - a.targetIndex);
     performMove(0, sortedHandMoves[0].targetIndex);
   };
@@ -509,7 +475,6 @@ const App: React.FC = () => {
           @keyframes activePulse { 0%, 100% { box-shadow: 0 0 0 0px rgba(245, 158, 11, 0); } 50% { box-shadow: 0 0 20px 2px rgba(245, 158, 11, 0.3); } }
           .animate-active-pulse { animation: activePulse 2s ease-in-out infinite; }
         `}} />
-        
         {!gameMode && (
           <div className="fixed inset-0 z-50 bg-stone-950 text-amber-500 overflow-y-auto flex flex-col items-center justify-between p-6 py-12 md:py-24">
                <div className="flex flex-col items-center flex-shrink-0 w-full max-w-sm md:max-w-md">
@@ -521,7 +486,6 @@ const App: React.FC = () => {
                    <p className="text-stone-400 tracking-[0.3em] uppercase text-[12px] md:text-sm text-center font-bold">Traditional Tibetan Dice Game</p>
                    <p className="text-amber-600/60 text-lg md:text-xl font-serif mt-2">བོད་ཀྱི་སྲོལ་རྒྱུན་ཤོ་རྩེད།</p>
                </div>
-               
                <div className="flex-grow flex flex-col items-center justify-center w-full max-w-md gap-4 md:gap-10">
                   <div className="w-full bg-stone-900/30 p-6 md:p-8 rounded-[3rem] border border-stone-800/50 backdrop-blur-2xl shadow-2xl">
                       <div className="mb-6">
@@ -537,7 +501,6 @@ const App: React.FC = () => {
                         </div>
                       </div>
                   </div>
-
                   {onlineLobbyStatus === 'IDLE' ? (
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 w-full px-2">
                         <button className="bg-stone-900/40 border-2 border-stone-800/80 p-6 rounded-[2rem] hover:border-amber-600/50 transition-all active:scale-95 flex flex-col items-center justify-center gap-2" onClick={() => { setGameMode(GameMode.LOCAL); initializeGame({name: playerName, color: selectedColor}, {name: 'Opponent', color: COLOR_PALETTE[1].hex}); }}>
@@ -582,7 +545,6 @@ const App: React.FC = () => {
                     </div>
                   )}
                </div>
-
                <div className="w-full flex flex-col items-center gap-10 mt-10">
                   <div className="flex gap-16">
                       <button onClick={() => { setGameMode(GameMode.TUTORIAL); initializeGame({name: playerName, color: selectedColor}, {name: 'Guide', color: '#999'}, true); }} className="text-stone-500 hover:text-amber-500 flex flex-col items-center group transition-colors">
@@ -604,7 +566,6 @@ const App: React.FC = () => {
                </div>
           </div>
         )}
-
         {gameMode && (
             <>
                 <div className="w-full md:w-1/4 flex flex-col border-b md:border-b-0 md:border-r border-stone-800 bg-stone-950 z-20 shadow-2xl h-[45dvh] md:h-full order-1 overflow-hidden flex-shrink-0 mobile-landscape-sidebar">
@@ -623,7 +584,6 @@ const App: React.FC = () => {
                                 <button onClick={() => setShowRules(true)} className="w-5 h-5 md:w-8 md:h-8 rounded-full border border-stone-600 text-stone-400 flex items-center justify-center text-[10px] md:text-xs">?</button>
                             </div>
                         </header>
-                        
                         <div className="grid grid-cols-2 gap-1 md:gap-2 mt-4 md:mt-8 relative px-1">
                             {players.map((p, i) => {
                                 const isActive = turnIndex === i;
@@ -654,7 +614,6 @@ const App: React.FC = () => {
                             })}
                         </div>
                     </div>
-                    
                     <div className="px-2 md:px-4 pb-1 flex flex-col gap-1 flex-shrink-0 bg-stone-950">
                         {phase === GamePhase.GAME_OVER ? ( 
                             <div className="text-center p-2 md:p-4 bg-stone-800 rounded-xl border border-amber-500 animate-pulse">
@@ -683,7 +642,6 @@ const App: React.FC = () => {
                         )}
                     </div>
                 </div>
-                
                 <div className="flex-grow relative bg-[#1a1715] flex items-center justify-center overflow-hidden order-2 h-[55dvh] md:h-full mobile-landscape-board" ref={boardContainerRef}>
                     <div style={{ transform: `scale(${boardScale})`, width: 800, height: 800 }} className="transition-transform duration-300">
                         <Board 
