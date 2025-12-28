@@ -45,11 +45,17 @@ const SFX = {
 const getRandomDicePos = () => { const r = 35 + Math.random() * 45; const theta = Math.random() * Math.PI * 2; return { x: r * Math.cos(theta), y: r * Math.sin(theta), r: Math.random() * 360 }; };
 
 const calculatePotentialMoves = (sourceIdx: number, moveVals: number[], currentBoard: BoardState, player: Player, isNinerMode: boolean, isOpeningPaRa: boolean): MoveOption[] => {
-  const options: MoveOption[] = [];
+  const options: Map<number, MoveOption> = new Map();
+
+  // Helper to evaluate a specific total distance move
   const evaluateTarget = (dist: number, consumed: number[]): MoveOption | null => {
     const targetIdx = sourceIdx + dist;
-    if (targetIdx > TOTAL_SHELLS) { return { sourceIndex: sourceIdx, targetIndex: targetIdx, consumedValues: consumed, type: MoveResultType.FINISH }; }
-    const targetShell = currentBoard.get(targetIdx); if (!targetShell) return null;
+    if (targetIdx > TOTAL_SHELLS) { 
+      return { sourceIndex: sourceIdx, targetIndex: targetIdx, consumedValues: consumed, type: MoveResultType.FINISH }; 
+    }
+    
+    const targetShell = currentBoard.get(targetIdx); 
+    if (!targetShell) return null;
     
     let movingStackSize = 0;
     if (sourceIdx === 0) {
@@ -62,13 +68,44 @@ const calculatePotentialMoves = (sourceIdx: number, moveVals: number[], currentB
         movingStackSize = currentBoard.get(sourceIdx)?.stackSize || 0;
     }
 
-    if (targetShell.owner === player.id) { const rs = targetShell.stackSize + movingStackSize; if (!isNinerMode && rs === 9) return null; return { sourceIndex: sourceIdx, targetIndex: targetIdx, consumedValues: consumed, type: MoveResultType.STACK }; }
-    if (targetShell.owner && targetShell.owner !== player.id) { if (movingStackSize >= targetShell.stackSize) return { sourceIndex: sourceIdx, targetIndex: targetIdx, consumedValues: consumed, type: MoveResultType.KILL }; return null; }
+    if (targetShell.owner === player.id) { 
+      const rs = targetShell.stackSize + movingStackSize; 
+      if (!isNinerMode && rs === 9) return null; 
+      return { sourceIndex: sourceIdx, targetIndex: targetIdx, consumedValues: consumed, type: MoveResultType.STACK }; 
+    }
+    
+    if (targetShell.owner && targetShell.owner !== player.id) { 
+      if (movingStackSize >= targetShell.stackSize) return { sourceIndex: sourceIdx, targetIndex: targetIdx, consumedValues: consumed, type: MoveResultType.KILL }; 
+      return null; 
+    }
+    
     return { sourceIndex: sourceIdx, targetIndex: targetIdx, consumedValues: consumed, type: MoveResultType.PLACE };
   };
-  Array.from(new Set(moveVals)).forEach(val => { const opt = evaluateTarget(val, [val]); if (opt) options.push(opt); });
-  if (moveVals.length > 1) { const total = moveVals.reduce((a, b) => a + b, 0); const opt = evaluateTarget(total, moveVals); if (opt && !options.some(o => o.targetIndex === opt.targetIndex)) options.push(opt); }
-  return options;
+
+  // Flexible Rule: Calculate all possible subset sums of the current pool
+  const generateSubsetSums = (index: number, currentSum: number, currentConsumed: number[]) => {
+    if (index === moveVals.length) {
+      if (currentSum > 0) {
+        const result = evaluateTarget(currentSum, [...currentConsumed]);
+        if (result) {
+          // If we have multiple ways to reach a target, keep the one using fewer dice (or specific preference)
+          const existing = options.get(result.targetIndex);
+          if (!existing || result.consumedValues.length < existing.consumedValues.length) {
+            options.set(result.targetIndex, result);
+          }
+        }
+      }
+      return;
+    }
+
+    // Option A: Include the current value in this move
+    generateSubsetSums(index + 1, currentSum + moveVals[index], [...currentConsumed, moveVals[index]]);
+    // Option B: Skip current value (to be used by another piece)
+    generateSubsetSums(index + 1, currentSum, currentConsumed);
+  };
+
+  generateSubsetSums(0, 0, []);
+  return Array.from(options.values());
 };
 
 const getAvailableMoves = (pIndex: number, pBoard: BoardState, pPlayers: Player[], pVals: number[], isNinerMode: boolean, isOpeningPaRa: boolean) => {
@@ -229,11 +266,9 @@ const App: React.FC = () => {
     const currentMovesList = getAvailableMoves(s.turnIndex, s.board, s.players, s.pendingMoveValues, s.isNinerMode, s.isOpeningPaRa);
     let move = currentMovesList.find(m => m.sourceIndex === sourceIdx && m.targetIndex === targetIdx);
     
-    // Remote consistency: if it's a remote request, trust the source/target even if local moves list differs slightly
     if (!move && isRemote) {
         const potential = calculatePotentialMoves(sourceIdx, s.pendingMoveValues, s.board, s.players[s.turnIndex], s.isNinerMode, s.isOpeningPaRa);
         move = potential.find(m => m.targetIndex === targetIdx);
-        // Final fallback: if move still null, force creation to avoid desync
         if (!move) {
            move = { sourceIndex: sourceIdx, targetIndex: targetIdx, consumedValues: [s.pendingMoveValues[0] || 0], type: MoveResultType.PLACE };
         }
@@ -289,8 +324,12 @@ const App: React.FC = () => {
     setPlayers(newPlayers); setBoard(nb); setSelectedSourceIndex(null); 
     setLastMove({ ...move, id: Date.now() });
 
+    // Correctly consume the pool values used for this move
     let nextMoves = [...s.pendingMoveValues]; 
-    move.consumedValues.forEach(val => { const idx = nextMoves.indexOf(val); if (idx > -1) nextMoves.splice(idx, 1); });
+    move.consumedValues.forEach(val => { 
+      const idx = nextMoves.indexOf(val); 
+      if (idx > -1) nextMoves.splice(idx, 1); 
+    });
 
     if (newPlayers[s.turnIndex].coinsFinished >= COINS_PER_PLAYER) { setPhase(GamePhase.GAME_OVER); return; }
 
@@ -436,7 +475,6 @@ const App: React.FC = () => {
     if (phase !== GamePhase.MOVING || !isLocalTurn) return;
     const player = players[turnIndex];
     
-    // Check if coins are in hand
     if (player.coinsInHand <= 0) {
       SFX.playBlocked();
       setHandShake(true);
@@ -444,7 +482,6 @@ const App: React.FC = () => {
       return;
     }
 
-    // Check if ALL potential moves from hand are blocked by larger stacks
     const handMoves = currentValidMovesList.filter(m => m.sourceIndex === 0);
     if (handMoves.length === 0) {
       SFX.playBlocked();
@@ -455,7 +492,6 @@ const App: React.FC = () => {
     }
     
     // Automatic placement: Execute the 'best' valid move starting from hand
-    // 'Best' is defined as the move that reaches the furthest target index
     const sortedHandMoves = [...handMoves].sort((a, b) => b.targetIndex - a.targetIndex);
     performMove(0, sortedHandMoves[0].targetIndex);
   };

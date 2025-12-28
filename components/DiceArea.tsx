@@ -32,18 +32,12 @@ export const DiceArea: React.FC<DiceAreaProps> = ({
             </div>
         )}
 
-        {flexiblePool !== null && (
-            <div className="w-full bg-amber-900/40 border border-amber-600/50 rounded-lg p-1 md:p-3 text-center mb-1 animate-pulse">
-                <div className="text-amber-400 text-[6px] md:text-[10px] uppercase font-bold">Flexible Pool</div>
-                <div className="text-lg md:text-3xl font-cinzel text-white">{flexiblePool}</div>
-            </div>
-        )}
-
-        {pendingValues.length > 0 && flexiblePool === null && (
+        {pendingValues.length > 0 && (
             <div className="w-full mb-1">
+                <div className="text-[7px] md:text-[9px] text-stone-500 uppercase font-bold text-center mb-1 tracking-widest">Movement Pool ཤོ་མིག་གཏོང་ཆོག</div>
                 <div className="flex gap-1 justify-center flex-wrap">
                     {pendingValues.map((val, idx) => (
-                        <span key={idx} className={`px-1.5 md:px-3 py-0.5 md:py-1.5 rounded-lg font-bold text-[10px] md:text-lg shadow-lg border ${val === 2 ? 'bg-amber-600 border-amber-400/30' : 'bg-indigo-600 border-indigo-400/30'} text-white`}>{val}</span>
+                        <span key={idx} className={`px-2 md:px-4 py-1 md:py-2 rounded-lg font-bold text-[12px] md:text-xl shadow-lg border animate-in zoom-in duration-300 ${val === 2 ? 'bg-amber-600 border-amber-400/30' : 'bg-indigo-600 border-indigo-400/30'} text-white`}>{val}</span>
                     ))}
                 </div>
             </div>
@@ -61,7 +55,7 @@ export const DiceArea: React.FC<DiceAreaProps> = ({
             onClick={onRoll}
             disabled={!canRoll && !waitingForPaRa}
             className={`
-                w-full py-1.5 md:py-3.5 rounded-lg font-cinzel font-bold transition-all flex flex-col items-center justify-center leading-none
+                w-full py-1.5 md:py-3.5 rounded-lg font-cinzel font-bold transition-all flex flex-col items-center justify-center leading-none mt-1
                 ${(canRoll || waitingForPaRa) ? 'bg-amber-700 hover:bg-amber-600 text-white shadow-lg text-[10px] md:text-lg' : 'bg-stone-700 text-stone-500 cursor-not-allowed text-[8px] md:text-sm'}
                 ${waitingForPaRa ? 'animate-bounce border border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.4)]' : ''}
             `}
