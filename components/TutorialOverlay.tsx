@@ -18,26 +18,27 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ step, onNext, 
       text: "The game is played with two dice. Let's start the game! Click the 'ROLL DICE' button. རྩེད་མོ་འདི་ཤོ་གཉིས་ཀྱིས་རྩེ་དགོས། ད་འགོ་འཛུགས་དོ། 'ROLL DICE' ལ་ནོན།",
     },
     {
-      title: "The Opening Move འགོ་འཛུགས་སྟངས།",
-      text: "In Sho, the opening move always places 2 coins from your hand onto the board. Click your 'From Hand' button to select it. ཤོ་འགོ་འཛུགས་སྐབས་ལག་ཁྱི་གཉིས་ལག་པ་ནས་འཇོག་དགོས། 'From Hand' ལ་ནོན་།",
+      title: "Smart Placement ལག་ཁྱི་འཇོག་སྟངས།",
+      text: "Clicking 'From Hand' now automatically places your coins at the furthest valid position to give you a head start! ལག་ཁྱི་བཙུགས་པ་དང་དེ་མ་ཐག་འགྲོ་ས་ཡག་ཤོས་དེར་རང་བཞིན་གྱིས་སླེབས་ཀྱི་རེད།",
     },
     {
-      title: "Placing Coins ལག་ཁྱི་འཇོག་སྟངས།",
-      text: "Valid moves are highlighted on the board. Click the glowing shell to place your stack. ལག་ཁྱི་འཇོག་ཆོག་ས་དག་ལ་འོད་སྒོར་ཡོད་རེད། འོད་རྒྱག་སའི་རྡེའུ་ལ་ནོན།",
-    },
-    {
-      title: "Opponent's Turn ཁ་གཏད་ཀྱི་རྒྱག་ཐེངས།",
-      text: "Now it's the opponent's turn. Watch them roll and move. ད་ཁ་གཏད་ཀྱི་རྒྱག་ཐེངས་རེད། ཁོ་ཚོས་ག་རེ་བྱེད་ཀྱི་འདུག་ལྟོས་དང་།",
+      title: "The Movement Pool ཤོ་མིག་གི་མཐུན་རྐྱེན།",
+      text: "Dice results are stored as tiles in the sidebar. You can use them one by one or combine them for massive tactical jumps! ཤོ་མིག་རྣམས་རེ་རེ་བྱས་ནས་གཏོང་ཆོག་ལ་བསྡོམས་ནས་ཐག་རིང་པོར་མཆོང་ནའང་ཆོག",
       action: "Next མུ་མཐུད"
     },
     {
-      title: "Key Mechanics གལ་གནད་ཅན་གྱི་སྒྲིག་གཞི།",
-      text: "Stacking: Land on your own coins to build a stack. Killing: Land on an opponent's stack to send them back. Blocking: You cannot land on a larger opponent's stack. བརྩེགས་སྟངས། རང་གི་ལག་ཁྱིའི་ཐོག་བབས་ན་བརྩེགས་ཆོག གསོད་སྟངས། ཁ་གཏད་ལག་ཁྱིའི་ཐོག་བབས་ན་བསད་ནས་ལག་པར་སློག་ཆོག བཀག་སྟངས། རང་ལས་མང་བའི་ལག་ཁྱིའི་་ཐོག་བཙུགས་་མི་ཆོག",
+      title: "Tactical Combat འཐབ་ཇུས།",
+      text: "Stacking: Land on your own pieces to move together and gain bonus rolls. Killing: Land on equal or smaller opponent stacks to send them back! བརྩེགས་སྟངས། རང་གི་ལག་ཁྱིའི་ཐོག་བབས་ན་བརྩེགས་ནས་ཤོ་ཐེངས་གཅིག་ཐོབ། གསོད་སྟངས། ཁ་གཏད་ལག་ཁྱིའི་ཐོག་བབས་ན་བསད་ནས་ལག་པར་སློག་ཆོག",
+      action: "Next མུ་མཐུད"
+    },
+    {
+      title: "Blocked Paths བགྲོད་ལམ་བཀག་པ།",
+      text: "You cannot land on a larger opponent's stack. Attempting to do so will trigger a 'TOO LARGE' warning and a red pulse. རང་ལས་མང་བའི་ལག་ཁྱིའི་ཐོག་ཏུ་བབས་མི་ཆོག གལ་ཏེ་འགྲོ་ཐབས་བྱས་ན་'བཀག་'ཅེས་པའི་བརྡ་དམར་པོ་ཞིག་སྟོན་གྱི་རེད།",
       action: "Next མུ་མཐུད་པ།"
     },
     {
       title: "The Pa Ra Rule པ་རའི་སྒྲིག་གཞི།",
-      text: "If you roll a 1 and 1, it's called 'Pa Ra'. You get a bonus roll immediately! གལ་ཏེ་ཤོ་མིག་ ༡ དང་ ༡ བབས་ན་'པ་ར་'ཟེར། ཁྱེད་ལ་ཤོ་ཐེངས་གཅིག་བསྐྱར་དུ་རྒྱག་རྒྱུའི་གོ་སྐབས་ཐོབ།",
+      text: "Rolling 1 and 1 (Pa Ra) adds a '2' bonus to your pool and lets you roll again immediately! པ་ར་བབས་ན་ཤོ་མིག་ '༢' ཁ་སྣོན་ཐོབ་པ་མ་ཟད་ཤོ་བསྐྱར་དུ་རྒྱག་ཆོག",
       action: "Finish མྱུར་ཁྲིད་མཇུག་བསྡུ་བའོ།"
     }
   ];

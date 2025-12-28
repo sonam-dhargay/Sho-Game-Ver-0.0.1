@@ -57,7 +57,7 @@ export const T = {
     stackingTitle: { en: "Stacking", bo: "བརྩེགས་སྟངས།" },
     stackingDesc: { en: "If you land on your own piece, they stack together. Stacks move as a single unit.", bo: "གལ་ཏེ་རང་གི་ལག་ཁྱི་ཐོག་ཏུ་ཤོ་བབས་ན་དེའི་སྟེང་བརྩེགས་ནས་མཉམ་དུ་འགྲོ་ཐུབ།" },
     killingTitle: { en: "Killing", bo: "བསད་སྟངས།" },
-    killingDesc: { en: "If you land on an opponent's stack that is equal to or smaller than yours, you 'kill' it. They return to hand, and you get a Bonus Roll!", bo: "གལ་ཏེ་ཁ་གཏད་ཀྱི་ལག་ཁྱི་ཁྱེད་ལས་ཉུང་བའམ་མཉམ་པ་ཡོད་ན། དེ་བསད་ནས་ལག་པར་སློག་ཆོག ཁྱེད་ལ་ཤོ་ཐེངས་གཅིག་རྒྱག་རྒྱུའི་ཁེ་ཕན་ཐོབ།" },
+    killingDesc: { en: "If you land on an opponent's stack that is equal to or smaller than yours, you 'kill' it. They return to hand, and you get a Bonus Roll!", bo: "གལ་ཏེ་ཁ་གཏད་ཀྱི་ལག་ཁྱི་ཁྱེད་ལས་ཉུང་བའམ་མཉམ་པ་ཡོད་ན། དེ་བསད་ནས་ལག་པར་སློག་ཆོག ཁྱེད་ལ་ཤོ་ཐེངས་གཅིག་རྒྱག་རྒྱུའི་ཁེ་ཕན།ཐོབ།" },
     finishingTitle: { en: "Finishing", bo: "རྩེད་མོ་མཇུག་སྒྲིལ་སྟངས།" },
     finishingRule1: { en: "You must roll a number that takes your piece past the 64th shell.", bo: "ལག་ཁྱི་རྣམས་རྡེའུ་ ༦༤ ལས་བརྒལ་བར་བྱེད་པའི་ཤོ་མིག་ཞིག་བབས་དགོས།" },
     finishingRule2: { en: "The first player to move all 9 coins off the board wins!", bo: "ལག་ཁྱི་་ ༩ ཆར་ཚང་མ་ལ་བརྒལ་མཁན་དེ་ལ་རྒྱལ་ཁ་ཐོབ་པ་ཡིན།" },
@@ -74,26 +74,28 @@ export const T = {
         text: { en: "The game is played with two dice. Let's start the game! Click the 'ROLL DICE' button.", bo: "རྩེད་མོ་འདི་ཤོ་གཉིས་ཀྱིས་རྩེ་དགོས། ད་འགོ་འཛུགས་དོ། 'ROLL DICE' ལ་ནོན།" },
       },
       {
-        title: { en: "The Opening Move", bo: "འགོ་འཛུགས་སྟངས།" },
-        text: { en: "In Sho, the opening move always places 2 coins from your hand onto the board. Click your 'Hand' tile to select it.", bo: "ཤོ་འགོ་འཛུགས་སྐབས་ལག་ཁྱི་གཉིས་ལག་པ་ནས་འཇོག་དགོས། 'Hand' ལ་ནོན་།" },
+        title: { en: "Smart Placement", bo: "ལག་ཁྱི་འཇོག་སྟངས།" },
+        text: { en: "Clicking 'From Hand' now automatically places your coins at the furthest valid position to give you a head start!", bo: "ལག་ཁྱི་བཙུགས་པ་དང་དེ་མ་ཐག་འགྲོ་ས་ཡག་ཤོས་དེར་རང་བཞིན་གྱིས་སླེབས་ཀྱི་རེད།" },
       },
       {
-        title: { en: "Placing Coins", bo: "ལག་ཁྱི་འཇོག་སྟངས།" },
-        text: { en: "Valid moves are highlighted on the board. Click the glowing shell to place your stack.", bo: "ལག་ཁྱི་འཇོག་ཆོག་ས་དག་ལ་འོད་སྒོར་ཡོད་རེད། འོད་རྒྱག་སའི་རྡེའུ་ལ་ནོན།" },
+        title: { en: "The Movement Pool", bo: "ཤོ་མིག་གི་མཐུན་རྐྱེན།" },
+        text: { en: "Dice results are stored as tiles in the sidebar. You can use them one by one or combine them for massive tactical jumps!", bo: "ཤོ་མིག་རྣམས་རེ་རེ་བྱས་ནས་གཏོང་ཆོག་ལ་བསྡོམས་ནས་ཐག་རིང་པོར་མཆོང་ནའང་ཆོག" },
+        action: { en: "Next", bo: "མུ་མཐུད" }
       },
       {
-        title: { en: "Opponent's Turn", bo: "ཁ་གཏད་ཀྱི་རྒྱག་ཐེངས།" },
-        text: { en: "Now it's the opponent's turn. Watch them roll and move.", bo: "ད་ཁ་གཏད་ཀྱི་རྒྱག་ཐེངས་རེད། ཁོ་ཚོས་ག་རེ་བྱེད་ཀྱི་འདུག་ལྟོས་དང་།" },
+        title: { en: "Tactical Combat", bo: "འཐབ་ཇུས།" },
+        text: { en: "Stacking: Land on your own pieces to move together and gain bonus rolls. Killing: Land on equal or smaller opponent stacks to send them back!", bo: "བརྩེགས་སྟངས། རང་གི་ལག་ཁྱིའི་ཐོག་བབས་ན་བརྩེགས་ནས་ཤོ་ཐེངས་གཅིག་ཐོབ། གསོད་སྟངས། ཁ་གཏད་ལག་ཁྱིའི་ཐོག་བབས་ན་བསད་ནས་ལག་པར་སློག་ཆོག" },
+        action: { en: "Next", bo: "མུ་མཐུད་པ།" }
       },
       {
-        title: { en: "Key Mechanics", bo: "གལ་གནད་ཅན་གྱི་སྒྲིག་གཞི།" },
-        text: { en: "Stacking: Land on your own coins to build a stack. Killing: Land on an opponent's stack to send them back. Blocking: You cannot land on a larger opponent's stack.", bo: "བརྩེགས་སྟངས། རང་གི་ལག་ཁྱིའི་ཐོག་བབས་ན་བརྩེགས་ཆོག གསོད་སྟངས། ཁ་གཏད་ལག་ཁྱིའི་ཐོག་བབས་ན་བསད་ནས་ལག་པར་སློག་ཆོག བཀག་སྟངས། རང་ལས་མང་བའི་ལག་ཁྱིའི་ཐོག་བཙུགས་མི་ཆོག" },
+        title: { en: "Blocked Paths", bo: "བགྲོད་ལམ་བཀག་པ།" },
+        text: { en: "You cannot land on a larger opponent's stack. Attempting to do so will trigger a 'TOO LARGE' warning and a red pulse.", bo: "རང་ལས་མང་བའི་ལག་ཁྱིའི་ཐོག་ཏུ་བབས་མི་ཆོག གལ་ཏེ་འགྲོ་ཐབས་བྱས་ན་'བཀག་'ཅེས་པའི་བརྡ་དམར་པོ་ཞིག་སྟོན་གྱི་རེད།" },
         action: { en: "Next", bo: "མུ་མཐུད་པ།" }
       },
       {
         title: { en: "The Pa Ra Rule", bo: "པ་རའི་སྒྲིག་གཞི།" },
         text: { en: "If you roll a 1 and 1, it's called 'Pa Ra'. You get a bonus roll immediately!", bo: "གལ་ཏེ་ཤོ་མིག་ ༡ དང་ ༡ བབས་ན་'པ་ར་'ཟེར། ཁྱེད་ལ་ཤོ་ཐེངས་གཅིག་བསྐྱར་དུ་རྒྱག་རྒྱུའི་གོ་སྐབས་ཐོབ།" },
-        action: { en: "Finish Tutorial", bo: "མྱུར་ཁྲིད་ mཇུག་བསྡུ་བའོ།" }
+        action: { en: "Finish Tutorial", bo: "མྱུར་ཁྲིད་མཇུག་བསྡུ་བའོ།" }
       }
     ]
   }
