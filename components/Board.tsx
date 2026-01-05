@@ -76,13 +76,16 @@ const CowrieShell: React.FC<{ angle: number; isTarget: boolean; isHovered?: bool
             <stop offset="100%" stopColor="#a8a29e" />
           </radialGradient>
         </defs>
-        <ellipse cx="50" cy="65" rx="45" ry="60" fill="url(#shellBody)" stroke={isBlocked ? "#ef4444" : (isTarget ? "#fbbf24" : "#78716c")} strokeWidth={isBlocked ? "5" : (isTarget ? "3" : "1.5")} />
+        <ellipse cx="50" cy="65" rx="45" ry="60" fill="url(#shellBody)" stroke={isBlocked ? "#ef4444" : (isTarget ? "#fbbf24" : "#78716c")} strokeWidth={isBlocked ? "5" : (isTarget ? "3" : "1.5")} className={isTarget ? "animate-pulse" : ""} />
         <path d="M50 20 C 40 40, 40 90, 50 110 C 60 90, 60 40, 50 20" fill={isBlocked ? "#b91c1c" : (isTarget ? "#92400e" : "#44403c")} stroke={isBlocked ? "#ef4444" : "#292524"} strokeWidth="1"/>
         <g stroke={isBlocked ? "#fecaca" : "#e7e5e4"} strokeWidth="2" strokeLinecap="round" opacity="0.8">
            <line x1="48" y1="30" x2="42" y2="30" /><line x1="47" y1="45" x2="40" y2="45" /><line x1="47" y1="60" x2="38" y2="60" /><line x1="47" y1="75" x2="40" y2="75" /><line x1="48" y1="90" x2="42" y2="90" />
            <line x1="52" y1="30" x2="58" y2="30" /><line x1="53" y1="45" x2="60" y2="45" /><line x1="53" y1="60" x2="62" y2="60" /><line x1="53" y1="75" x2="60" y2="75" /><line x1="52" y1="90" x2="58" y2="90" />
         </g>
       </svg>
+      {isTarget && (
+        <div className="absolute inset-0 rounded-full bg-amber-400/20 blur-md animate-pulse pointer-events-none"></div>
+      )}
     </div>
   );
 };
