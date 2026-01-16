@@ -266,14 +266,15 @@ export const Board: React.FC<BoardProps> = ({ boardState, players, validMoves, o
         <svg width="100%" height="100%" className="absolute inset-0 z-0 pointer-events-none"><path d={d3.line().curve(d3.curveCatmullRom.alpha(0.6))(shells.map(s => [s.x, s.y])) || ""} fill="none" stroke="#44403c" strokeWidth="12" strokeLinecap="round" className="opacity-20 blur-sm transition-all duration-500" /></svg>
         {shells.map((shell) => {
             const moveTarget = validMoves.find(m => m.targetIndex === shell.id); 
-            const isTarget = !!moveTarget || (selectedSource === null && turnPhase === GamePhase.MOVING && (shell.data?.owner === currentPlayer && shell.data?.stackSize > 0));
+            const isTarget = !!moveTarget;
+            const isSelectableSource = (selectedSource === null && turnPhase === GamePhase.MOVING && (shell.data?.owner === currentPlayer && shell.data?.stackSize > 0));
             const shellData = boardState.get(shell.id); const stackSize = shellData?.stackSize || 0; const owner = shellData?.owner;
             const isSource = selectedSource === shell.id;
             const isShaking = shakeShellId === shell.id; const hasBlockedMsg = blockedFeedback?.shellId === shell.id;
             const shellOffX = Math.cos(shell.angle) * -12 + Math.cos(shell.angle + Math.PI / 2) * -10; const shellOffY = Math.sin(shell.angle) * -12 + Math.sin(shell.angle + Math.PI / 2) * -10;
             const stackOffX = Math.cos(shell.angle) * 28 + Math.cos(shell.angle + Math.PI / 2) * -10; const stackOffY = Math.sin(shell.angle) * 28 + Math.sin(shell.angle + Math.PI / 2) * -10;
             return (
-                <div key={shell.id} data-shell-id={shell.id} className={`absolute flex items-center justify-center transition-all duration-300 ease-in-out ${isTarget ? 'z-40 cursor-pointer' : 'z-20'} ${isShaking ? 'animate-blocked-outline rounded-full border-4 border-red-600' : ''}`} style={{ left: shell.x, top: shell.y, width: 44, height: 44, transform: 'translate(-50%, -50%)', touchAction: 'none' }}
+                <div key={shell.id} data-shell-id={shell.id} className={`absolute flex items-center justify-center transition-all duration-300 ease-in-out ${isTarget || isSelectableSource ? 'z-40 cursor-pointer' : 'z-20'} ${isShaking ? 'animate-blocked-outline rounded-full border-4 border-red-600' : ''}`} style={{ left: shell.x, top: shell.y, width: 44, height: 44, transform: 'translate(-50%, -50%)', touchAction: 'none' }}
                     onClick={(e) => { 
                         e.stopPropagation(); 
                         if (isTarget && moveTarget) { 
@@ -293,8 +294,8 @@ export const Board: React.FC<BoardProps> = ({ boardState, players, validMoves, o
                         }
                     }}
                 >
-                    <div style={{ transform: `translate(${shellOffX}px, ${shellOffY}px)` }}><CowrieShell angle={shell.angle} isTarget={isTarget} isHovered={isTarget} isBlocked={isShaking} /></div>
-                    {isTarget && <div className={`absolute w-16 h-16 rounded-full border-2 border-amber-400 animate-ping opacity-75 pointer-events-none`}></div>}
+                    <div style={{ transform: `translate(${shellOffX}px, ${shellOffY}px)` }}><CowrieShell angle={shell.angle} isTarget={isTarget || isSelectableSource} isHovered={isTarget || isSelectableSource} isBlocked={isShaking} /></div>
+                    {(isTarget || isSelectableSource) && <div className={`absolute w-16 h-16 rounded-full border-2 border-amber-400 animate-ping opacity-75 pointer-events-none`}></div>}
                     {isSource && <div className="absolute w-18 h-18 rounded-full border-4 border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.5)] opacity-80 pointer-events-none animate-pulse"></div>}
                     {isShaking && ( <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] pointer-events-none"><div className="w-20 h-20 rounded-full border-4 border-red-600/60 animate-shake-target flex items-center justify-center"><svg viewBox="0 0 24 24" className="w-16 h-16 text-red-600 animate-x-mark" fill="none" stroke="currentColor" strokeWidth="4"><path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" /></svg></div></div> )}
                     {hasBlockedMsg && ( <div className="absolute bottom-12 left-1/2 -translate-x-1/2 whitespace-nowrap z-[70] pointer-events-none"><span className="bg-red-700 text-white font-cinzel font-bold px-4 py-2 rounded-lg text-[10px] md:text-sm shadow-2xl border-2 border-red-500/50 animate-blocked-label block text-center shadow-[0_0_30px_rgba(0,0,0,0.9)]">{blockedFeedback?.message}</span></div> )}
