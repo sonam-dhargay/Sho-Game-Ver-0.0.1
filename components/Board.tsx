@@ -266,7 +266,7 @@ export const Board: React.FC<BoardProps> = ({ boardState, players, validMoves, o
         <svg width="100%" height="100%" className="absolute inset-0 z-0 pointer-events-none"><path d={d3.line().curve(d3.curveCatmullRom.alpha(0.6))(shells.map(s => [s.x, s.y])) || ""} fill="none" stroke="#44403c" strokeWidth="12" strokeLinecap="round" className="opacity-20 blur-sm transition-all duration-500" /></svg>
         {shells.map((shell) => {
             const moveTarget = validMoves.find(m => m.targetIndex === shell.id); 
-            const isTarget = !!moveTarget || (selectedSource === null && turnPhase === GamePhase.MOVING && (shell.data?.owner === currentPlayer && shell.data?.stackSize > 0));
+            const isTarget = !!moveTarget;
             const shellData = boardState.get(shell.id); const stackSize = shellData?.stackSize || 0; const owner = shellData?.owner;
             const isSource = selectedSource === shell.id;
             const isShaking = shakeShellId === shell.id; const hasBlockedMsg = blockedFeedback?.shellId === shell.id;
