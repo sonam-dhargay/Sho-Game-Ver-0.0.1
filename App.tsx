@@ -9,6 +9,7 @@ import { Board } from './components/Board';
 import { DiceArea } from './components/DiceArea';
 import { RulesModal } from './components/RulesModal';
 import { TutorialOverlay } from './components/TutorialOverlay';
+import { ShoLogo } from './components/ShoLogo';
 
 const generatePlayers = (
     p1Settings: { name: string, color: string },
@@ -568,45 +569,46 @@ const App: React.FC = () => {
         )}
         {gameMode && (
             <>
-                <div className="w-full md:w-1/4 flex flex-col border-b md:border-b-0 md:border-r border-stone-800 bg-stone-950 z-20 shadow-2xl h-[45dvh] md:h-full order-1 overflow-hidden flex-shrink-0 mobile-landscape-sidebar">
-                    <div className="p-1.5 md:p-4 flex flex-col gap-0 md:gap-3 flex-shrink-0 bg-stone-950 mobile-landscape-compact-stats">
-                        <header className="flex justify-between items-center border-b border-stone-800 pb-1 md:pb-4">
-                            <div className="flex items-center gap-1 cursor-pointer" onClick={() => { if (peer) peer.destroy(); setGameMode(null); setOnlineLobbyStatus('IDLE'); }}>
-                                <h1 className="text-amber-500 text-sm md:text-2xl font-cinzel">ཤོ Sho</h1>
+                <div className="w-full md:w-80 lg:w-96 flex flex-col border-b md:border-b-0 md:border-r border-stone-800 bg-stone-950 z-20 shadow-2xl h-[45dvh] md:h-full order-1 overflow-hidden flex-shrink-0 mobile-landscape-sidebar">
+                    <div className="p-4 md:p-6 flex flex-col gap-3 md:gap-6 flex-shrink-0 bg-stone-950 mobile-landscape-compact-stats">
+                        <header className="flex justify-between items-center border-b border-stone-800 pb-2 md:pb-6">
+                            <div className="flex items-center gap-2 cursor-pointer" onClick={() => { if (peer) peer.destroy(); setGameMode(null); setOnlineLobbyStatus('IDLE'); }}>
+                                <ShoLogo className="w-8 h-8 md:w-12 md:h-12 text-amber-500" />
+                                <h1 className="text-amber-500 text-lg md:text-3xl font-cinzel">ཤོ Sho</h1>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-3">
                                 {(gameMode === GameMode.ONLINE_HOST || gameMode === GameMode.ONLINE_GUEST) && (
-                                    <div className="flex items-center gap-1.5 bg-green-950/40 border border-green-700/50 px-2 py-0.5 rounded-full">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                                        <span className="text-[8px] uppercase font-bold text-green-400">Online དྲ་ཐོག</span>
+                                    <div className="flex items-center gap-2 bg-green-950/40 border border-green-700/50 px-3 py-1 rounded-full">
+                                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                        <span className="text-[10px] uppercase font-bold text-green-400">Online</span>
                                     </div>
                                 )}
-                                <button onClick={() => setShowRules(true)} className="w-5 h-5 md:w-8 md:h-8 rounded-full border border-stone-600 text-stone-400 flex items-center justify-center text-[10px] md:text-xs">?</button>
+                                <button onClick={() => setShowRules(true)} className="w-8 h-8 rounded-full border border-stone-600 text-stone-400 flex items-center justify-center text-xs md:text-sm hover:text-white hover:border-white transition-colors">?</button>
                             </div>
                         </header>
-                        <div className="grid grid-cols-2 gap-1 md:gap-2 mt-4 md:mt-8 relative px-1">
+                        <div className="grid grid-cols-2 gap-2 md:gap-4 mt-4 md:mt-8 relative px-1">
                             {players.map((p, i) => {
                                 const isActive = turnIndex === i;
                                 const isMe = (gameMode === GameMode.ONLINE_HOST && i === 0) || (gameMode === GameMode.ONLINE_GUEST && i === 1) || (gameMode !== GameMode.ONLINE_HOST && gameMode !== GameMode.ONLINE_GUEST && i === 0);
                                 return (
-                                    <div key={p.id} className={`relative p-1.5 md:p-3 rounded-xl border transition-all duration-300 ${isActive ? 'bg-stone-800 border-amber-500/50 scale-[1.05] z-10 animate-active-pulse shadow-xl' : 'border-stone-800 opacity-50'}`}>
+                                    <div key={p.id} className={`relative p-3 md:p-5 rounded-2xl border transition-all duration-300 ${isActive ? 'bg-stone-800 border-amber-500/50 scale-[1.05] z-10 animate-active-pulse shadow-xl' : 'border-stone-800 opacity-50'}`}>
                                         {isActive && (
-                                            <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex flex-col items-center animate-turn-indicator z-20">
-                                                 <div className="w-3 h-3 bg-amber-500 rounded-full shadow-[0_0_15px_rgba(245,158,11,1)] border border-white/20" />
-                                                 <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-amber-500 mt-[-2px]" />
+                                            <div className="absolute -top-7 left-1/2 -translate-x-1/2 flex flex-col items-center animate-turn-indicator z-20">
+                                                 <div className="w-4 h-4 bg-amber-500 rounded-full shadow-[0_0_20px_rgba(245,158,11,1)] border-2 border-white/20" />
+                                                 <div className="w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[10px] border-t-amber-500 mt-[-2px]" />
                                             </div>
                                         )}
-                                        <div className="flex items-center gap-1.5 mb-1.5">
-                                            <div className={`w-2 h-2 md:w-3 md:h-3 rounded-full flex-shrink-0 ${isActive ? 'animate-pulse' : ''}`} style={{ backgroundColor: p.colorHex }}></div>
-                                            <h3 className={`font-bold truncate text-[9px] md:text-[11px] font-serif ${isActive ? 'brightness-125' : ''}`} style={{ color: p.colorHex }}>{p.name}</h3>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className={`w-3 h-3 md:w-4 md:h-4 rounded-full flex-shrink-0 ${isActive ? 'animate-pulse' : ''}`} style={{ backgroundColor: p.colorHex }}></div>
+                                            <h3 className={`font-bold truncate text-[10px] md:text-base font-serif ${isActive ? 'brightness-125' : ''}`} style={{ color: p.colorHex }}>{p.name}</h3>
                                         </div>
-                                        <div className="flex justify-between text-[11px] md:text-[14px] text-stone-100 font-bold font-cinzel">
-                                            <div className="flex flex-col"><span className="text-[7px] text-stone-500">Hand ལག་པ།</span><span>{p.coinsInHand}</span></div>
-                                            <div className="flex flex-col items-end"><span className="text-[7px] text-stone-500">Done ཕུད་གྲངས།</span><span className="text-amber-500">{p.coinsFinished}</span></div>
+                                        <div className="flex justify-between text-xs md:text-lg text-stone-100 font-bold font-cinzel">
+                                            <div className="flex flex-col"><span className="text-[8px] text-stone-500 uppercase tracking-wider">Hand</span><span>{p.coinsInHand}</span></div>
+                                            <div className="flex flex-col items-end"><span className="text-[8px] text-stone-500 uppercase tracking-wider">Done</span><span className="text-amber-500">{p.coinsFinished}</span></div>
                                         </div>
                                         {isActive && (
-                                            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-amber-600 px-1.5 py-0.5 rounded-md shadow-lg border border-amber-400/30 whitespace-nowrap">
-                                                <span className="text-[7px] md:text-[9px] text-white font-bold uppercase tracking-[0.1em]">{isMe ? "YOUR TURN ཁྱེད་ཀྱི་ཐེངས།" : "WAITING... སྒུག"}</span>
+                                            <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 bg-amber-600 px-3 py-1 rounded-full shadow-lg border border-amber-400/30 whitespace-nowrap">
+                                                <span className="text-[8px] md:text-[11px] text-white font-black uppercase tracking-widest">{isMe ? "YOUR TURN" : "WAITING"}</span>
                                             </div>
                                         )}
                                     </div>
@@ -614,36 +616,36 @@ const App: React.FC = () => {
                             })}
                         </div>
                     </div>
-                    <div className="px-2 md:px-4 pb-1 flex flex-col gap-1 flex-shrink-0 bg-stone-950">
+                    <div className="px-4 md:px-8 pb-4 md:pb-8 flex flex-col gap-4 md:gap-8 flex-shrink-0 bg-stone-950 border-t border-stone-800 pt-6">
                         {phase === GamePhase.GAME_OVER ? ( 
-                            <div className="text-center p-2 md:p-4 bg-stone-800 rounded-xl border border-amber-500 animate-pulse">
-                                <h2 className="text-base md:text-xl text-amber-400 font-cinzel">Victory རྒྱལ་ཁ།</h2>
-                                <button onClick={() => { if(peer) peer.destroy(); setGameMode(null); setOnlineLobbyStatus('IDLE'); }} className="bg-amber-600 text-white px-3 py-1 rounded-full font-bold uppercase text-[8px] md:text-[10px] mt-1">Exit Game ཕྱིར་དོན།</button>
+                            <div className="text-center p-4 md:p-8 bg-stone-800 rounded-2xl border-2 border-amber-500 shadow-2xl animate-pulse">
+                                <h2 className="text-xl md:text-3xl text-amber-400 font-cinzel mb-4">Victory!</h2>
+                                <button onClick={() => { if(peer) peer.destroy(); setGameMode(null); setOnlineLobbyStatus('IDLE'); }} className="w-full bg-amber-600 hover:bg-amber-500 text-white py-3 rounded-xl font-bold uppercase tracking-widest transition-colors text-sm">Exit Game</button>
                             </div> 
                         ) : ( 
-                            <div className="flex flex-col gap-1">
+                            <div className="flex flex-col gap-4 md:gap-8">
                                 <DiceArea currentRoll={lastRoll} onRoll={() => performRoll()} canRoll={(phase === GamePhase.ROLLING) && !isRolling && isLocalTurn} pendingValues={pendingMoveValues} waitingForPaRa={paRaCount > 0} paRaCount={paRaCount} extraRolls={extraRolls} flexiblePool={null} />
-                                <div className="flex gap-1">
-                                    <div onClick={handleFromHandClick} className={`flex-1 p-2 md:p-5 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center justify-center ${handShake ? 'animate-hand-blocked' : selectedSourceIndex === 0 ? 'border-amber-500 bg-amber-900/40 shadow-inner scale-95' : (shouldHighlightHand && isLocalTurn) ? 'border-amber-500/80 bg-amber-900/10 animate-pulse' : 'border-stone-800 bg-stone-900/50'} ${!isLocalTurn ? 'opacity-30 grayscale' : ''}`}>
-                                        <span className={`font-bold uppercase font-cinzel text-[11px] md:text-lg ${(shouldHighlightHand && isLocalTurn) ? 'text-amber-400' : ''}`}>From Hand</span>
-                                        <span className="text-[11px] md:text-[16px] text-stone-200 font-serif mt-1 font-bold">({players[turnIndex].coinsInHand}) ལག་ཁྱི་བཙུགས།</span>
+                                <div className="flex gap-4">
+                                    <div onClick={handleFromHandClick} className={`flex-1 p-4 md:p-10 rounded-2xl border-2 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 ${handShake ? 'animate-hand-blocked' : selectedSourceIndex === 0 ? 'border-amber-500 bg-amber-900/40 shadow-inner scale-95' : (shouldHighlightHand && isLocalTurn) ? 'border-amber-500/80 bg-amber-900/10 animate-pulse' : 'border-stone-800 bg-stone-900/50 hover:bg-stone-800/80'} ${!isLocalTurn ? 'opacity-30 grayscale' : ''}`}>
+                                        <span className={`font-black uppercase font-cinzel text-sm md:text-2xl ${(shouldHighlightHand && isLocalTurn) ? 'text-amber-400' : 'text-stone-300'}`}>From Hand</span>
+                                        <span className="text-xs md:text-xl text-stone-400 font-serif font-bold">({players[turnIndex].coinsInHand} coins)</span>
                                     </div>
                                     {currentValidMovesList.length === 0 && phase === GamePhase.MOVING && !isRolling && paRaCount === 0 && isLocalTurn && ( 
-                                        <button onClick={() => handleSkipTurn()} className="flex-1 bg-amber-800/50 hover:bg-amber-700 text-amber-200 border border-amber-600/50 p-1 rounded-xl font-bold flex flex-col items-center justify-center font-cinzel">
-                                            <span className="text-[9px] md:text-[11px]">Skip</span>
-                                            <span className="text-[11px] md:text-[14px] font-serif">སྐྱུར།</span>
+                                        <button onClick={() => handleSkipTurn()} className="w-24 md:w-32 bg-amber-900/30 hover:bg-amber-800/50 text-amber-200 border-2 border-amber-700/50 rounded-2xl font-bold flex flex-col items-center justify-center font-cinzel transition-colors">
+                                            <span className="text-xs uppercase tracking-widest">Skip</span>
+                                            <span className="text-lg md:text-2xl font-serif">སྐྱུར།</span>
                                         </button> 
                                     )}
                                 </div>
                                 {!isLocalTurn && phase !== GamePhase.GAME_OVER && (
-                                    <div className="text-center py-2 animate-pulse"><span className="text-amber-600 text-[10px] uppercase font-bold">Opponent's Move... ཁ་གཏད་ཀྱི་རྒྱག་ཐེངས།</span></div>
+                                    <div className="text-center py-4 bg-stone-800/30 rounded-xl border border-stone-700/30 animate-pulse"><span className="text-amber-600 text-xs md:text-sm uppercase font-black tracking-widest">Opponent's Move...</span></div>
                                 )}
                             </div> 
                         )}
                     </div>
                 </div>
-                <div className="flex-grow relative bg-[#1a1715] flex items-center justify-center overflow-hidden order-2 h-[55dvh] md:h-full mobile-landscape-board" ref={boardContainerRef}>
-                    <div style={{ transform: `scale(${boardScale})`, width: 800, height: 800 }} className="transition-transform duration-300">
+                <div className="flex-grow relative bg-[#151210] flex items-center justify-center overflow-hidden order-2 h-[55dvh] md:h-full mobile-landscape-board" ref={boardContainerRef}>
+                    <div style={{ transform: `scale(${boardScale})`, width: 800, height: 800 }} className="transition-transform duration-500 ease-out">
                         <Board 
                             boardState={board} players={players} validMoves={visualizedMoves} onSelectMove={(m) => { if (isLocalTurn) performMove(m.sourceIndex, m.targetIndex); }} 
                             currentPlayer={players[turnIndex].id} turnPhase={phase} onShellClick={(i) => { if (isLocalTurn) { board.get(i)?.owner === players[turnIndex].id ? setSelectedSourceIndex(i) : setSelectedSourceIndex(null) } }} 
