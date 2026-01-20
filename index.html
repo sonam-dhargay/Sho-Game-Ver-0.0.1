@@ -10,13 +10,21 @@
     <meta name="description" content="Play the traditional Tibetan game of Sho. Race through 64 shells, stack your coins, and roll Pa Ra for bonus turns in this high-quality digital experience." />
     
     <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#1a1a1a" />
+    <meta name="theme-color" content="#1c1917" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Sho" />
-    <link rel="apple-touch-icon" href="sho_logo.png" />
-    <link rel="icon" type="image/png" href="sho_logo.png" />
-    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="/assets/logo.png" />
+    <link rel="icon" type="image/png" href="/assets/logo.png" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js');
+        });
+      }
+    </script>
 
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-JP0RJN1V46"></script>
