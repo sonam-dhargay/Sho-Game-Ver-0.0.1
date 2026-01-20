@@ -481,7 +481,10 @@ const App: React.FC = () => {
                <div className="flex flex-col items-center flex-shrink-0 w-full max-w-sm md:max-w-md">
                    <ShoLogo className="w-48 h-48 md:w-64 md:h-64 mb-6" />
                    <div className="text-center">
-                       <h1 className="text-5xl md:text-7xl text-amber-500 font-cinzel tracking-widest drop-shadow-lg">ཤོ SHO</h1>
+                       <h1 className="text-5xl md:text-7xl text-amber-500 font-cinzel tracking-widest drop-shadow-lg flex items-center justify-center gap-4">
+                           <span>ཤོ</span>
+                           <span className="text-3xl md:text-4xl">SHO</span>
+                       </h1>
                        <div className="h-1 w-24 bg-gradient-to-r from-transparent via-amber-500 to-transparent mx-auto mt-2 mb-4" />
                    </div>
                    <p className="text-stone-400 tracking-[0.3em] uppercase text-[12px] md:text-sm text-center font-bold">Traditional Tibetan Dice Game</p>
@@ -574,7 +577,10 @@ const App: React.FC = () => {
                         <header className="flex justify-between items-center border-b border-stone-800 pb-2 md:pb-6">
                             <div className="flex items-center gap-2 cursor-pointer" onClick={() => { if (peer) peer.destroy(); setGameMode(null); setOnlineLobbyStatus('IDLE'); }}>
                                 <ShoLogo className="w-8 h-8 md:w-12 md:h-12 text-amber-500" />
-                                <h1 className="text-amber-500 text-lg md:text-3xl font-cinzel">ཤོ Sho</h1>
+                                <h1 className="text-amber-500 font-cinzel flex items-center gap-2">
+                                    <span className="text-lg md:text-3xl">ཤོ</span>
+                                    <span className="text-sm md:text-base">Sho</span>
+                                </h1>
                             </div>
                             <div className="flex items-center gap-3">
                                 {(gameMode === GameMode.ONLINE_HOST || gameMode === GameMode.ONLINE_GUEST) && (
