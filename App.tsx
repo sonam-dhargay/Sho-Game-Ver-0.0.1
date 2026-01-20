@@ -483,7 +483,7 @@ const App: React.FC = () => {
                    <div className="text-center mt-[-0.5rem] md:mt-[-1rem]">
                        <h1 className="text-4xl md:text-5xl text-amber-500 font-cinzel tracking-widest drop-shadow-lg flex items-center justify-center gap-4">
                            <span>ཤོ</span>
-                           <span className="text-3xl md:text-4xl">SHO</span>
+                           <span className="text-xl md:text-2xl">SHO</span>
                        </h1>
                        <div className="h-1 w-24 bg-gradient-to-r from-transparent via-amber-500 to-transparent mx-auto mt-0.5 mb-2" />
                    </div>
