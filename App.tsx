@@ -481,7 +481,7 @@ const App: React.FC = () => {
                <div className="flex flex-col items-center flex-shrink-0 w-full max-w-sm md:max-w-md">
                    <ShoLogo className="w-36 h-36 md:w-48 md:h-48 mb-0" />
                    <div className="text-center mt-[-1rem] md:mt-[-2rem]">
-                       <h1 className="text-5xl md:text-7xl text-amber-500 font-cinzel tracking-widest drop-shadow-lg flex items-center justify-center gap-4">
+                       <h1 className="text-4xl md:text-5xl text-amber-500 font-cinzel tracking-widest drop-shadow-lg flex items-center justify-center gap-4">
                            <span>ཤོ</span>
                            <span className="text-3xl md:text-4xl">SHO</span>
                        </h1>
