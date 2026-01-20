@@ -479,7 +479,7 @@ const App: React.FC = () => {
         {!gameMode && (
           <div className="fixed inset-0 z-50 bg-stone-950 text-amber-500 overflow-y-auto flex flex-col items-center justify-between p-6 py-6 md:py-12">
                <div className="flex flex-col items-center flex-shrink-0 w-full max-w-sm md:max-w-md">
-                   <ShoLogo className="w-48 h-48 md:w-64 md:h-64 mb-0" />
+                   <ShoLogo className="w-40 h-40 md:w-52 md:h-52 mb-0" />
                    <div className="text-center mt-[-1rem] md:mt-[-2rem]">
                        <h1 className="text-5xl md:text-7xl text-amber-500 font-cinzel tracking-widest drop-shadow-lg flex items-center justify-center gap-4">
                            <span>ཤོ</span>
@@ -576,7 +576,7 @@ const App: React.FC = () => {
                     <div className="p-4 md:p-6 flex flex-col gap-3 md:gap-6 flex-shrink-0 bg-stone-950 mobile-landscape-compact-stats">
                         <header className="flex justify-between items-center border-b border-stone-800 pb-2 md:pb-4">
                             <div className="flex items-center gap-2 cursor-pointer" onClick={() => { if (peer) peer.destroy(); setGameMode(null); setOnlineLobbyStatus('IDLE'); }}>
-                                <ShoLogo className="w-8 h-8 md:w-12 md:h-12 text-amber-500 -ml-1" />
+                                <ShoLogo className="w-6 h-6 md:w-10 md:h-10 text-amber-500 -ml-1" />
                                 <h1 className="text-amber-500 font-cinzel flex items-center gap-1.5">
                                     <span className="text-lg md:text-3xl">ཤོ</span>
                                     <span className="text-sm md:text-base">Sho</span>
