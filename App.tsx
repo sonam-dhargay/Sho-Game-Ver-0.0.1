@@ -479,11 +479,11 @@ const App: React.FC = () => {
         {!gameMode && (
           <div className="fixed inset-0 z-50 bg-stone-950 text-amber-500 overflow-y-auto flex flex-col items-center justify-between p-6 py-12 md:py-24">
                <div className="flex flex-col items-center flex-shrink-0 w-full max-w-sm md:max-w-md">
-                   <h1 className="flex items-center gap-6 mb-4 font-cinzel">
-                      <span className="text-7xl md:text-9xl text-amber-500 drop-shadow-[0_0_20px_rgba(245,158,11,0.5)]">ཤོ</span>
-                      <span className="text-5xl md:text-7xl text-amber-500 tracking-widest drop-shadow-lg">Sho</span>
-                   </h1>
-                   <div className="h-px w-32 bg-amber-900/40 mb-4" />
+                   <ShoLogo className="w-48 h-48 md:w-64 md:h-64 mb-6" />
+                   <div className="text-center">
+                       <h1 className="text-5xl md:text-7xl text-amber-500 font-cinzel tracking-widest drop-shadow-lg">ཤོ SHO</h1>
+                       <div className="h-1 w-24 bg-gradient-to-r from-transparent via-amber-500 to-transparent mx-auto mt-2 mb-4" />
+                   </div>
                    <p className="text-stone-400 tracking-[0.3em] uppercase text-[12px] md:text-sm text-center font-bold">Traditional Tibetan Dice Game</p>
                    <p className="text-amber-600/60 text-lg md:text-xl font-serif mt-2">བོད་ཀྱི་སྲོལ་རྒྱུན་ཤོ་རྩེད།</p>
                </div>
