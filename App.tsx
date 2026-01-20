@@ -479,13 +479,13 @@ const App: React.FC = () => {
         {!gameMode && (
           <div className="fixed inset-0 z-50 bg-stone-950 text-amber-500 overflow-y-auto flex flex-col items-center justify-between p-6 py-12 md:py-24">
                <div className="flex flex-col items-center flex-shrink-0 w-full max-w-sm md:max-w-md">
-                   <ShoLogo className="w-48 h-48 md:w-64 md:h-64 mb-6" />
+                   <ShoLogo className="w-48 h-48 md:w-64 md:h-64 mb-1" />
                    <div className="text-center">
                        <h1 className="text-5xl md:text-7xl text-amber-500 font-cinzel tracking-widest drop-shadow-lg flex items-center justify-center gap-4">
                            <span>ཤོ</span>
                            <span className="text-3xl md:text-4xl">SHO</span>
                        </h1>
-                       <div className="h-1 w-24 bg-gradient-to-r from-transparent via-amber-500 to-transparent mx-auto mt-2 mb-4" />
+                       <div className="h-1 w-24 bg-gradient-to-r from-transparent via-amber-500 to-transparent mx-auto mt-1 mb-4" />
                    </div>
                    <p className="text-stone-400 tracking-[0.3em] uppercase text-[12px] md:text-sm text-center font-bold">Traditional Tibetan Dice Game</p>
                    <p className="text-amber-600/60 text-lg md:text-xl font-serif mt-2">བོད་ཀྱི་སྲོལ་རྒྱུན་ཤོ་རྩེད།</p>
@@ -574,10 +574,10 @@ const App: React.FC = () => {
             <>
                 <div className="w-full md:w-80 lg:w-96 flex flex-col border-b md:border-b-0 md:border-r border-stone-800 bg-stone-950 z-20 shadow-2xl h-[45dvh] md:h-full order-1 overflow-hidden flex-shrink-0 mobile-landscape-sidebar">
                     <div className="p-4 md:p-6 flex flex-col gap-3 md:gap-6 flex-shrink-0 bg-stone-950 mobile-landscape-compact-stats">
-                        <header className="flex justify-between items-center border-b border-stone-800 pb-2 md:pb-6">
+                        <header className="flex justify-between items-center border-b border-stone-800 pb-2 md:pb-4">
                             <div className="flex items-center gap-2 cursor-pointer" onClick={() => { if (peer) peer.destroy(); setGameMode(null); setOnlineLobbyStatus('IDLE'); }}>
-                                <ShoLogo className="w-8 h-8 md:w-12 md:h-12 text-amber-500" />
-                                <h1 className="text-amber-500 font-cinzel flex items-center gap-2">
+                                <ShoLogo className="w-8 h-8 md:w-12 md:h-12 text-amber-500 -ml-1" />
+                                <h1 className="text-amber-500 font-cinzel flex items-center gap-1.5">
                                     <span className="text-lg md:text-3xl">ཤོ</span>
                                     <span className="text-sm md:text-base">Sho</span>
                                 </h1>
