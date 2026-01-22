@@ -633,7 +633,10 @@ const App: React.FC = () => {
                                 <DiceArea currentRoll={lastRoll} onRoll={() => performRoll()} canRoll={(phase === GamePhase.ROLLING) && !isRolling && isLocalTurn} pendingValues={pendingMoveValues} waitingForPaRa={paRaCount > 0} paRaCount={paRaCount} extraRolls={extraRolls} flexiblePool={null} />
                                 <div className="flex gap-2 md:gap-4">
                                     <div onClick={handleFromHandClick} className={`flex-1 p-2 md:p-10 rounded-xl md:rounded-2xl border-2 transition-all cursor-pointer flex flex-col items-center justify-center gap-1 md:gap-2 ${handShake ? 'animate-hand-blocked' : selectedSourceIndex === 0 ? 'border-amber-500 bg-amber-900/40 shadow-inner scale-95' : (shouldHighlightHand && isLocalTurn) ? 'border-amber-500/80 bg-amber-900/10 animate-pulse' : 'border-stone-800 bg-stone-900/50 hover:bg-stone-800/80'} ${!isLocalTurn ? 'opacity-30 grayscale' : ''}`}>
-                                        <span className={`font-black uppercase font-cinzel text-xs md:text-2xl ${(shouldHighlightHand && isLocalTurn) ? 'text-amber-400' : 'text-stone-300'}`}>From Hand</span>
+                                        <div className="flex flex-col items-center">
+                                            <span className={`font-black uppercase font-cinzel text-xs md:text-2xl ${(shouldHighlightHand && isLocalTurn) ? 'text-amber-400' : 'text-stone-300'}`}>From Hand</span>
+                                            <span className="text-[10px] md:text-xl text-stone-400 font-serif font-bold -mt-1">ལག་པ་ནས།</span>
+                                        </div>
                                         <span className="text-[10px] md:text-xl text-stone-400 font-serif font-bold">({players[turnIndex].coinsInHand})</span>
                                     </div>
                                     {currentValidMovesList.length === 0 && phase === GamePhase.MOVING && !isRolling && paRaCount === 0 && isLocalTurn && ( 
