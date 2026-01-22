@@ -149,6 +149,24 @@ export const Board: React.FC<BoardProps> = ({ boardState, players, validMoves, o
   const [blockedFeedback, setBlockedFeedback] = useState<{ shellId: number, message: string, id: number } | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const lastAnimatedMoveId = useRef<number | null>(null);
+  const [boardScale, setBoardScale] = useState(1);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (boardRef.current) {
+        const parent = boardRef.current.parentElement;
+        if (parent) {
+          const availableWidth = parent.clientWidth;
+          const availableHeight = parent.clientHeight;
+          const size = Math.min(availableWidth, availableHeight, 800);
+          setBoardScale(size / 800);
+        }
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const getPlayerColor = (id: PlayerColor | null): string => { if (!id) return '#666'; const p = players.find(p => p.id === id); return p ? p.colorHex : '#666'; };
 
@@ -250,7 +268,7 @@ export const Board: React.FC<BoardProps> = ({ boardState, players, validMoves, o
   const hasFinishMove = validMoves.some(m => m.type === MoveResultType.FINISH);
 
   return (
-    <div className="relative mx-auto select-none" style={{ width: 800, height: 800, touchAction: 'none' }} ref={boardRef}>
+    <div className="relative mx-auto select-none origin-center" style={{ width: 800, height: 800, touchAction: 'none', transform: `scale(${boardScale})` }} ref={boardRef}>
         <style dangerouslySetInnerHTML={{__html: `
           @keyframes shake { 0%, 100% { transform: translate(-50%, -50%) rotate(0deg); } 15% { transform: translate(-65%, -50%) rotate(-12deg); } 30% { transform: translate(-35%, -50%) rotate(12deg); } 45% { transform: translate(-65%, -50%) rotate(-12deg); } 60% { transform: translate(-35%, -50%) rotate(12deg); } 75% { transform: translate(-55%, -50%) rotate(-6deg); } } 
           @keyframes blockedFadeUp { 0% { opacity: 0; transform: translate(-50%, 0); } 15% { opacity: 1; transform: translate(-50%, -45px); } 85% { opacity: 1; transform: translate(-50%, -55px); } 100% { opacity: 0; transform: translate(-50%, -70px); } } 

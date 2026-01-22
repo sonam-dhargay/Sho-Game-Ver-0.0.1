@@ -478,8 +478,8 @@ const App: React.FC = () => {
         `}} />
         {!gameMode && (
           <div className="fixed inset-0 z-50 bg-stone-950 text-amber-500 overflow-y-auto flex flex-col items-center justify-between p-6 py-6 md:py-12">
-               <div className="flex flex-col items-center flex-shrink-0 w-full max-w-sm md:max-w-md">
-                   <ShoLogo className="w-28 h-28 md:w-36 md:h-36 mb-0" />
+               <div className="flex flex-col items-center flex-shrink-0 w-full max-w-sm md:max-w-md scale-90 md:scale-100">
+                   <ShoLogo className="w-24 h-24 md:w-36 md:h-36 mb-0" />
                    <div className="text-center mt-[-0.5rem] md:mt-[-1rem]">
                        <h1 className="text-4xl md:text-5xl text-amber-500 font-cinzel tracking-widest drop-shadow-lg flex items-center justify-center gap-4">
                            <span>ཤོ</span>
