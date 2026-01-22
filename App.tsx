@@ -477,20 +477,20 @@ const App: React.FC = () => {
           .animate-active-pulse { animation: activePulse 2s ease-in-out infinite; }
         `}} />
         {!gameMode && (
-          <div className="fixed inset-0 z-50 bg-stone-950 text-amber-500 overflow-hidden flex flex-col items-center justify-center p-4">
-               <div className="flex flex-col items-center flex-shrink-0 w-full max-w-sm md:max-w-md lg:max-w-lg scale-75 md:scale-90 lg:scale-100">
-                   <ShoLogo className="w-32 h-32 md:w-48 md:h-48 mb-0" />
-                   <div className="text-center mt-[-0.25rem] md:mt-[-0.5rem]">
-                       <h1 className="text-3xl md:text-5xl text-amber-500 font-cinzel tracking-widest drop-shadow-lg flex items-center justify-center gap-3">
+          <div className="fixed inset-0 z-50 bg-stone-950 text-amber-500 overflow-y-auto overflow-x-hidden flex flex-col items-center p-4 md:p-8">
+               <div className="flex flex-col items-center flex-shrink-0 w-full max-w-sm md:max-w-md lg:max-w-lg mt-4 md:mt-8">
+                   <ShoLogo className="w-40 h-40 md:w-64 md:h-64 mb-2" />
+                   <div className="text-center mt-[-0.5rem] md:mt-[-1rem]">
+                       <h1 className="text-4xl md:text-6xl text-amber-500 font-cinzel tracking-widest drop-shadow-lg flex items-center justify-center gap-4">
                            <span>ཤོ</span>
-                           <span className="text-lg md:text-2xl">SHO</span>
+                           <span className="text-xl md:text-3xl">SHO</span>
                        </h1>
-                       <div className="h-0.5 w-16 md:w-24 bg-gradient-to-r from-transparent via-amber-500 to-transparent mx-auto mt-0.5 mb-1" />
+                       <div className="h-1 w-24 md:w-40 bg-gradient-to-r from-transparent via-amber-500 to-transparent mx-auto mt-1 mb-2" />
                    </div>
-                   <p className="text-stone-400 tracking-[0.2em] uppercase text-[10px] md:text-sm text-center font-bold">Traditional Tibetan Dice Game</p>
-                   <p className="text-amber-600/60 text-base md:text-xl font-serif mt-1">བོད་ཀྱི་སྲོལ་རྒྱུན་ཤོ་རྩེད།</p>
+                   <p className="text-stone-400 tracking-[0.3em] uppercase text-[12px] md:text-lg text-center font-bold">Traditional Tibetan Dice Game</p>
+                   <p className="text-amber-600/60 text-lg md:text-2xl font-serif mt-2">བོད་ཀྱི་སྲོལ་རྒྱུན་ཤོ་རྩེད།</p>
                </div>
-               <div className="flex-grow flex flex-col items-center justify-center w-full max-w-md gap-3 md:gap-6 scale-90 md:scale-100">
+               <div className="flex flex-col items-center justify-center w-full max-w-md gap-6 md:gap-10 mt-8 md:mt-16">
                   <div className="w-full bg-stone-900/30 p-4 md:p-8 rounded-[2rem] md:rounded-[3rem] border border-stone-800/50 backdrop-blur-2xl shadow-2xl">
                       <div className="mb-4">
                         <label className="text-stone-500 text-[8px] md:text-[10px] uppercase block mb-2 tracking-widest font-bold px-1">Identity ཁྱེད་ཀྱི་མིང་།</label>
