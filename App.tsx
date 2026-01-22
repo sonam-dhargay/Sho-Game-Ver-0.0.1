@@ -606,7 +606,12 @@ const App: React.FC = () => {
                                         )}
                                         <div className="flex items-center gap-2 mb-2">
                                             <div className={`w-3 h-3 md:w-4 md:h-4 rounded-full flex-shrink-0 ${isActive ? 'animate-pulse' : ''}`} style={{ backgroundColor: p.colorHex }}></div>
-                                            <h3 className={`font-bold truncate text-[10px] md:text-base font-serif ${isActive ? 'brightness-125' : ''}`} style={{ color: p.colorHex }}>{p.name}</h3>
+                                            <div className="flex flex-col min-w-0">
+                                                <h3 className={`font-bold truncate text-[10px] md:text-base font-serif leading-tight ${isActive ? 'brightness-125' : ''}`} style={{ color: p.colorHex }}>{p.name}</h3>
+                                                <span className="text-[8px] md:text-xs text-stone-500 font-serif leading-tight">
+                                                    {i === 0 ? 'ཁྱེད་རང་།' : 'ཁ་གཏད།'}
+                                                </span>
+                                            </div>
                                         </div>
                                         <div className="flex justify-between text-xs md:text-lg text-stone-100 font-bold font-cinzel">
                                             <div className="flex flex-col"><span className="text-[8px] text-stone-500 uppercase tracking-wider">Hand</span><span>{p.coinsInHand}</span></div>
