@@ -67,11 +67,12 @@ export enum GameMode {
   AI = 'AI',
   ONLINE_HOST = 'ONLINE_HOST',
   ONLINE_GUEST = 'ONLINE_GUEST',
-  TUTORIAL = 'TUTORIAL'
+  TUTORIAL = 'TUTORIAL',
+  SPECTATOR = 'SPECTATOR'
 }
 
 // Network Packets
 export interface NetworkPacket {
-  type: 'SYNC' | 'ROLL_REQ' | 'MOVE_REQ' | 'RESET_REQ' | 'SKIP_REQ';
+  type: 'SYNC' | 'ROLL_REQ' | 'MOVE_REQ' | 'RESET_REQ' | 'SKIP_REQ' | 'FULL_SYNC';
   payload?: any;
 }
