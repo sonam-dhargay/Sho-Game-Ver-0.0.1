@@ -18,7 +18,6 @@ interface BoardProps {
   onInvalidMoveAttempt?: (sourceIdx: number, targetIdx: number) => void;
   isNinerMode?: boolean; 
   isOpeningPaRa?: boolean;
-  phase?: GamePhase;
 }
 
 // Localized Synthesizer for Blocked Feedback
@@ -69,7 +68,7 @@ const CowrieShell: React.FC<{ angle: number; isTarget: boolean; isHovered?: bool
       className={`w-10 h-12 flex items-center justify-center transition-transform duration-300 pointer-events-none ${isBlocked ? 'scale-110' : ''}`}
       style={{ transform: `rotate(${rotation}deg)` }}
     >
-      <svg viewBox="0 0 100 130" className={`w-full h-full drop-shadow-xl transition-all ${isTarget ? 'filter brightness-150 saturate-150 scale-125' : ''} ${isHovered ? 'filter drop-shadow-[0_0_15px_#fbbf24]' : ''} ${isBlocked ? 'filter saturate-200 brightness-150 sepia-[.8] hue-rotate-[-50deg] drop-shadow-[0_0_15px_rgba(239,68,68,1)]' : ''}`}>
+      <svg viewBox="0 0 100 130" className={`w-full h-full drop-shadow-xl transition-all ${isTarget ? 'filter brightness-150 saturate-150 scale-125 drop-shadow-[0_0_12px_rgba(245,158,11,0.8)]' : ''} ${isHovered ? 'filter drop-shadow-[0_0_15px_#fbbf24]' : ''} ${isBlocked ? 'filter saturate-200 brightness-150 sepia-[.8] hue-rotate-[-50deg] drop-shadow-[0_0_15px_rgba(239,68,68,1)]' : ''}`}>
         <defs>
           <radialGradient id="shellBody" cx="40%" cy="40%" r="80%">
             <stop offset="0%" stopColor="#fdfbf7" />
@@ -77,16 +76,13 @@ const CowrieShell: React.FC<{ angle: number; isTarget: boolean; isHovered?: bool
             <stop offset="100%" stopColor="#a8a29e" />
           </radialGradient>
         </defs>
-        <ellipse cx="50" cy="65" rx="45" ry="60" fill="url(#shellBody)" stroke={isBlocked ? "#ef4444" : (isTarget ? "#fbbf24" : "#78716c")} strokeWidth={isBlocked ? "5" : (isTarget ? "3" : "1.5")} className={isTarget ? "animate-pulse" : ""} />
+        <ellipse cx="50" cy="65" rx="45" ry="60" fill="url(#shellBody)" stroke={isBlocked ? "#ef4444" : (isTarget ? "#fbbf24" : "#78716c")} strokeWidth={isBlocked ? "5" : (isTarget ? "3" : "1.5")} />
         <path d="M50 20 C 40 40, 40 90, 50 110 C 60 90, 60 40, 50 20" fill={isBlocked ? "#b91c1c" : (isTarget ? "#92400e" : "#44403c")} stroke={isBlocked ? "#ef4444" : "#292524"} strokeWidth="1"/>
         <g stroke={isBlocked ? "#fecaca" : "#e7e5e4"} strokeWidth="2" strokeLinecap="round" opacity="0.8">
            <line x1="48" y1="30" x2="42" y2="30" /><line x1="47" y1="45" x2="40" y2="45" /><line x1="47" y1="60" x2="38" y2="60" /><line x1="47" y1="75" x2="40" y2="75" /><line x1="48" y1="90" x2="42" y2="90" />
            <line x1="52" y1="30" x2="58" y2="30" /><line x1="53" y1="45" x2="60" y2="45" /><line x1="53" y1="60" x2="62" y2="60" /><line x1="53" y1="75" x2="60" y2="75" /><line x1="52" y1="90" x2="58" y2="90" />
         </g>
       </svg>
-      {isTarget && (
-        <div className="absolute inset-0 rounded-full bg-amber-400/20 blur-md animate-pulse pointer-events-none"></div>
-      )}
     </div>
   );
 };
@@ -142,31 +138,13 @@ const BoardDie: React.FC<{ value: number; x: number; y: number; rotation: number
 
 const pseudoRandom = (seed: number) => { const x = Math.sin(seed) * 10000; return x - Math.floor(x); };
 
-export const Board: React.FC<BoardProps> = ({ boardState, players, validMoves, onSelectMove, currentPlayer, turnPhase, onShellClick, selectedSource, lastMove, currentRoll, isRolling, onInvalidMoveAttempt, isNinerMode, isOpeningPaRa, phase }) => {
+export const Board: React.FC<BoardProps> = ({ boardState, players, validMoves, onSelectMove, currentPlayer, turnPhase, onShellClick, selectedSource, lastMove, currentRoll, isRolling, onInvalidMoveAttempt, isNinerMode, isOpeningPaRa }) => {
   const [finishingParticles, setFinishingParticles] = useState<{id: number, x: number, y: number, color: string}[]>([]);
   const [stackingAnim, setStackingAnim] = useState<{ id: number, startX: number, startY: number, endX: number, endY: number, color: string } | null>(null);
   const [shakeShellId, setShakeShellId] = useState<number | null>(null);
   const [blockedFeedback, setBlockedFeedback] = useState<{ shellId: number, message: string, id: number } | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const lastAnimatedMoveId = useRef<number | null>(null);
-  const [boardScale, setBoardScale] = useState(1);
-
-  useEffect(() => {
-    const handleResize = () => {
-      if (boardRef.current) {
-        const parent = boardRef.current.parentElement;
-        if (parent) {
-          const availableWidth = parent.clientWidth;
-          const availableHeight = parent.clientHeight;
-          const size = Math.min(availableWidth, availableHeight, 800);
-          setBoardScale(size / 800);
-        }
-      }
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   const getPlayerColor = (id: PlayerColor | null): string => { if (!id) return '#666'; const p = players.find(p => p.id === id); return p ? p.colorHex : '#666'; };
 
@@ -268,17 +246,19 @@ export const Board: React.FC<BoardProps> = ({ boardState, players, validMoves, o
   const hasFinishMove = validMoves.some(m => m.type === MoveResultType.FINISH);
 
   return (
-    <div className="relative mx-auto select-none origin-center" style={{ width: 800, height: 800, touchAction: 'none', transform: `scale(${boardScale})` }} ref={boardRef}>
+    <div className="relative mx-auto select-none" style={{ width: 800, height: 800, touchAction: 'none' }} ref={boardRef}>
         <style dangerouslySetInnerHTML={{__html: `
           @keyframes shake { 0%, 100% { transform: translate(-50%, -50%) rotate(0deg); } 15% { transform: translate(-65%, -50%) rotate(-12deg); } 30% { transform: translate(-35%, -50%) rotate(12deg); } 45% { transform: translate(-65%, -50%) rotate(-12deg); } 60% { transform: translate(-35%, -50%) rotate(12deg); } 75% { transform: translate(-55%, -50%) rotate(-6deg); } } 
           @keyframes blockedFadeUp { 0% { opacity: 0; transform: translate(-50%, 0); } 15% { opacity: 1; transform: translate(-50%, -45px); } 85% { opacity: 1; transform: translate(-50%, -55px); } 100% { opacity: 0; transform: translate(-50%, -70px); } } 
           @keyframes xMarkFlash { 0%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } 30% { opacity: 1; transform: translate(-50%, -50%) scale(1.6); } 70% { opacity: 1; transform: translate(-50%, -50%) scale(1.3); } } 
           @keyframes blockedOutlinePulse { 0% { box-shadow: 0 0 0 0px rgba(239, 68, 68, 1); } 50% { box-shadow: 0 0 0 25px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0px rgba(239, 68, 68, 0); } } 
           @keyframes redBorderPulse { 0%, 100% { border-color: rgba(239, 68, 68, 0.5); } 50% { border-color: rgba(239, 68, 68, 1); border-width: 6px; } }
+          @keyframes targetGlowHalo { 0%, 100% { box-shadow: 0 0 10px 2px rgba(245, 158, 11, 0.5); border-color: rgba(245, 158, 11, 0.5); } 50% { box-shadow: 0 0 25px 8px rgba(245, 158, 11, 0.8); border-color: rgba(245, 158, 11, 1); } }
           .animate-shake-target { animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; } 
           .animate-blocked-label { animation: blockedFadeUp 1.8s cubic-bezier(0.25, 1, 0.5, 1) forwards; } 
           .animate-x-mark { animation: xMarkFlash 0.5s ease-out forwards; } 
           .animate-blocked-outline { animation: blockedOutlinePulse 0.5s ease-out, redBorderPulse 0.5s ease-in-out; }
+          .animate-target-glow { animation: targetGlowHalo 1.5s ease-in-out infinite; }
         ` }} />
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none"><div className="w-[16rem] h-[16rem] bg-[#3f2e26] rounded-full blur-md opacity-80 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div><div className="relative w-56 h-56 rounded-full shadow-[0_10px_40px_rgba(0,0,0,0.8)] border-4 border-[#271c19] overflow-hidden flex items-center justify-center bg-[#291d1a]"><div className="absolute inset-0 opacity-40 bg-[url('https://www.transparenttextures.com/patterns/leather.png')] mix-blend-overlay"></div><div className="flex flex-col items-center opacity-40 mix-blend-screen pointer-events-none"><span className="font-serif text-[#8b5e3c] text-5xl mb-1">ཤོ</span><span className="font-cinzel text-[#8b5e3c] text-6xl font-bold tracking-widest drop-shadow-lg">SHO</span></div>{(isRolling || currentRoll) && ( <div className="absolute inset-0 z-20">{isRolling ? ( <><div className="absolute left-1/2 top-1/2 -ml-[15px] -mt-[30px]"><BoardDie value={1} x={0} y={0} rotation={0} isRolling={true} /></div><div className="absolute left-1/2 top-1/2 ml-[15px] mt-[10px]"><BoardDie value={6} x={0} y={0} rotation={0} isRolling={true} /></div></> ) : ( currentRoll && currentRoll.visuals && ( <><BoardDie value={currentRoll.die1} x={currentRoll.visuals.d1x} y={currentRoll.visuals.d1y} rotation={currentRoll.visuals.d1r} isRolling={false} /><BoardDie value={currentRoll.die2} x={currentRoll.visuals.d2x} y={currentRoll.visuals.d2y} rotation={currentRoll.visuals.d2r} isRolling={false} /></> ) )}</div> )}</div></div>
         <svg width="100%" height="100%" className="absolute inset-0 z-0 pointer-events-none"><path d={d3.line().curve(d3.curveCatmullRom.alpha(0.6))(shells.map(s => [s.x, s.y])) || ""} fill="none" stroke="#44403c" strokeWidth="12" strokeLinecap="round" className="opacity-20 blur-sm transition-all duration-500" /></svg>
@@ -291,7 +271,7 @@ export const Board: React.FC<BoardProps> = ({ boardState, players, validMoves, o
             const shellOffX = Math.cos(shell.angle) * -12 + Math.cos(shell.angle + Math.PI / 2) * -10; const shellOffY = Math.sin(shell.angle) * -12 + Math.sin(shell.angle + Math.PI / 2) * -10;
             const stackOffX = Math.cos(shell.angle) * 28 + Math.cos(shell.angle + Math.PI / 2) * -10; const stackOffY = Math.sin(shell.angle) * 28 + Math.sin(shell.angle + Math.PI / 2) * -10;
             return (
-                <div key={shell.id} data-shell-id={shell.id} className={`absolute flex items-center justify-center transition-all duration-300 ease-in-out ${isTarget ? 'z-40 cursor-pointer' : 'z-20'} ${isShaking ? 'animate-blocked-outline rounded-full border-4 border-red-600' : ''}`} style={{ left: shell.x, top: shell.y, width: 44, height: 44, transform: 'translate(-50%, -50%)', touchAction: 'none' }}
+                <div key={shell.id} data-shell-id={shell.id} className={`absolute flex items-center justify-center transition-all duration-300 ease-in-out ${isTarget ? 'z-40 cursor-pointer rounded-full animate-target-glow border-2' : 'z-20'} ${isShaking ? 'animate-blocked-outline rounded-full border-4 border-red-600' : ''}`} style={{ left: shell.x, top: shell.y, width: 44, height: 44, transform: 'translate(-50%, -50%)', touchAction: 'none' }}
                     onClick={(e) => { 
                         e.stopPropagation(); 
                         if (isTarget && moveTarget) { 
@@ -328,7 +308,7 @@ export const Board: React.FC<BoardProps> = ({ boardState, players, validMoves, o
         {stackingAnim && ( <div key={stackingAnim.id} className="absolute z-[60] pointer-events-none animate-coin-arc" style={{ '--start-x': `${stackingAnim.startX}px`, '--start-y': `${stackingAnim.startY}px`, '--end-x': `${stackingAnim.endX}px`, '--end-y': `${stackingAnim.endY}px`, } as React.CSSProperties}><style dangerouslySetInnerHTML={{__html: `@keyframes coinArc { 0% { transform: translate(var(--start-x), var(--start-y)) scale(1); opacity: 0.8; } 50% { transform: translate(calc(var(--start-x) + (var(--end-x) - var(--start-x))/2), calc(var(--start-y) + (var(--end-y) - var(--start-y))/2 - 60px)) scale(1.3); opacity: 1; } 100% { transform: translate(var(--end-x), var(--end-y)) scale(1); opacity: 1; } } .animate-coin-arc { animation: coinArc 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; transform-origin: center center; margin-left: -32px; margin-top: -32px; }` }} /><AncientCoin color={stackingAnim.color} isSelected={true} /></div> )}
         {finishingParticles.map((p, i) => ( <div key={p.id} className="absolute z-50 pointer-events-none animate-finish-float" style={{ left: p.x, top: p.y, animationDelay: `${i * 100}ms` }}><style dangerouslySetInnerHTML={{__html: `@keyframes finishFloat { 0% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; } 50% { transform: translate(-50%, -150px) scale(1.5) rotate(180deg); opacity: 0.8; filter: brightness(1.5); } 100% { transform: translate(-50%, -300px) scale(0.5) rotate(360deg); opacity: 0; } } .animate-finish-float { animation: finishFloat 1.5s ease-out forwards; }` }} /><div className="drop-shadow-[0_0_15px_rgba(251,191,36,0.8)]"><AncientCoin color={p.color} isSelected={true} /></div></div> ))}
 
-        <div className={`absolute transition-all duration-500 transform -translate-x-1/2 -translate-y-1/2 ${hasFinishMove ? 'opacity-100 cursor-pointer scale-110 z-50' : 'opacity-40 pointer-events-none z-10'}`} style={{ left: endBtnPos.x, top: endBtnPos.y }} onClick={() => { if (hasFinishMove) { const fm = validMoves.find(m => m.type === MoveResultType.FINISH); if (fm) onSelectMove(fm); } }}><div className={`w-24 h-24 border-4 rounded-full flex items-center justify-center border-dashed transition-colors ${hasFinishMove ? 'border-amber-500 bg-amber-900/20 animate-pulse' : 'border-stone-700'}`}><span className={`font-cinzel font-bold uppercase ${hasFinishMove ? 'text-amber-500' : 'text-stone-600'}`}>END</span></div></div>
+        <div className={`absolute transition-all duration-500 transform -translate-x-1/2 -translate-y-1/2 ${hasFinishMove ? 'opacity-100 cursor-pointer scale-110 z-50' : 'opacity-40 pointer-events-none z-10'}`} style={{ left: endBtnPos.x, top: endBtnPos.y }} onClick={() => { if (hasFinishMove) { const fm = validMoves.find(m => m.type === MoveResultType.FINISH); if (fm) onSelectMove(fm); } }}><div className={`w-24 h-24 border-4 rounded-full flex items-center justify-center border-dashed transition-colors ${hasFinishMove ? 'border-amber-500 bg-amber-900/20 animate-target-glow' : 'border-stone-700'}`}><span className={`font-cinzel font-bold uppercase ${hasFinishMove ? 'text-amber-500' : 'text-stone-600'}`}>END</span></div></div>
     </div>
   );
 };

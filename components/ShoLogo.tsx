@@ -18,7 +18,7 @@ export const ShoLogo: React.FC<{ className?: string }> = ({ className }) => {
       
       <div className="relative z-10 animate-float-logo">
         <img 
-          src="/assets/logo.png" 
+          src="sho_logo.png" 
           alt="Sho Cup and Dice"
           className="w-full h-auto object-contain drop-shadow-[0_15px_25px_rgba(0,0,0,0.8)]"
         />
