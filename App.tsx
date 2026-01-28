@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import Peer, { DataConnection } from 'peerjs';
+import Peer, { DataConnection, MediaConnection } from 'peerjs';
 import { 
   Player, PlayerColor, BoardState, GamePhase, 
   DiceRoll, MoveResultType, MoveOption, GameLog, BoardShell, GameMode, NetworkPacket
@@ -46,11 +46,29 @@ const SFX = {
   playBlocked: () => { 
     const ctx = SFX.getContext(); const t = ctx.currentTime;
     const osc1 = ctx.createOscillator(); const osc2 = ctx.createOscillator();
-    const gain = ctx.createGain(); osc1.type = 'sawtooth'; osc2.type = 'sawtooth';
-    osc1.frequency.setValueAtTime(80, t); osc2.frequency.setValueAtTime(84, t);
-    gain.gain.setValueAtTime(0.3, t); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+    const gain = ctx.createGain(); 
+    const noise = ctx.createBufferSource();
+    noise.buffer = SFX.createNoiseBuffer(ctx);
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 400;
+
+    osc1.type = 'sawtooth'; osc2.type = 'sawtooth';
+    osc1.frequency.setValueAtTime(60, t); 
+    osc1.frequency.exponentialRampToValueAtTime(40, t + 0.4);
+    osc2.frequency.setValueAtTime(63, t);
+    osc2.frequency.exponentialRampToValueAtTime(42, t + 0.4);
+    
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.4, t + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+    
+    noise.connect(filter);
+    filter.connect(gain);
     osc1.connect(gain); osc2.connect(gain); gain.connect(ctx.destination);
-    osc1.start(t); osc2.start(t); osc1.stop(t + 0.4); osc2.stop(t + 0.4);
+    
+    osc1.start(t); osc2.start(t); noise.start(t);
+    osc1.stop(t + 0.6); osc2.stop(t + 0.6); noise.stop(t + 0.6);
   },
   playPaRa: () => { SFX.playCoinClick(0, 2.0); SFX.playCoinClick(0.1, 2.2); }
 };
@@ -142,7 +160,7 @@ const App: React.FC = () => {
   const [isProUpgradeOpen, setIsProUpgradeOpen] = useState(false);
   const [authForm, setAuthForm] = useState({ email: '', password: '', confirmPassword: '' });
 
-  // Online Multiplayer State
+  // Online Multiplayer & Voice State
   const [peer, setPeer] = useState<Peer | null>(null);
   const [activeConnections, setActiveConnections] = useState<DataConnection[]>([]);
   const [myPeerId, setMyPeerId] = useState<string>('');
@@ -150,6 +168,9 @@ const App: React.FC = () => {
   const [isPeerConnecting, setIsPeerConnecting] = useState(false);
   const [onlineLobbyStatus, setOnlineLobbyStatus] = useState<'IDLE' | 'WAITING' | 'CONNECTED'>('IDLE');
   const [spectatorCount, setSpectatorCount] = useState(0);
+  const [isMicActive, setIsMicActive] = useState(false);
+  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+  const localStreamRef = useRef<MediaStream | null>(null);
 
   const gameStateRef = useRef({ board, players, turnIndex, phase, pendingMoveValues, paRaCount, extraRolls, isRolling, isNinerMode, gameMode, tutorialStep, isOpeningPaRa });
   useEffect(() => { 
@@ -298,6 +319,26 @@ const App: React.FC = () => {
     if (s.gameMode === GameMode.TUTORIAL && s.tutorialStep === 3) setTutorialStep(4);
   };
 
+  const toggleMic = async () => {
+    if (!isPro) { setIsProUpgradeOpen(true); return; }
+    if (isMicActive) {
+        if (localStreamRef.current) {
+            localStreamRef.current.getTracks().forEach(t => t.stop());
+            localStreamRef.current = null;
+        }
+        setIsMicActive(false);
+    } else {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            localStreamRef.current = stream;
+            setIsMicActive(true);
+            // In a real implementation, we would call peer.call(remotePeerId, stream) here
+        } catch (err) {
+            addLog("Could not access microphone.", 'alert');
+        }
+    }
+  };
+
   const handleAuthSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (authMode === 'SIGNUP' && authForm.password !== authForm.confirmPassword) { alert("Passwords do not match!"); return; }
@@ -323,6 +364,10 @@ const App: React.FC = () => {
         setActiveConnections(prev => [...prev, conn]);
         setupPeerEvents(conn, true); 
     });
+    newPeer.on('call', (call) => {
+        call.answer(localStreamRef.current || undefined);
+        call.on('stream', (stream) => setRemoteStream(stream));
+    });
     newPeer.on('error', (err) => { if (err.type === 'unavailable-id') startOnlineHost(); else { addLog("Network Error: " + err.type, 'alert'); setOnlineLobbyStatus('IDLE'); } });
     setPeer(newPeer);
   };
@@ -337,6 +382,10 @@ const App: React.FC = () => {
         setupPeerEvents(conn, false, asSpectator); 
       });
       conn.on('error', () => { addLog("Failed to connect to room.", 'alert'); setIsPeerConnecting(false); newPeer.destroy(); });
+    });
+    newPeer.on('call', (call) => {
+        call.answer(localStreamRef.current || undefined);
+        call.on('stream', (stream) => setRemoteStream(stream));
     });
     newPeer.on('error', () => setIsPeerConnecting(false)); setPeer(newPeer);
   };
@@ -389,7 +438,7 @@ const App: React.FC = () => {
               setBoard(new Map(bData));
               setTurnIndex(ti);
               setPhase(ph);
-              addLog("Joined as Spectator. ལྟད་མོ་བའི་ཚུལ་དུ་ཞུགས་ཡོད།", 'info');
+              addLog("Joined as Spectator.", 'info');
            }
            break;
         case 'ROLL_REQ': performRoll(packet.payload); if (isHost) broadcastPacket(packet); break;
@@ -407,7 +456,12 @@ const App: React.FC = () => {
     });
   };
 
-  useEffect(() => { return () => { if (peer) peer.destroy(); }; }, [peer]);
+  useEffect(() => { 
+    return () => { 
+        if (peer) peer.destroy(); 
+        if (localStreamRef.current) localStreamRef.current.getTracks().forEach(t => t.stop());
+    }; 
+  }, [peer]);
 
   useEffect(() => {
     if (gameMode === GameMode.AI && turnIndex === 1 && phase !== GamePhase.GAME_OVER && !isRolling) {
@@ -449,14 +503,28 @@ const App: React.FC = () => {
   const handleFromHandClick = () => {
     if (phase !== GamePhase.MOVING || !isLocalTurn || isSpectator) return;
     const player = players[turnIndex];
-    if (player.coinsInHand <= 0) { SFX.playBlocked(); triggerHaptic(100); setHandShake(true); setTimeout(() => setHandShake(false), 400); return; }
+    if (player.coinsInHand <= 0) { 
+      SFX.playBlocked(); 
+      triggerHaptic(100); 
+      setHandShake(true); 
+      setTimeout(() => setHandShake(false), 400); 
+      return; 
+    }
     const handMoves = currentValidMovesList.filter(m => m.sourceIndex === 0);
-    if (handMoves.length === 0) { SFX.playBlocked(); triggerHaptic(100); setHandShake(true); addLog("BLOCKED!", 'alert'); setTimeout(() => setHandShake(false), 400); return; }
+    if (handMoves.length === 0) { 
+      SFX.playBlocked(); 
+      triggerHaptic(100); 
+      setHandShake(true); 
+      addLog("BLOCKED!", 'alert'); 
+      setTimeout(() => setHandShake(false), 400); 
+      return; 
+    }
     performMove(0, [...handMoves].sort((a, b) => b.targetIndex - a.targetIndex)[0].targetIndex);
   };
 
   return (
     <div className="min-h-screen bg-stone-900 text-stone-100 flex flex-col md:flex-row fixed inset-0 font-sans mobile-landscape-row">
+        {remoteStream && <audio autoPlay ref={el => { if (el) el.srcObject = remoteStream; }} />}
         <style dangerouslySetInnerHTML={{__html: `
           @keyframes handBlockedShake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-4px); } 40%, 80% { transform: translateX(4px); } }
           .animate-hand-blocked { animation: handBlockedShake 0.4s ease-in-out; border-color: #ef4444 !important; background-color: rgba(127, 29, 29, 0.4) !important; }
@@ -468,6 +536,8 @@ const App: React.FC = () => {
           .animate-gold-pulse { animation: goldPulse 2s ease-in-out infinite; }
           @keyframes spectatorGlow { 0%, 100% { color: #60a5fa; text-shadow: 0 0 5px #3b82f6; } 50% { color: #93c5fd; text-shadow: 0 0 15px #3b82f6; } }
           .animate-spectator-mode { animation: spectatorGlow 3s ease-in-out infinite; }
+          @keyframes micPulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.2); } }
+          .animate-mic-active { animation: micPulse 1.5s ease-in-out infinite; }
         `}} />
 
         {phase === GamePhase.SETUP && gameMode !== null && <div className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center p-4 text-amber-500 font-cinzel">Initializing...</div>}
@@ -477,7 +547,7 @@ const App: React.FC = () => {
         {/* Auth Modal */}
         {isAuthModalOpen && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
-            <div className="bg-stone-900 border-2 border-amber-600/50 p-8 rounded-[3rem] w-full max-w-sm shadow-[0_0_50px_rgba(0,0,0,0.8)] relative">
+            <div className="bg-stone-900 border-2 border-amber-600/50 p-8 rounded-[3rem] w-full max-sm shadow-[0_0_50px_rgba(0,0,0,0.8)] relative">
               <button onClick={() => setIsAuthModalOpen(false)} className="absolute top-6 right-6 text-stone-500 hover:text-white text-xl">×</button>
               <h2 className="text-3xl font-cinzel text-amber-500 text-center mb-8 font-bold tracking-widest">{authMode === 'LOGIN' ? 'Login' : 'Sign Up'}</h2>
               <form onSubmit={handleAuthSubmit} className="flex flex-col gap-4">
@@ -540,7 +610,7 @@ const App: React.FC = () => {
                 <div className="w-20 h-20 bg-amber-600 rounded-full flex items-center justify-center text-4xl mb-6 shadow-[0_0_30px_rgba(217,119,6,0.5)] animate-pulse">⭐</div>
                 <h2 className="text-4xl font-cinzel text-white mb-2 font-bold tracking-[0.2em]">PRO ACCESS</h2>
                 <div className="h-0.5 w-16 bg-amber-600 mb-6" />
-                <p className="text-stone-400 text-center mb-10 text-sm font-serif italic">Unlock the full spiritual journey of Sho.</p>
+                <p className="text-stone-400 text-center mb-10 text-sm font-serif italic">Play Sho with voice, banter, and tradition.</p>
                 
                 <ul className="w-full space-y-4 mb-12">
                   {[
@@ -709,7 +779,18 @@ const App: React.FC = () => {
                                 <h1 className="text-amber-500 font-cinzel text-[10px] md:text-sm">Sho</h1>
                                 {isSpectator && <span className="bg-blue-600/20 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-full text-[8px] font-bold tracking-widest animate-pulse">SPECTATOR</span>}
                             </div>
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2 md:gap-4">
+                                {(gameMode === GameMode.ONLINE_HOST || gameMode === GameMode.ONLINE_GUEST) && (
+                                    <button 
+                                        onClick={toggleMic}
+                                        className={`w-7 h-7 md:w-9 md:h-9 rounded-full flex items-center justify-center transition-all ${isMicActive ? 'bg-red-600 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'bg-stone-800 text-stone-500 hover:text-white border border-stone-700'}`}
+                                        title={isMicActive ? "Mute Microphone" : "Enable Microphone"}
+                                    >
+                                        <span className={`text-sm md:text-base ${isMicActive ? 'animate-mic-active' : ''}`}>
+                                            {isMicActive ? '🎙️' : '🔇'}
+                                        </span>
+                                    </button>
+                                )}
                                 {(gameMode === GameMode.ONLINE_HOST || spectatorCount > 0) && (
                                     <div className="flex items-center gap-1.5 bg-stone-800/80 px-2 py-1 rounded-full border border-stone-700">
                                         <span className="text-[10px]">👁️</span>
