@@ -68,6 +68,7 @@ const SFX = {
     osc1.start(t); osc2.start(t); noise.start(t);
     osc1.stop(t + 0.6); osc2.stop(t + 0.6); noise.stop(t + 0.6);
   },
+  playBlockedSFX: () => { SFX.playBlocked(); },
   playPaRa: () => { SFX.playCoinClick(0, 2.0); SFX.playCoinClick(0.1, 2.2); }
 };
 
@@ -179,7 +180,7 @@ const App: React.FC = () => {
   const localStreamRef = useRef<MediaStream | null>(null);
 
   const gameStateRef = useRef({ board, players, turnIndex, phase, pendingMoveValues, paRaCount, extraRolls, isRolling, isNinerMode, gameMode, tutorialStep, isOpeningPaRa, lastRoll });
-  // Fix typo from iNinerMode to isNinerMode in gameStateRef update and useEffect dependency array
+  
   useEffect(() => { 
     gameStateRef.current = { board, players, turnIndex, phase, pendingMoveValues, paRaCount, extraRolls, isRolling, isNinerMode, gameMode, tutorialStep, isOpeningPaRa, lastRoll }; 
   }, [board, players, turnIndex, phase, pendingMoveValues, paRaCount, extraRolls, isRolling, isNinerMode, gameMode, tutorialStep, isOpeningPaRa, lastRoll]);
@@ -781,24 +782,57 @@ const App: React.FC = () => {
                                 </button>
                             </div>
                         ) : (
-                            <div className="w-full bg-stone-900/50 border-2 border-amber-700/50 p-8 rounded-[3rem] animate-in fade-in zoom-in duration-300">
+                            <div className="w-full bg-stone-900/50 border-2 border-amber-700/50 p-6 rounded-[3rem] animate-in fade-in zoom-in duration-300 max-h-[70vh] overflow-y-auto no-scrollbar">
                                 {onlineLobbyStatus === 'WAITING' && (
                                 <div className="flex flex-col items-center gap-6">
-                                    <h3 className="text-xl font-cinzel mb-2">Room Lobby ཚོམས་ཆེན།</h3>
-                                    <div className="flex flex-col gap-4 w-full">
-                                        <button className="w-full py-4 bg-amber-600 text-white rounded-xl font-bold uppercase tracking-widest hover:bg-amber-500 transition-colors shadow-lg" onClick={() => { if(!myPeerId) startOnlineHost(); else navigator.clipboard.writeText(myPeerId); }}>
-                                            {myPeerId ? `ROOM CODE: ${myPeerId} 📋` : 'Host Game ཁང་བདག'}
-                                        </button>
-                                        <div className="h-px w-full bg-stone-800" />
-                                        <div className="flex flex-col gap-2">
-                                        <input type="text" placeholder="ENTER ROOM CODE" value={targetPeerId} onChange={(e) => setTargetPeerId(e.target.value.toUpperCase())} className="bg-black/40 border border-stone-800 p-4 rounded-xl text-center font-cinzel text-lg outline-none focus:border-amber-600" />
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <button className={`py-4 rounded-xl font-bold uppercase tracking-widest transition-all ${targetPeerId.length >= 4 ? 'bg-amber-600 text-white shadow-lg' : 'bg-stone-800 text-stone-500'}`} disabled={targetPeerId.length < 4 || isPeerConnecting} onClick={() => joinOnlineGame(targetPeerId, false)}> {isPeerConnecting ? '...' : 'Play'} </button>
-                                            <button className={`py-4 rounded-xl font-bold uppercase tracking-widest transition-all ${targetPeerId.length >= 4 ? 'bg-stone-700 text-amber-500 border border-stone-600' : 'bg-stone-800 text-stone-500'}`} disabled={targetPeerId.length < 4 || isPeerConnecting} onClick={() => joinOnlineGame(targetPeerId, true)}> {isPeerConnecting ? '...' : 'Watch'} </button>
+                                    <h3 className="text-xl font-cinzel text-amber-500 mb-2">
+                                        {T.lobby.roomLobbyTitle.en} <span className="font-serif ml-2">{T.lobby.roomLobbyTitle.bo}</span>
+                                    </h3>
+                                    
+                                    <div className="flex flex-col gap-6 w-full">
+                                        {/* Host Section */}
+                                        <div className="bg-black/40 p-5 rounded-2xl border border-stone-800 flex flex-col items-center">
+                                            <div className="text-center mb-4">
+                                                <h4 className="text-amber-200 font-cinzel text-sm uppercase tracking-widest font-bold">
+                                                    {T.lobby.hostHeader.en} <span className="font-serif ml-1">{T.lobby.hostHeader.bo}</span>
+                                                </h4>
+                                                <div className="flex flex-col gap-1 mt-2">
+                                                    <p className="text-[10px] text-stone-400 uppercase tracking-tight leading-tight">{T.lobby.hostInstruction.en}</p>
+                                                    <p className="text-[11px] text-stone-500 font-serif leading-tight">{T.lobby.hostInstruction.bo}</p>
+                                                </div>
+                                            </div>
+                                            <button className="w-full py-4 bg-amber-600 text-white rounded-xl font-bold uppercase tracking-widest hover:bg-amber-500 transition-colors shadow-lg text-sm" onClick={() => { if(!myPeerId) startOnlineHost(); else navigator.clipboard.writeText(myPeerId); }}>
+                                                {myPeerId ? `ROOM CODE: ${myPeerId} 📋` : T.lobby.hostHeader.en}
+                                            </button>
                                         </div>
+
+                                        <div className="relative flex items-center py-2">
+                                            <div className="flex-grow border-t border-stone-800"></div>
+                                            <span className="flex-shrink mx-4 text-stone-700 text-[10px] uppercase font-bold tracking-widest">OR</span>
+                                            <div className="flex-grow border-t border-stone-800"></div>
+                                        </div>
+
+                                        {/* Join Section */}
+                                        <div className="bg-black/40 p-5 rounded-2xl border border-stone-800 flex flex-col items-center">
+                                            <div className="text-center mb-4">
+                                                <h4 className="text-amber-200 font-cinzel text-sm uppercase tracking-widest font-bold">
+                                                    {T.lobby.joinHeader.en} <span className="font-serif ml-1">{T.lobby.joinHeader.bo}</span>
+                                                </h4>
+                                                <div className="flex flex-col gap-1 mt-2">
+                                                    <p className="text-[10px] text-stone-400 uppercase tracking-tight leading-tight">{T.lobby.joinInstruction.en}</p>
+                                                    <p className="text-[11px] text-stone-500 font-serif leading-tight">{T.lobby.joinInstruction.bo}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col gap-2 w-full">
+                                                <input type="text" placeholder="ENTER ROOM CODE" value={targetPeerId} onChange={(e) => setTargetPeerId(e.target.value.toUpperCase())} className="bg-black/40 border border-stone-800 p-4 rounded-xl text-center font-cinzel text-lg outline-none focus:border-amber-600 w-full" />
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <button className={`py-4 rounded-xl font-bold uppercase tracking-widest transition-all ${targetPeerId.length >= 4 ? 'bg-amber-600 text-white shadow-lg' : 'bg-stone-800 text-stone-500'}`} disabled={targetPeerId.length < 4 || isPeerConnecting} onClick={() => joinOnlineGame(targetPeerId, false)}> {isPeerConnecting ? '...' : 'Play'} </button>
+                                                    <button className={`py-4 rounded-xl font-bold uppercase tracking-widest transition-all ${targetPeerId.length >= 4 ? 'bg-stone-700 text-amber-500 border border-stone-600' : 'bg-stone-800 text-stone-500'}`} disabled={targetPeerId.length < 4 || isPeerConnecting} onClick={() => joinOnlineGame(targetPeerId, true)}> {isPeerConnecting ? '...' : 'Watch'} </button>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                    <button className="text-stone-500 hover:text-white uppercase text-[10px] tracking-widest font-bold" onClick={() => { if(peer) peer.destroy(); setOnlineLobbyStatus('IDLE'); }}>Cancel</button>
+                                    <button className="text-stone-500 hover:text-white uppercase text-[10px] tracking-widest font-bold mt-4" onClick={() => { if(peer) peer.destroy(); setOnlineLobbyStatus('IDLE'); }}>Cancel ཕྱིར་ལོག།</button>
                                 </div>
                                 )}
                             </div>

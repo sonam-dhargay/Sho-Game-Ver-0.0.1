@@ -20,6 +20,11 @@ export const T = {
     guestContinue: { en: "Continue as Guest", bo: "མགྲོན་པོའི་ཚུལ་དུ་མུ་མཐུད།" },
     loginSplash: { en: "Login", bo: "ནང་ལ་འཛུལ།" },
     signupSplash: { en: "Sign Up", bo: "ཐོ་ཁོད།" },
+    roomLobbyTitle: { en: "Game Lobby", bo: "རྩེད་མོའི་ཚོམས་ཆེན།" },
+    hostHeader: { en: "Host a Match", bo: "རྩེད་མོའི་མགྲོན་བདག་བྱོས།" },
+    hostInstruction: { en: "Click below to generate a room code, then send it to your opponent.", bo: "གཤམ་གྱི་མཐེབ་ཅི་མནན་ནས་ཁང་བའི་ཨང་གྲངས་བཟོས་རྗེས་ཁ་གཏད་ལ་ཐོང་།" },
+    joinHeader: { en: "Join a Match", bo: "རྩེད་མོར་ཞུགས་པ།" },
+    joinInstruction: { en: "Enter the room code shared by your opponent.", bo: "ཁ་གཏད་ཀྱིས་བསྐུར་བའི་ཁང་བའི་ཨང་གྲངས་དེ་འདི་རུ་བྲིས།" },
   },
   game: {
     inHand: { en: "In", bo: "ལག་ཐོག།" },
