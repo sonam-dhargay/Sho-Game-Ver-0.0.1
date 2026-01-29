@@ -561,19 +561,13 @@ const App: React.FC = () => {
           .animate-spectator-mode { animation: spectatorGlow 3s ease-in-out infinite; }
           @keyframes micPulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.2); } }
           .animate-mic-active { animation: micPulse 1.5s ease-in-out infinite; }
-          @keyframes verseScroll { 
-            0% { transform: translateX(-100%); } 
-            100% { transform: translateX(100%); } 
+          @keyframes verseFlicker { 
+            0%, 80%, 100% { opacity: 1; filter: drop-shadow(0 0 8px rgba(251,191,36,0.6)); }
+            82%, 87% { opacity: 0.7; filter: drop-shadow(0 0 3px rgba(251,191,36,0.3)); }
+            84% { opacity: 0.5; filter: drop-shadow(0 0 1px rgba(251,191,36,0.1)); }
           }
-          .scrolling-verse-container {
-            width: 100%;
-            overflow: hidden;
-            white-space: nowrap;
-            position: relative;
-          }
-          .animate-verse-scroll {
-            display: inline-block;
-            animation: verseScroll 25s linear infinite;
+          .animate-verse-flicker {
+            animation: verseFlicker 6s ease-in-out infinite;
           }
         `}} />
 
@@ -655,9 +649,9 @@ const App: React.FC = () => {
         )}
 
         {!gameMode && (
-          <div className="fixed inset-0 z-50 bg-stone-950 text-amber-500 overflow-y-auto flex flex-col items-center justify-between p-6 py-12 md:py-24">
+          <div className="fixed inset-0 z-50 bg-stone-950 text-amber-500 overflow-y-auto flex flex-col items-center justify-between p-6 py-6 md:py-10">
                {isSplashVisible && !isLoggedIn ? (
-                 <div className="flex flex-col items-center justify-center w-full max-w-md gap-8 animate-in fade-in duration-700">
+                 <div className="flex flex-col items-center justify-center w-full max-w-md gap-6 animate-in fade-in duration-700">
                     <div className="flex flex-col items-center text-center">
                         <h1 className="flex items-center gap-6 mb-2 font-cinzel">
                             <span className="text-5xl md:text-7xl text-amber-500 drop-shadow-[0_0_30px_rgba(245,158,11,0.6)]">{T.lobby.title.bo}</span>
@@ -669,12 +663,12 @@ const App: React.FC = () => {
                             <p className="text-stone-500 font-serif text-[13px] md:text-base">{T.lobby.subtitle.bo}</p>
                         </div>
                     </div>
-                    <div className="w-full flex flex-col gap-4 mt-4 px-4">
+                    <div className="w-full flex flex-col gap-4 mt-2 px-4">
                         <button onClick={() => setIsSplashVisible(false)} className="w-full py-4 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-2xl transition-all shadow-lg flex flex-col items-center justify-center">
                             <span className="uppercase tracking-[0.1em] text-sm leading-tight">{T.lobby.guestContinue.en}</span>
                             <span className="font-serif text-sm leading-tight mt-0.5">{T.lobby.guestContinue.bo}</span>
                         </button>
-                        <div className="relative flex items-center py-4">
+                        <div className="relative flex items-center py-2">
                             <div className="flex-grow border-t border-stone-800"></div>
                             <div className="flex flex-col items-center mx-4 gap-0.5">
                                 <span className="text-stone-600 text-[10px] uppercase font-bold tracking-widest">{T.common.or.en}</span>
@@ -696,7 +690,7 @@ const App: React.FC = () => {
                  </div>
                ) : (
                  <>
-                    <div className="fixed top-0 left-0 right-0 p-6 flex justify-between items-center z-[60] bg-gradient-to-b from-stone-950 via-stone-950/80 to-transparent">
+                    <div className="fixed top-0 left-0 right-0 p-4 flex justify-between items-center z-[60] bg-gradient-to-b from-stone-950 via-stone-950/80 to-transparent">
                         <div className="flex items-center gap-2">
                             <span className="text-amber-600/60 text-[10px] font-cinzel font-bold tracking-[0.3em] hidden sm:block uppercase">EST. 2024</span>
                             {isPro && <span className="ml-4 bg-amber-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full tracking-widest shadow-[0_0_10px_rgba(217,119,6,0.5)]">PRO MEMBER</span>}
@@ -711,30 +705,26 @@ const App: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="flex flex-col items-center flex-shrink-0 w-full max-w-sm md:max-w-4xl mt-12 sm:mt-8">
-                        <h1 className="flex items-center gap-6 mb-2 font-cinzel">
+                    <div className="flex flex-col items-center flex-shrink-0 w-full max-w-sm md:max-w-4xl mt-4 sm:mt-2">
+                        <h1 className="flex items-center gap-6 mb-1 font-cinzel">
                             <span className="text-3xl md:text-5xl text-amber-500 drop-shadow-[0_0_20px_rgba(245,158,11,0.5)]">{T.lobby.title.bo}</span>
                             <span className="text-2xl md:text-4xl text-amber-500 tracking-widest drop-shadow-lg">{T.lobby.title.en}</span>
                         </h1>
-                        <div className="h-px w-32 bg-amber-900/40 mb-3" />
+                        <div className="h-px w-32 bg-amber-900/40 mb-2" />
                         <div className="flex flex-col items-center">
                             <p className="text-stone-400 tracking-[0.3em] uppercase text-[10px] md:text-xs text-center font-bold leading-none">{T.lobby.subtitle.en}</p>
                             <p className="text-stone-500 font-serif text-[11px] md:text-sm mt-1">{T.lobby.subtitle.bo}</p>
                         </div>
-                        {/* Verse Scrolling Box */}
-                        <div className="mt-10 bg-stone-900/30 border-y border-amber-900/30 italic text-center animate-in fade-in duration-500 w-full max-w-2xl shadow-[0_0_40px_rgba(0,0,0,0.3)] overflow-hidden">
-                            <div className="scrolling-verse-container py-6">
-                                <div className="animate-verse-scroll whitespace-nowrap px-8">
-                                    <p className="text-amber-400 font-serif text-2xl md:text-3xl leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
-                                        {getDynamicVerse('bo')}
-                                    </p>
-                                </div>
-                            </div>
+                        {/* Verse Box with Flicker Effect */}
+                        <div className="mt-6 bg-stone-900/30 border-y border-amber-900/30 italic text-center animate-in fade-in duration-500 w-full max-w-2xl shadow-[0_0_40px_rgba(0,0,0,0.3)] py-4 flex items-center justify-center">
+                            <p className="text-amber-400 font-serif text-2xl md:text-3xl leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] animate-verse-flicker px-8">
+                                {getDynamicVerse('bo')}
+                            </p>
                         </div>
                     </div>
-                    <div className="flex-grow flex flex-col items-center justify-center w-full max-w-md gap-4 md:gap-10 my-4 md:my-8">
-                        <div className="w-full bg-stone-900/30 p-6 md:p-8 rounded-[3rem] border border-stone-800/50 backdrop-blur-2xl shadow-2xl">
-                            <div className="mb-6">
+                    <div className="flex-grow flex flex-col items-center justify-center w-full max-w-md gap-4 md:gap-8 my-2 md:my-4">
+                        <div className="w-full bg-stone-900/30 p-5 md:p-8 rounded-[3rem] border border-stone-800/50 backdrop-blur-2xl shadow-2xl">
+                            <div className="mb-4">
                                 <label className="text-stone-500 text-[10px] uppercase block mb-3 tracking-widest font-bold px-1">
                                     {T.lobby.nameLabel.en} <span className="text-stone-600 font-serif ml-1">{T.lobby.nameLabel.bo}</span>
                                     {!isNameValid && <span className="ml-2 text-amber-600 font-serif lowercase italic opacity-80">ཁྱེད་ཀྱི་མིང་དང་རུས་མིང་འབྲི་རོགས།</span>}
@@ -868,7 +858,7 @@ const App: React.FC = () => {
                                 <span className="text-[11px] md:text-[13px] font-serif mt-1">{T.lobby.rules.bo}</span>
                             </button>
                         </div>
-                        <div className="flex flex-col items-center pb-8">
+                        <div className="flex flex-col items-center pb-4">
                             <span className="text-stone-600 text-[10px] uppercase tracking-[0.4em] font-bold text-center">
                                 {T.lobby.totalPlayed.en} <br/>
                                 <span className="font-serif mt-1 block">{T.lobby.totalPlayed.bo}</span>
