@@ -561,6 +561,20 @@ const App: React.FC = () => {
           .animate-spectator-mode { animation: spectatorGlow 3s ease-in-out infinite; }
           @keyframes micPulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.2); } }
           .animate-mic-active { animation: micPulse 1.5s ease-in-out infinite; }
+          @keyframes verseScroll { 
+            0% { transform: translateX(-100%); } 
+            100% { transform: translateX(100%); } 
+          }
+          .scrolling-verse-container {
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
+          }
+          .animate-verse-scroll {
+            display: inline-block;
+            animation: verseScroll 25s linear infinite;
+          }
         `}} />
 
         {phase === GamePhase.SETUP && gameMode !== null && <div className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center p-4 text-amber-500 font-cinzel">Initializing...</div>}
@@ -707,10 +721,15 @@ const App: React.FC = () => {
                             <p className="text-stone-400 tracking-[0.3em] uppercase text-[10px] md:text-xs text-center font-bold leading-none">{T.lobby.subtitle.en}</p>
                             <p className="text-stone-500 font-serif text-[11px] md:text-sm mt-1">{T.lobby.subtitle.bo}</p>
                         </div>
-                        <div className="mt-10 px-10 py-6 bg-stone-900/30 border-y border-amber-900/30 italic text-center animate-in fade-in duration-500 w-full max-w-2xl shadow-[0_0_40px_rgba(0,0,0,0.3)]">
-                            <p className="text-amber-400 font-serif text-2xl md:text-3xl leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
-                                {getDynamicVerse('bo')}
-                            </p>
+                        {/* Verse Scrolling Box */}
+                        <div className="mt-10 bg-stone-900/30 border-y border-amber-900/30 italic text-center animate-in fade-in duration-500 w-full max-w-2xl shadow-[0_0_40px_rgba(0,0,0,0.3)] overflow-hidden">
+                            <div className="scrolling-verse-container py-6">
+                                <div className="animate-verse-scroll whitespace-nowrap px-8">
+                                    <p className="text-amber-400 font-serif text-2xl md:text-3xl leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                                        {getDynamicVerse('bo')}
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div className="flex-grow flex flex-col items-center justify-center w-full max-w-md gap-4 md:gap-10 my-4 md:my-8">
