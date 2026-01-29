@@ -4,11 +4,12 @@ export const T = {
     close: { en: "Close", bo: "ཁ་རྒྱོབ།" },
     cancel: { en: "Cancel", bo: "རྩིས་མེད་གཏོང་།" },
     ok: { en: "OK", bo: "ལགས་སོ།" },
+    or: { en: "or", bo: "ཡང་ན།" }
   },
   lobby: {
     title: { en: "Sho", bo: "ཤོ" },
     subtitle: { en: "Traditional Tibetan Dice Game", bo: "བོད་ཀྱི་སྲོལ་རྒྱུན་གྱི་ཤོ་རྩེད།" },
-    verse: { en: "Para Penpa Tashi Zhug. Gyak-khen Trinley Namgyal Re.", bo: "པ་ར་སྤེན་པ་བཀྲ་ཤིས་ཞུགས། རྒྱག་མཁན་འཕྲིན་ལས་རྣམ་རྒྱལ་རེད།" },
+    verse: { en: "", bo: "པ་ར་སྤེན་པ་བཀྲ་ཤིས་ཞུགས། རྒྱག་མཁན་འཕྲིན་ལས་རྣམ་རྒྱལ་རེད།" },
     nameLabel: { en: "Your Name", bo: "ཁྱེད་ཀྱི་མིང་།" },
     colorLabel: { en: "Choose Color", bo: "ཚོས་གཞི་དོམ།" },
     modeLocal: { en: "Local", bo: "རང་ཤག་ཏུ་་རྩེ།" },
@@ -16,6 +17,9 @@ export const T = {
     tutorial: { en: "Tutorial", bo: "རྩེ་སྟངས་མྱུར་ཁྲིད།" },
     rules: { en: "Rules", bo: "ཤོ་ཡི་སྒྲིག་གཞི།" },
     totalPlayed: { en: "Total Games Played", bo: "འཛམ་གླིང་ཁྱོན་ཡོངས་སུ་རྩེད་གྲངས།" },
+    guestContinue: { en: "Continue as Guest", bo: "མགྲོན་པོའི་ཚུལ་དུ་མུ་མཐུད།" },
+    loginSplash: { en: "Login", bo: "ནང་ལ་འཛུལ།" },
+    signupSplash: { en: "Sign Up", bo: "ཐོ་ཁོད།" },
   },
   game: {
     inHand: { en: "In", bo: "ལག་ཐོག།" },
@@ -55,7 +59,7 @@ export const T = {
     stackedDice: { en: "Stacked Dice: If the dice physically land stacked on top of each other during a roll, the player wins on the spot.", bo: "ཤོ་བརྩེགས་བབས་པ། གལ་ཏེ་ཤོ་གཅིག་གི་སྟེང་དུ་གཅིག་བརྩེགས་ནས་བབས་ན་རྒྱལ་ཁ་ཐོབ་སྲིད།" },
     tacticsTitle: { en: "Tactics", bo: "ཐབས་ཇུས།" },
     stackingTitle: { en: "Stacking", bo: "བརྩེགས་སྟངས།" },
-    stackingDesc: { en: "If you land on your own piece, they stack together. Stacks move as a single unit.", bo: "གལ་ཏེ་རང་གི་ལག་ཁྱི་ཐོག་ཏུ་ཤོ་བབས་ན་དེའི་སྟེང་བརྩེགས་ནས་མཉམ་དུ་འགྲོ་ཐུབ།" },
+    stackingDesc: { en: "If you land on your own piece, they stack together. Stacks move as a single unit.", bo: "གལ་ཏེ་རང་གི་ལག་ཁྱི་ཐོག་ཏུ་ཤོ་བབས་ན་དེའི་སྟེང་བརྩེགས་ནས་ mnyam-du-'gro-thub." },
     killingTitle: { en: "Killing", bo: "བསད་སྟངས།" },
     killingDesc: { en: "If you land on an opponent's stack that is equal to or smaller than yours, you 'kill' it. They return to hand, and you get a Bonus Roll!", bo: "གལ་ཏེ་ཁ་གཏད་ཀྱི་ལག་ཁྱི་ཁྱེད་ལས་ཉུང་བའམ་མཉམ་པ་ཡོད་ན། དེ་བསད་ནས་ལག་པར་སློག་ཆོག ཁྱེད་ལ་ཤོ་ཐེངས་གཅིག་རྒྱག་རྒྱུའི་ཁེ་ཕན།ཐོབ།" },
     finishingTitle: { en: "Finishing", bo: "རྩེད་མོ་མཇུག་སྒྲིལ་སྟངས།" },

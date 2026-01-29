@@ -1,5 +1,6 @@
 import React from 'react';
 import { DiceRoll } from '../types';
+import { T } from '../translations';
 
 interface DiceAreaProps {
   currentRoll: DiceRoll | null;
@@ -60,9 +61,11 @@ export const DiceArea: React.FC<DiceAreaProps> = ({
                 ${waitingForPaRa ? 'animate-bounce border border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.4)]' : ''}
             `}
         >
-            <div className="flex items-center gap-2">
-              <span>{waitingForPaRa ? "ROLL BONUS!" : canRoll ? "ROLL DICE" : "WAITING"}</span>
-              <span className="text-amber-400 text-lg md:text-2xl font-serif">ཤོ་རྒྱོབ།</span>
+            <div className="flex flex-col items-center gap-0.5">
+              <span>{waitingForPaRa ? T.game.rollBonus.en : canRoll ? T.game.rollDice.en : T.game.waiting.en}</span>
+              <span className="text-amber-400 text-lg md:text-2xl font-serif">
+                {waitingForPaRa ? T.game.rollBonus.bo : canRoll ? T.game.rollDice.bo : T.game.waiting.bo}
+              </span>
             </div>
         </button>
     </div>
