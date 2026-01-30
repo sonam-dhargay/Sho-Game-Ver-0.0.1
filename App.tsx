@@ -141,7 +141,6 @@ const App: React.FC = () => {
   const [gameMode, setGameMode] = useState<GameMode | null>(null);
   const [tutorialStep, setTutorialStep] = useState(0);
   
-  // Identity state - optional fallback to "Player"
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   
@@ -153,14 +152,12 @@ const App: React.FC = () => {
   const [handShake, setHandShake] = useState(false);
   const boardContainerRef = useRef<HTMLDivElement>(null);
 
-  // Derived Full Name
   const getSafePlayerName = () => {
       const trimmed = `${firstName} ${lastName}`.trim();
       return trimmed.length > 0 ? trimmed : 'Player';
   };
   const isNameEntered = firstName.trim().length > 0;
 
-  // Authentication & Pro State
   const [isSplashVisible, setIsSplashVisible] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'LOGIN' | 'SIGNUP'>('LOGIN');
@@ -170,14 +167,12 @@ const App: React.FC = () => {
   const [isProUpgradeOpen, setIsProUpgradeOpen] = useState(false);
   const [authForm, setAuthForm] = useState({ email: '', password: '', confirmPassword: '', firstName: '', lastName: '' });
 
-  // Online Multiplayer & Voice State
   const [peer, setPeer] = useState<Peer | null>(null);
   const [activeConnections, setActiveConnections] = useState<DataConnection[]>([]);
   const [myPeerId, setMyPeerId] = useState<string>('');
   const [targetPeerId, setTargetPeerId] = useState<string>('');
   const [isPeerConnecting, setIsPeerConnecting] = useState(false);
   const [onlineLobbyStatus, setOnlineLobbyStatus] = useState<'IDLE' | 'WAITING' | 'CONNECTED'>('IDLE');
-  const [spectatorCount, setSpectatorCount] = useState(0);
   const [isMicActive, setIsMicActive] = useState(false);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -217,7 +212,6 @@ const App: React.FC = () => {
 
   const handleSkipTurn = useCallback((isRemote = false) => {
     const s = gameStateRef.current;
-    if (s.gameMode === GameMode.SPECTATOR) return;
     setPendingMoveValues([]);
     setIsOpeningPaRa(false);
     if (!isRemote && (gameMode === GameMode.ONLINE_HOST || gameMode === GameMode.ONLINE_GUEST)) broadcastPacket({ type: 'SKIP_REQ' });
@@ -233,7 +227,6 @@ const App: React.FC = () => {
   const performRoll = async (forcedRoll?: DiceRoll) => {
     const s = gameStateRef.current; 
     if (s.phase !== GamePhase.ROLLING) return;
-    if (s.gameMode === GameMode.SPECTATOR) return;
 
     setIsRolling(true); SFX.playShake();
     triggerHaptic([25, 800, 50]);
@@ -271,8 +264,6 @@ const App: React.FC = () => {
 
   const performMove = (sourceIdx: number, targetIdx: number, isRemote = false) => {
     const s = gameStateRef.current;
-    if (s.gameMode === GameMode.SPECTATOR && !isRemote) return;
-
     const currentMovesList = getAvailableMoves(s.turnIndex, s.board, s.players, s.pendingMoveValues, s.isNinerMode, s.isOpeningPaRa);
     let move = currentMovesList.find(m => m.sourceIndex === sourceIdx && m.targetIndex === targetIdx);
     
@@ -385,14 +376,14 @@ const App: React.FC = () => {
     setPeer(newPeer);
   };
 
-  const joinOnlineGame = (roomId: string, asSpectator = false) => {
+  const joinOnlineGame = (roomId: string) => {
     if (!roomId) return; setIsPeerConnecting(true); const newPeer = new Peer();
     newPeer.on('open', (id) => {
       const conn = newPeer.connect(roomId.toUpperCase().trim(), { reliable: true });
       conn.on('open', () => { 
         setActiveConnections([conn]); 
         setIsPeerConnecting(false); 
-        setupPeerEvents(conn, false, asSpectator); 
+        setupPeerEvents(conn, false); 
       });
       conn.on('error', () => { addLog("Failed to connect to room.", 'alert'); setIsPeerConnecting(false); newPeer.destroy(); });
     });
@@ -403,54 +394,25 @@ const App: React.FC = () => {
     newPeer.on('error', () => setIsPeerConnecting(false)); setPeer(newPeer);
   };
 
-  const setupPeerEvents = (conn: DataConnection, isHost: boolean, asSpectator = false) => {
+  const setupPeerEvents = (conn: DataConnection, isHost: boolean) => {
     if (!isHost) {
-      conn.send({ type: 'SYNC', payload: { playerName: getSafePlayerName(), color: selectedColor, isNinerMode, role: asSpectator ? 'spectator' : 'player' } });
+      conn.send({ type: 'SYNC', payload: { playerName: getSafePlayerName(), color: selectedColor, isNinerMode } });
     }
     conn.on('data', (data: any) => {
       const packet = data as NetworkPacket;
       switch (packet.type) {
         case 'SYNC':
           if (isHost) {
-            if (packet.payload.role === 'spectator') {
-                conn.send({ 
-                    type: 'FULL_SYNC', 
-                    payload: { 
-                        hostInfo: { name: getSafePlayerName(), color: selectedColor }, 
-                        guestInfo: players[1], 
-                        board: Array.from(gameStateRef.current.board.entries()),
-                        turnIndex: gameStateRef.current.turnIndex,
-                        phase: gameStateRef.current.phase,
-                        isNinerMode
-                    } 
-                });
-                setSpectatorCount(prev => prev + 1);
-            } else {
-                let guestColor = packet.payload.color;
-                if (guestColor === selectedColor) guestColor = COLOR_PALETTE.find(c => c.hex !== selectedColor)?.hex || '#3b82f6';
-                const guestInfo = { name: packet.payload.playerName, color: guestColor }, hostInfo = { name: getSafePlayerName(), color: selectedColor };
-                setGameMode(GameMode.ONLINE_HOST); setOnlineLobbyStatus('CONNECTED'); initializeGame(hostInfo, guestInfo);
-                broadcastPacket({ type: 'SYNC', payload: { hostInfo, guestInfo, isNinerMode } });
-            }
+            let guestColor = packet.payload.color;
+            if (guestColor === selectedColor) guestColor = COLOR_PALETTE.find(c => c.hex !== selectedColor)?.hex || '#3b82f6';
+            const guestInfo = { name: packet.payload.playerName, color: guestColor }, hostInfo = { name: getSafePlayerName(), color: selectedColor };
+            setGameMode(GameMode.ONLINE_HOST); setOnlineLobbyStatus('CONNECTED'); initializeGame(hostInfo, guestInfo);
+            broadcastPacket({ type: 'SYNC', payload: { hostInfo, guestInfo, isNinerMode } });
           } else {
             const { hostInfo, guestInfo, isNinerMode: serverNiner } = packet.payload;
             setIsNinerMode(serverNiner); setGameMode(GameMode.ONLINE_GUEST); setOnlineLobbyStatus('CONNECTED'); initializeGame(hostInfo, guestInfo);
           }
           break;
-        case 'FULL_SYNC':
-           if (!isHost) {
-              const { hostInfo, guestInfo, board: bData, turnIndex: ti, phase: ph, isNinerMode: inm } = packet.payload;
-              setIsNinerMode(inm);
-              setGameMode(GameMode.SPECTATOR);
-              setOnlineLobbyStatus('CONNECTED');
-              const initialPlayers = generatePlayers(hostInfo, guestInfo);
-              setPlayers(initialPlayers);
-              setBoard(new Map(bData));
-              setTurnIndex(ti);
-              setPhase(ph);
-              addLog("Joined as Spectator.", 'info');
-           }
-           break;
         case 'ROLL_REQ': performRoll(packet.payload); if (isHost) broadcastPacket(packet); break;
         case 'MOVE_REQ': performMove(packet.payload.sourceIdx, packet.payload.targetIdx, true); if (isHost) broadcastPacket(packet); break;
         case 'SKIP_REQ': handleSkipTurn(true); if (isHost) broadcastPacket(packet); break;
@@ -459,7 +421,6 @@ const App: React.FC = () => {
     conn.on('close', () => { 
         if (isHost) {
             setActiveConnections(prev => prev.filter(c => c !== conn));
-            setSpectatorCount(prev => Math.max(0, prev - 1));
         } else {
             addLog("Connection closed.", 'alert'); setOnlineLobbyStatus('IDLE'); setGameMode(null); 
         }
@@ -500,10 +461,7 @@ const App: React.FC = () => {
   const visualizedMoves = selectedSourceIndex !== null ? currentValidMovesList.filter(m => m.sourceIndex === selectedSourceIndex) : [];
   const shouldHighlightHand = phase === GamePhase.MOVING && (gameMode !== GameMode.AI || turnIndex === 0) && players[turnIndex].coinsInHand > 0;
   
-  const isSpectator = gameMode === GameMode.SPECTATOR;
-
   const isLocalTurn = (() => {
-    if (isSpectator) return false;
     if (gameMode === GameMode.ONLINE_HOST) return turnIndex === 0;
     if (gameMode === GameMode.ONLINE_GUEST) return turnIndex === 1;
     if (gameMode === GameMode.AI) return turnIndex === 0;
@@ -511,7 +469,7 @@ const App: React.FC = () => {
   })();
 
   const handleFromHandClick = () => {
-    if (phase !== GamePhase.MOVING || !isLocalTurn || isSpectator) return;
+    if (phase !== GamePhase.MOVING || !isLocalTurn) return;
     const player = players[turnIndex];
     if (player.coinsInHand <= 0) { 
       SFX.playBlocked(); 
@@ -544,8 +502,6 @@ const App: React.FC = () => {
           .animate-active-pulse { animation: activePulse 2s ease-in-out infinite; }
           @keyframes goldPulse { 0%, 100% { border-color: rgba(251, 191, 36, 0.4); box-shadow: 0 0 5px rgba(251, 191, 36, 0.2); } 50% { border-color: rgba(251, 191, 36, 1); box-shadow: 0 0 20px rgba(251, 191, 36, 0.4); } }
           .animate-gold-pulse { animation: goldPulse 2s ease-in-out infinite; }
-          @keyframes spectatorGlow { 0%, 100% { color: #60a5fa; text-shadow: 0 0 5px #3b82f6; } 50% { color: #93c5fd; text-shadow: 0 0 15px #3b82f6; } }
-          .animate-spectator-mode { animation: spectatorGlow 3s ease-in-out infinite; }
           @keyframes micPulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.2); } }
           .animate-mic-active { animation: micPulse 1.5s ease-in-out infinite; }
         `}} />
@@ -640,7 +596,7 @@ const App: React.FC = () => {
                           <div className="h-px w-32 bg-amber-900/40 mb-3" />
                           <div className="flex flex-col gap-1 mb-6">
                               <p className="text-stone-400 tracking-[0.3em] uppercase text-xs md:text-sm font-bold">{T.lobby.subtitle.en}</p>
-                              <p className="text-stone-500 font-serif text-2xl md:text-3xl">{T.lobby.subtitle.bo}</p>
+                              <p className="text-stone-500 font-serif text-2xl md:text-3xl leading-tight text-center">{T.lobby.subtitle.bo}</p>
                           </div>
                       </div>
                       <div className="w-full flex flex-col gap-4 mt-2 px-4">
@@ -799,10 +755,7 @@ const App: React.FC = () => {
                                             </div>
                                             <div className="flex flex-col gap-2 w-full">
                                                 <input type="text" placeholder="ENTER ROOM CODE" value={targetPeerId} onChange={(e) => setTargetPeerId(e.target.value.toUpperCase())} className="bg-black/40 border border-stone-800 p-4 rounded-xl text-center font-cinzel text-lg outline-none focus:border-amber-600 w-full" />
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    <button className={`py-4 rounded-xl font-bold uppercase tracking-widest transition-all ${targetPeerId.length >= 4 ? 'bg-amber-600 text-white shadow-lg' : 'bg-stone-800 text-stone-500'}`} disabled={targetPeerId.length < 4 || isPeerConnecting} onClick={() => joinOnlineGame(targetPeerId, false)}> {isPeerConnecting ? '...' : 'Play'} </button>
-                                                    <button className={`py-4 rounded-xl font-bold uppercase tracking-widest transition-all ${targetPeerId.length >= 4 ? 'bg-stone-700 text-amber-500 border border-stone-600' : 'bg-stone-800 text-stone-500'}`} disabled={targetPeerId.length < 4 || isPeerConnecting} onClick={() => joinOnlineGame(targetPeerId, true)}> {isPeerConnecting ? '...' : 'Watch'} </button>
-                                                </div>
+                                                <button className={`py-4 rounded-xl font-bold uppercase tracking-widest transition-all ${targetPeerId.length >= 4 ? 'bg-amber-600 text-white shadow-lg' : 'bg-stone-800 text-stone-500'}`} disabled={targetPeerId.length < 4 || isPeerConnecting} onClick={() => joinOnlineGame(targetPeerId)}> {isPeerConnecting ? '...' : 'Play'} </button>
                                             </div>
                                         </div>
                                     </div>
@@ -842,7 +795,6 @@ const App: React.FC = () => {
                         <header className="flex justify-between items-center border-b border-stone-800 pb-1 md:pb-4">
                             <div className="flex items-center gap-2 cursor-pointer" onClick={() => { if (peer) peer.destroy(); setGameMode(null); setOnlineLobbyStatus('IDLE'); }}>
                                 <h1 className="text-amber-500 font-cinzel text-[10px] md:text-sm">Sho</h1>
-                                {isSpectator && <span className="bg-blue-600/20 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-full text-[8px] font-bold tracking-widest animate-pulse">SPECTATOR</span>}
                             </div>
                             <div className="flex items-center gap-2 md:gap-4">
                                 {(gameMode === GameMode.ONLINE_HOST || gameMode === GameMode.ONLINE_GUEST) && (
@@ -855,12 +807,6 @@ const App: React.FC = () => {
                                             {isMicActive ? '🎙️' : '🔇'}
                                         </span>
                                     </button>
-                                )}
-                                {(gameMode === GameMode.ONLINE_HOST || spectatorCount > 0) && (
-                                    <div className="flex items-center gap-1.5 bg-stone-800/80 px-2 py-1 rounded-full border border-stone-700">
-                                        <span className="text-[10px]">👁️</span>
-                                        <span className="text-[9px] font-bold text-stone-400">{spectatorCount}</span>
-                                    </div>
                                 )}
                                 <button onClick={() => setShowRules(true)} className="w-5 h-5 md:w-8 md:h-8 rounded-full border border-stone-600 text-stone-400 flex items-center justify-center text-[10px] md:text-xs">?</button>
                             </div>
@@ -899,7 +845,7 @@ const App: React.FC = () => {
                                 </button>
                             </div> 
                         ) : ( 
-                            <div className={`flex flex-col gap-1 ${isSpectator ? 'opacity-50 pointer-events-none' : ''}`}>
+                            <div className="flex flex-col gap-1">
                                 <DiceArea currentRoll={lastRoll} onRoll={() => performRoll()} canRoll={(phase === GamePhase.ROLLING) && !isRolling && isLocalTurn} pendingValues={pendingMoveValues} waitingForPaRa={paRaCount > 0} paRaCount={paRaCount} extraRolls={extraRolls} flexiblePool={null} />
                                 <div className="flex gap-1">
                                     <div onClick={handleFromHandClick} className={`flex-1 p-2 md:p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center justify-center ${handShake ? 'animate-hand-blocked' : selectedSourceIndex === 0 ? 'border-amber-500 bg-amber-900/40' : (shouldHighlightHand && isLocalTurn) ? 'border-amber-500/80 bg-amber-900/10 animate-pulse' : 'border-stone-800 bg-stone-900/50'}`}>
@@ -914,11 +860,6 @@ const App: React.FC = () => {
                                         </button> 
                                     )}
                                 </div>
-                                {isSpectator && (
-                                    <div className="text-center py-2 animate-spectator-mode">
-                                        <span className="text-[10px] font-bold uppercase tracking-widest">Watching Live Match</span>
-                                    </div>
-                                )}
                             </div> 
                         )}
                     </div>
@@ -932,12 +873,6 @@ const App: React.FC = () => {
                             isOpeningPaRa={isOpeningPaRa}
                         />
                     </div>
-                    {isSpectator && (
-                        <div className="absolute top-4 right-4 bg-blue-600 px-4 py-2 rounded-full shadow-[0_0_20px_rgba(37,99,235,0.4)] flex items-center gap-2 animate-in fade-in slide-in-from-top duration-700">
-                           <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                           <span className="text-white text-xs font-bold uppercase tracking-widest">Live Feed ཐད་གཏོང་།</span>
-                        </div>
-                    )}
                 </div>
             </>
         )}
