@@ -465,6 +465,17 @@ const App: React.FC = () => {
     });
   };
 
+  const handleTutorialNext = () => {
+    triggerHaptic(10);
+    setTutorialStep(prev => prev + 1);
+  };
+
+  const handleTutorialClose = () => {
+    triggerHaptic(10);
+    setTutorialStep(0);
+    // Keep gameMode so they can finish the game if they want
+  };
+
   useEffect(() => { 
     return () => { 
         if (peer) peer.destroy(); 
@@ -548,7 +559,7 @@ const App: React.FC = () => {
           .animate-mic-active { animation: micPulse 1.5s ease-in-out infinite; }
         `}} />
 
-        {phase === GamePhase.SETUP && gameMode !== null && <div className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center p-4 text-amber-500 font-cinzel">Initializing...</div>}
+        {phase === GamePhase.SETUP && gameMode !== null && <div className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center p-4 text-amber-500 font-cinzel text-xl animate-pulse">Initializing འགོ་འཛུགས་བཞིན་པ...</div>}
         <RulesModal isOpen={showRules} onClose={() => { triggerHaptic(10); setShowRules(false); }} isNinerMode={isNinerMode} onToggleNinerMode={() => { triggerHaptic(15); setIsNinerMode(prev => !prev); }} />
         
         {isAuthModalOpen && (
@@ -833,10 +844,17 @@ const App: React.FC = () => {
         )}
         {gameMode && (
             <>
+                {(gameMode === GameMode.TUTORIAL || tutorialStep > 0) && tutorialStep > 0 && (
+                  <TutorialOverlay 
+                    step={tutorialStep} 
+                    onNext={handleTutorialNext} 
+                    onClose={handleTutorialClose} 
+                  />
+                )}
                 <div className="w-full md:w-1/4 flex flex-col border-b md:border-b-0 md:border-r border-stone-800 bg-stone-950 z-20 shadow-2xl h-[45dvh] md:h-full order-1 overflow-hidden flex-shrink-0 mobile-landscape-sidebar">
                     <div className="p-1.5 md:p-4 flex flex-col gap-0 md:gap-3 flex-shrink-0 bg-stone-950 mobile-landscape-compact-stats">
                         <header className="flex justify-between items-center border-b border-stone-800 pb-1 md:pb-4">
-                            <div className="flex items-center gap-2 cursor-pointer" onClick={() => { triggerHaptic(10); if (peer) peer.destroy(); setGameMode(null); setOnlineLobbyStatus('IDLE'); }}>
+                            <div className="flex items-center gap-2 cursor-pointer" onClick={() => { triggerHaptic(10); if (peer) peer.destroy(); setGameMode(null); setOnlineLobbyStatus('IDLE'); setTutorialStep(0); }}>
                                 <h1 className="text-amber-500 font-cinzel text-[10px] md:text-sm">Sho</h1>
                             </div>
                             <div className="flex items-center gap-2 md:gap-4">
@@ -883,13 +901,13 @@ const App: React.FC = () => {
                             <div className="text-center p-2 bg-stone-800 rounded-xl border border-amber-500 animate-pulse">
                                 <h2 className="text-base text-amber-400 font-cinzel">{T.game.victory.en}</h2>
                                 <h3 className="text-lg text-amber-500 font-serif leading-none mb-2">{T.game.victory.bo}</h3>
-                                <button onClick={() => { triggerHaptic(20); if(peer) peer.destroy(); setGameMode(null); setOnlineLobbyStatus('IDLE'); }} className="bg-amber-600 text-white px-4 py-1.5 rounded-full font-bold uppercase text-[9px] transition-all hover:bg-amber-500">
+                                <button onClick={() => { triggerHaptic(20); if(peer) peer.destroy(); setGameMode(null); setOnlineLobbyStatus('IDLE'); setTutorialStep(0); }} className="bg-amber-600 text-white px-4 py-1.5 rounded-full font-bold uppercase text-[9px] transition-all hover:bg-amber-500">
                                     {T.common.back.en} <span className="font-serif ml-1">{T.common.back.bo}</span>
                                 </button>
                             </div> 
                         ) : ( 
                             <div className="flex flex-col gap-1">
-                                <DiceArea currentRoll={lastRoll} onRoll={() => performRoll()} canRoll={(phase === GamePhase.ROLLING) && !isRolling && isLocalTurn} pendingValues={pendingMoveValues} waitingForPaRa={paRaCount > 0} paRaCount={paRaCount} extraRolls={extraRolls} flexiblePool={null} />
+                                <DiceArea currentRoll={lastRoll} onRoll={() => { if (tutorialStep === 2) handleTutorialNext(); performRoll(); }} canRoll={(phase === GamePhase.ROLLING) && !isRolling && isLocalTurn} pendingValues={pendingMoveValues} waitingForPaRa={paRaCount > 0} paRaCount={paRaCount} extraRolls={extraRolls} flexiblePool={null} />
                                 <div className="flex gap-1">
                                     <div onClick={handleFromHandClick} className={`flex-1 p-2 md:p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center justify-center ${handShake ? 'animate-hand-blocked' : selectedSourceIndex === 0 ? 'border-amber-500 bg-amber-900/40' : (shouldHighlightHand && isLocalTurn) ? 'border-amber-500/80 bg-amber-900/10 animate-pulse' : 'border-stone-800 bg-stone-900/50'}`}>
                                         <span className={`font-bold uppercase font-cinzel text-[11px] md:text-sm`}>{T.game.fromHand.en}</span>
