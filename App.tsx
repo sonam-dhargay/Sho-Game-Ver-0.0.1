@@ -169,6 +169,7 @@ const App: React.FC = () => {
 
   const [peer, setPeer] = useState<Peer | null>(null);
   const [activeConnections, setActiveConnections] = useState<DataConnection[]>([]);
+  const connectionsRef = useRef<DataConnection[]>([]);
   const [myPeerId, setMyPeerId] = useState<string>('');
   const [targetPeerId, setTargetPeerId] = useState<string>('');
   const [isPeerConnecting, setIsPeerConnecting] = useState(false);
@@ -176,6 +177,10 @@ const App: React.FC = () => {
   const [isMicActive, setIsMicActive] = useState(false);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
+
+  useEffect(() => {
+    connectionsRef.current = activeConnections;
+  }, [activeConnections]);
 
   const gameStateRef = useRef({ board, players, turnIndex, phase, pendingMoveValues, paRaCount, extraRolls, isRolling, isNinerMode, gameMode, tutorialStep, isOpeningPaRa, lastRoll });
   
@@ -186,10 +191,10 @@ const App: React.FC = () => {
   const addLog = useCallback((msg: string, type: GameLog['type'] = 'info') => { setLogs(prev => [{ id: Date.now().toString() + Math.random(), message: msg, type }, ...prev].slice(50)); }, []);
 
   const broadcastPacket = useCallback((packet: NetworkPacket) => {
-    activeConnections.forEach(conn => {
+    connectionsRef.current.forEach(conn => {
         if (conn.open) conn.send(packet);
     });
-  }, [activeConnections]);
+  }, []);
 
   useEffect(() => { 
     const growth = Math.floor((Date.now() - new Date('2024-01-01').getTime()) / (1000 * 60 * 15)); setGlobalPlayCount(prev => prev + growth); 
@@ -406,11 +411,17 @@ const App: React.FC = () => {
             let guestColor = packet.payload.color;
             if (guestColor === selectedColor) guestColor = COLOR_PALETTE.find(c => c.hex !== selectedColor)?.hex || '#3b82f6';
             const guestInfo = { name: packet.payload.playerName, color: guestColor }, hostInfo = { name: getSafePlayerName(), color: selectedColor };
-            setGameMode(GameMode.ONLINE_HOST); setOnlineLobbyStatus('CONNECTED'); initializeGame(hostInfo, guestInfo);
-            broadcastPacket({ type: 'SYNC', payload: { hostInfo, guestInfo, isNinerMode } });
+            setGameMode(GameMode.ONLINE_HOST); 
+            setOnlineLobbyStatus('CONNECTED'); 
+            initializeGame(hostInfo, guestInfo);
+            // Respond directly to the connection to ensure the guest gets the packet
+            conn.send({ type: 'SYNC', payload: { hostInfo, guestInfo, isNinerMode } });
           } else {
             const { hostInfo, guestInfo, isNinerMode: serverNiner } = packet.payload;
-            setIsNinerMode(serverNiner); setGameMode(GameMode.ONLINE_GUEST); setOnlineLobbyStatus('CONNECTED'); initializeGame(hostInfo, guestInfo);
+            setIsNinerMode(serverNiner); 
+            setGameMode(GameMode.ONLINE_GUEST); 
+            setOnlineLobbyStatus('CONNECTED'); 
+            initializeGame(hostInfo, guestInfo);
           }
           break;
         case 'ROLL_REQ': performRoll(packet.payload); if (isHost) broadcastPacket(packet); break;
