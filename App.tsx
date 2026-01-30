@@ -630,43 +630,48 @@ const App: React.FC = () => {
         {!gameMode && (
           <div className="fixed inset-0 z-50 bg-stone-950 text-amber-500 overflow-y-auto flex flex-col items-center justify-between p-6 py-6 md:py-10">
                {isSplashVisible && !isLoggedIn ? (
-                 <div className="flex flex-col items-center justify-center w-full max-w-md gap-6 animate-in fade-in duration-700">
-                    <div className="flex flex-col items-center text-center">
-                        <h1 className="flex items-center gap-6 mb-2 font-cinzel">
-                            <span className="text-5xl md:text-7xl text-amber-500 drop-shadow-[0_0_30px_rgba(245,158,11,0.6)]">{T.lobby.title.bo}</span>
-                            <span className="text-3xl md:text-5xl text-amber-500 tracking-widest drop-shadow-lg">{T.lobby.title.en}</span>
-                        </h1>
-                        <div className="h-px w-32 bg-amber-900/40 mb-3" />
-                        <div className="flex flex-col gap-1 mb-6">
-                            <p className="text-stone-400 tracking-[0.3em] uppercase text-xs md:text-sm font-bold">{T.lobby.subtitle.en}</p>
-                            <p className="text-stone-500 font-serif text-2xl md:text-3xl">{T.lobby.subtitle.bo}</p>
-                        </div>
-                    </div>
-                    <div className="w-full flex flex-col gap-4 mt-2 px-4">
-                        <button onClick={() => setIsSplashVisible(false)} className="w-full py-4 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-2xl transition-all shadow-lg flex flex-col items-center justify-center">
-                            <span className="uppercase tracking-[0.1em] text-sm leading-tight">{T.lobby.guestContinue.en}</span>
-                            <span className="font-serif text-sm leading-tight mt-0.5">{T.lobby.guestContinue.bo}</span>
-                        </button>
-                        <div className="relative flex items-center py-2">
-                            <div className="flex-grow border-t border-stone-800"></div>
-                            <div className="flex flex-col items-center mx-4 gap-0.5">
-                                <span className="text-stone-600 text-[10px] uppercase font-bold tracking-widest">{T.common.or.en}</span>
-                                <span className="text-stone-700 font-serif text-[11px] leading-none">{T.common.or.bo}</span>
-                            </div>
-                            <div className="flex-grow border-t border-stone-800"></div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <button onClick={() => { setAuthMode('LOGIN'); setIsAuthModalOpen(true); }} className="py-3 bg-stone-900 border border-stone-800 hover:border-amber-600 text-stone-300 font-bold rounded-2xl transition-all flex flex-col items-center justify-center">
-                                <span className="uppercase tracking-[0.1em] text-[11px] leading-tight">{T.lobby.loginSplash.en}</span>
-                                <span className="font-serif text-[12px] leading-tight mt-0.5 text-stone-400">{T.lobby.loginSplash.bo}</span>
-                            </button>
-                            <button onClick={() => { setAuthMode('SIGNUP'); setIsAuthModalOpen(true); }} className="py-3 bg-stone-900 border border-stone-800 hover:border-amber-600 text-stone-300 font-bold rounded-2xl transition-all flex flex-col items-center justify-center">
-                                <span className="uppercase tracking-[0.1em] text-[11px] leading-tight">{T.lobby.signupSplash.en}</span>
-                                <span className="font-serif text-[12px] leading-tight mt-0.5 text-stone-400">{T.lobby.signupSplash.bo}</span>
-                            </button>
-                        </div>
-                    </div>
-                 </div>
+                 <>
+                   <div className="flex-grow flex flex-col items-center justify-center w-full max-w-md gap-6 animate-in fade-in duration-700">
+                      <div className="flex flex-col items-center text-center">
+                          <h1 className="flex items-center gap-6 mb-2 font-cinzel">
+                              <span className="text-5xl md:text-7xl text-amber-500 drop-shadow-[0_0_30px_rgba(245,158,11,0.6)]">{T.lobby.title.bo}</span>
+                              <span className="text-3xl md:text-5xl text-amber-500 tracking-widest drop-shadow-lg">{T.lobby.title.en}</span>
+                          </h1>
+                          <div className="h-px w-32 bg-amber-900/40 mb-3" />
+                          <div className="flex flex-col gap-1 mb-6">
+                              <p className="text-stone-400 tracking-[0.3em] uppercase text-xs md:text-sm font-bold">{T.lobby.subtitle.en}</p>
+                              <p className="text-stone-500 font-serif text-2xl md:text-3xl">{T.lobby.subtitle.bo}</p>
+                          </div>
+                      </div>
+                      <div className="w-full flex flex-col gap-4 mt-2 px-4">
+                          <button onClick={() => setIsSplashVisible(false)} className="w-full py-4 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-2xl transition-all shadow-lg flex flex-col items-center justify-center">
+                              <span className="uppercase tracking-[0.1em] text-sm leading-tight">{T.lobby.guestContinue.en}</span>
+                              <span className="font-serif text-sm leading-tight mt-0.5">{T.lobby.guestContinue.bo}</span>
+                          </button>
+                          <div className="relative flex items-center py-2">
+                              <div className="flex-grow border-t border-stone-800"></div>
+                              <div className="flex flex-col items-center mx-4 gap-0.5">
+                                  <span className="text-stone-600 text-[10px] uppercase font-bold tracking-widest">{T.common.or.en}</span>
+                                  <span className="text-stone-700 font-serif text-[11px] leading-none">{T.common.or.bo}</span>
+                              </div>
+                              <div className="flex-grow border-t border-stone-800"></div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                              <button onClick={() => { setAuthMode('LOGIN'); setIsAuthModalOpen(true); }} className="py-3 bg-stone-900 border border-stone-800 hover:border-amber-600 text-stone-300 font-bold rounded-2xl transition-all flex flex-col items-center justify-center">
+                                  <span className="uppercase tracking-[0.1em] text-[11px] leading-tight">{T.lobby.loginSplash.en}</span>
+                                  <span className="font-serif text-[12px] leading-tight mt-0.5 text-stone-400">{T.lobby.loginSplash.bo}</span>
+                              </button>
+                              <button onClick={() => { setAuthMode('SIGNUP'); setIsAuthModalOpen(true); }} className="py-3 bg-stone-900 border border-stone-800 hover:border-amber-600 text-stone-300 font-bold rounded-2xl transition-all flex flex-col items-center justify-center">
+                                  <span className="uppercase tracking-[0.1em] text-[11px] leading-tight">{T.lobby.signupSplash.en}</span>
+                                  <span className="font-serif text-[12px] leading-tight mt-0.5 text-stone-400">{T.lobby.signupSplash.bo}</span>
+                              </button>
+                          </div>
+                      </div>
+                   </div>
+                   <p className="text-stone-600 text-[10px] uppercase tracking-wider font-bold mt-8 opacity-60 text-center animate-in fade-in slide-in-from-bottom duration-1000 delay-500">
+                     Login required for online multiplayer and syncing progress.
+                   </p>
+                 </>
                ) : (
                  <>
                     <div className="fixed top-0 left-0 right-0 p-4 flex justify-between items-center z-[60] bg-gradient-to-b from-stone-950 via-stone-950/80 to-transparent">
