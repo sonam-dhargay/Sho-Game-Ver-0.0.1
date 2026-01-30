@@ -141,8 +141,8 @@ const App: React.FC = () => {
   const [gameMode, setGameMode] = useState<GameMode | null>(null);
   const [tutorialStep, setTutorialStep] = useState(0);
   
-  // Default to "Player" to allow immediate entry
-  const [firstName, setFirstName] = useState('Player');
+  // Identity state
+  const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   
   const [selectedColor, setSelectedColor] = useState(COLOR_PALETTE[0].hex);
@@ -545,14 +545,6 @@ const App: React.FC = () => {
           .animate-spectator-mode { animation: spectatorGlow 3s ease-in-out infinite; }
           @keyframes micPulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.2); } }
           .animate-mic-active { animation: micPulse 1.5s ease-in-out infinite; }
-          @keyframes verseFlicker { 
-            0%, 80%, 100% { opacity: 1; filter: drop-shadow(0 0 8px rgba(251,191,36,0.6)); }
-            82%, 87% { opacity: 0.7; filter: drop-shadow(0 0 3px rgba(251,191,36,0.3)); }
-            84% { opacity: 0.5; filter: drop-shadow(0 0 1px rgba(251,191,36,0.1)); }
-          }
-          .animate-verse-flicker {
-            animation: verseFlicker 6s ease-in-out infinite;
-          }
         `}} />
 
         {phase === GamePhase.SETUP && gameMode !== null && <div className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center p-4 text-amber-500 font-cinzel">Initializing...</div>}
@@ -639,12 +631,12 @@ const App: React.FC = () => {
                     <div className="flex flex-col items-center text-center">
                         <h1 className="flex items-center gap-6 mb-2 font-cinzel">
                             <span className="text-5xl md:text-7xl text-amber-500 drop-shadow-[0_0_30px_rgba(245,158,11,0.6)]">{T.lobby.title.bo}</span>
-                            <span className="text-4xl md:text-6xl text-amber-500 tracking-widest drop-shadow-lg">{T.lobby.title.en}</span>
+                            <span className="text-3xl md:text-5xl text-amber-500 tracking-widest drop-shadow-lg">{T.lobby.title.en}</span>
                         </h1>
                         <div className="h-px w-32 bg-amber-900/40 mb-3" />
                         <div className="flex flex-col gap-1 mb-6">
                             <p className="text-stone-400 tracking-[0.3em] uppercase text-xs md:text-sm font-bold">{T.lobby.subtitle.en}</p>
-                            <p className="text-stone-500 font-serif text-[13px] md:text-base">{T.lobby.subtitle.bo}</p>
+                            <p className="text-stone-500 font-serif text-xl md:text-2xl">{T.lobby.subtitle.bo}</p>
                         </div>
                     </div>
                     <div className="w-full flex flex-col gap-4 mt-2 px-4">
@@ -692,18 +684,32 @@ const App: React.FC = () => {
                     <div className="flex flex-col items-center flex-shrink-0 w-full max-w-sm md:max-w-4xl mt-4 sm:mt-2">
                         <h1 className="flex items-center gap-6 mb-1 font-cinzel">
                             <span className="text-3xl md:text-5xl text-amber-500 drop-shadow-[0_0_20px_rgba(245,158,11,0.5)]">{T.lobby.title.bo}</span>
-                            <span className="text-2xl md:text-4xl text-amber-500 tracking-widest drop-shadow-lg">{T.lobby.title.en}</span>
+                            <span className="text-lg md:text-2xl text-amber-500 tracking-widest drop-shadow-lg">{T.lobby.title.en}</span>
                         </h1>
                         <div className="h-px w-32 bg-amber-900/40 mb-2" />
                         <div className="flex flex-col items-center">
                             <p className="text-stone-400 tracking-[0.3em] uppercase text-[10px] md:text-xs text-center font-bold leading-none">{T.lobby.subtitle.en}</p>
-                            <p className="text-stone-500 font-serif text-[11px] md:text-sm mt-1">{T.lobby.subtitle.bo}</p>
+                            <p className="text-stone-500 font-serif text-lg md:text-xl mt-1">{T.lobby.subtitle.bo}</p>
                         </div>
                     </div>
                     <div className="flex-grow flex flex-col items-center justify-center w-full max-w-md gap-4 md:gap-8 my-2 md:my-4">
                         <div className="w-full bg-stone-900/30 p-5 md:p-8 rounded-[3rem] border border-stone-800/50 backdrop-blur-2xl shadow-2xl">
+                            <div className="mb-6">
+                                <label className="text-stone-500 text-[10px] uppercase block mb-3 tracking-widest font-bold px-1 text-center">
+                                    {T.lobby.nameLabel.en} <span className="text-stone-600 font-serif ml-1">{T.lobby.nameLabel.bo}</span>
+                                </label>
+                                <input 
+                                    type="text" 
+                                    value={firstName} 
+                                    placeholder="..." 
+                                    onChange={(e) => setFirstName(e.target.value)} 
+                                    className={`w-full bg-black/40 border-b-2 ${firstName.trim() ? 'border-amber-600' : 'border-stone-800'} focus:border-amber-500 p-3 text-stone-100 outline-none text-center text-xl font-cinzel tracking-widest transition-all`} 
+                                    maxLength={20} 
+                                />
+                                {!isNameValid && <p className="text-[10px] text-amber-700 font-serif mt-2 text-center">ཁྱེད་ཀྱི་མིང་འབྲི་རོགས། (Please enter your name)</p>}
+                            </div>
                             <div>
-                                <label className="text-stone-500 text-[10px] uppercase block mb-4 tracking-widest font-bold px-1">
+                                <label className="text-stone-500 text-[10px] uppercase block mb-4 tracking-widest font-bold px-1 text-center">
                                     {T.lobby.colorLabel.en} <span className="text-stone-600 font-serif ml-1">{T.lobby.colorLabel.bo}</span>
                                 </label>
                                 <div className="flex justify-between px-2 gap-2">
@@ -716,7 +722,8 @@ const App: React.FC = () => {
                         {onlineLobbyStatus === 'IDLE' ? (
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 w-full px-2">
                                 <button 
-                                    className={`bg-stone-900/40 border-2 border-stone-800/80 p-4 md:p-6 rounded-[2rem] hover:border-amber-600/50 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 md:gap-2`} 
+                                    disabled={!isNameValid}
+                                    className={`bg-stone-900/40 border-2 border-stone-800/80 p-4 md:p-6 rounded-[2rem] hover:border-amber-600/50 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 md:gap-2 ${!isNameValid ? 'opacity-40 grayscale cursor-not-allowed' : ''}`} 
                                     onClick={() => { setGameMode(GameMode.LOCAL); initializeGame({name: fullPlayerName, color: selectedColor}, {name: 'Opponent', color: COLOR_PALETTE[1].hex}); }}
                                 >
                                     <span className="text-xl md:text-2xl">🏔️</span>
@@ -724,7 +731,8 @@ const App: React.FC = () => {
                                     <span className="text-[9px] text-stone-500 font-serif">{T.lobby.modeLocal.bo}</span>
                                 </button>
                                 <button 
-                                    className={`bg-stone-900/40 border-2 border-stone-800/80 p-4 md:p-6 rounded-[2rem] hover:border-amber-600/50 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 md:gap-2`} 
+                                    disabled={!isNameValid}
+                                    className={`bg-stone-900/40 border-2 border-stone-800/80 p-4 md:p-6 rounded-[2rem] hover:border-amber-600/50 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 md:gap-2 ${!isNameValid ? 'opacity-40 grayscale cursor-not-allowed' : ''}`} 
                                     onClick={() => { setGameMode(GameMode.AI); initializeGame({name: fullPlayerName, color: selectedColor}, {name: 'Sho Bot', color: '#999'}); }}
                                 >
                                     <span className="text-xl md:text-2xl">🤖</span>
@@ -732,7 +740,8 @@ const App: React.FC = () => {
                                     <span className="text-[9px] text-stone-500 font-serif">{T.lobby.modeAI.bo}</span>
                                 </button>
                                 <button 
-                                    className={`col-span-2 md:col-span-1 bg-amber-900/20 border-2 border-amber-800/40 p-4 md:p-6 rounded-[2rem] hover:border-amber-500/80 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 md:gap-2 relative overflow-hidden`} 
+                                    disabled={!isNameValid}
+                                    className={`col-span-2 md:col-span-1 bg-amber-900/20 border-2 border-amber-800/40 p-4 md:p-6 rounded-[2rem] hover:border-amber-500/80 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 md:gap-2 relative overflow-hidden ${!isNameValid ? 'opacity-40 grayscale cursor-not-allowed' : ''}`} 
                                     onClick={handleOnlineClick}
                                 >
                                     {!isPro && <span className="absolute top-2 right-2 text-[8px] bg-amber-600 text-white px-1.5 py-0.5 rounded-full font-bold">PRO</span>}
@@ -800,7 +809,7 @@ const App: React.FC = () => {
                     </div>
                     <div className="w-full flex flex-col items-center gap-6 md:gap-10 mt-2">
                         <div className="flex gap-12 md:gap-16">
-                            <button onClick={() => { setGameMode(GameMode.TUTORIAL); initializeGame({name: fullPlayerName, color: selectedColor}, {name: 'Guide', color: '#999'}, true); }} className={`text-stone-500 hover:text-amber-500 flex flex-col items-center group transition-colors`}>
+                            <button onClick={() => { if(!isNameValid) return; setGameMode(GameMode.TUTORIAL); initializeGame({name: fullPlayerName, color: selectedColor}, {name: 'Guide', color: '#999'}, true); }} className={`text-stone-500 hover:text-amber-500 flex flex-col items-center group transition-colors ${!isNameValid ? 'opacity-40 grayscale cursor-not-allowed' : ''}`}>
                                 <span className="font-bold uppercase text-[10px] md:text-[11px] tracking-widest font-cinzel leading-none">{T.lobby.tutorial.en}</span>
                                 <span className="text-[11px] md:text-[13px] font-serif mt-1">{T.lobby.tutorial.bo}</span>
                             </button>
