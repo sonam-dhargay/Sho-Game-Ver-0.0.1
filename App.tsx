@@ -141,7 +141,7 @@ const App: React.FC = () => {
   const [gameMode, setGameMode] = useState<GameMode | null>(null);
   const [tutorialStep, setTutorialStep] = useState(0);
   
-  // Identity state
+  // Identity state - optional fallback to "Player"
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   
@@ -154,8 +154,11 @@ const App: React.FC = () => {
   const boardContainerRef = useRef<HTMLDivElement>(null);
 
   // Derived Full Name
-  const fullPlayerName = `${firstName} ${lastName}`.trim();
-  const isNameValid = fullPlayerName.length > 0;
+  const getSafePlayerName = () => {
+      const trimmed = `${firstName} ${lastName}`.trim();
+      return trimmed.length > 0 ? trimmed : 'Player';
+  };
+  const isNameEntered = firstName.trim().length > 0;
 
   // Authentication & Pro State
   const [isSplashVisible, setIsSplashVisible] = useState(true);
@@ -402,7 +405,7 @@ const App: React.FC = () => {
 
   const setupPeerEvents = (conn: DataConnection, isHost: boolean, asSpectator = false) => {
     if (!isHost) {
-      conn.send({ type: 'SYNC', payload: { playerName: fullPlayerName, color: selectedColor, isNinerMode, role: asSpectator ? 'spectator' : 'player' } });
+      conn.send({ type: 'SYNC', payload: { playerName: getSafePlayerName(), color: selectedColor, isNinerMode, role: asSpectator ? 'spectator' : 'player' } });
     }
     conn.on('data', (data: any) => {
       const packet = data as NetworkPacket;
@@ -413,7 +416,7 @@ const App: React.FC = () => {
                 conn.send({ 
                     type: 'FULL_SYNC', 
                     payload: { 
-                        hostInfo: { name: fullPlayerName, color: selectedColor }, 
+                        hostInfo: { name: getSafePlayerName(), color: selectedColor }, 
                         guestInfo: players[1], 
                         board: Array.from(gameStateRef.current.board.entries()),
                         turnIndex: gameStateRef.current.turnIndex,
@@ -425,7 +428,7 @@ const App: React.FC = () => {
             } else {
                 let guestColor = packet.payload.color;
                 if (guestColor === selectedColor) guestColor = COLOR_PALETTE.find(c => c.hex !== selectedColor)?.hex || '#3b82f6';
-                const guestInfo = { name: packet.payload.playerName, color: guestColor }, hostInfo = { name: fullPlayerName, color: selectedColor };
+                const guestInfo = { name: packet.payload.playerName, color: guestColor }, hostInfo = { name: getSafePlayerName(), color: selectedColor };
                 setGameMode(GameMode.ONLINE_HOST); setOnlineLobbyStatus('CONNECTED'); initializeGame(hostInfo, guestInfo);
                 broadcastPacket({ type: 'SYNC', payload: { hostInfo, guestInfo, isNinerMode } });
             }
@@ -636,7 +639,7 @@ const App: React.FC = () => {
                         <div className="h-px w-32 bg-amber-900/40 mb-3" />
                         <div className="flex flex-col gap-1 mb-6">
                             <p className="text-stone-400 tracking-[0.3em] uppercase text-xs md:text-sm font-bold">{T.lobby.subtitle.en}</p>
-                            <p className="text-stone-500 font-serif text-xl md:text-2xl">{T.lobby.subtitle.bo}</p>
+                            <p className="text-stone-500 font-serif text-2xl md:text-3xl">{T.lobby.subtitle.bo}</p>
                         </div>
                     </div>
                     <div className="w-full flex flex-col gap-4 mt-2 px-4">
@@ -674,7 +677,7 @@ const App: React.FC = () => {
                         <div className="flex items-center gap-4 sm:gap-6">
                             {isLoggedIn && (
                                 <div className="flex items-center gap-4">
-                                    <span className="text-amber-400 font-cinzel text-xs sm:text-sm tracking-widest">ཕེབས་པར་དགའ་བསུ་ཞུ། {fullPlayerName.toUpperCase()}</span>
+                                    <span className="text-amber-400 font-cinzel text-xs sm:text-sm tracking-widest">ཕེབས་པར་དགའ་བསུ་ཞུ། {getSafePlayerName().toUpperCase()}</span>
                                     <button onClick={handleLogout} className="bg-stone-900/80 border border-stone-700 px-4 py-2 rounded-full text-[10px] uppercase font-bold text-stone-400 hover:text-white hover:border-amber-600 transition-all">Logout</button>
                                 </div>
                             )}
@@ -689,7 +692,7 @@ const App: React.FC = () => {
                         <div className="h-px w-32 bg-amber-900/40 mb-2" />
                         <div className="flex flex-col items-center">
                             <p className="text-stone-400 tracking-[0.3em] uppercase text-[10px] md:text-xs text-center font-bold leading-none">{T.lobby.subtitle.en}</p>
-                            <p className="text-stone-500 font-serif text-lg md:text-xl mt-1">{T.lobby.subtitle.bo}</p>
+                            <p className="text-stone-500 font-serif text-2xl md:text-3xl mt-1 leading-tight text-center">{T.lobby.subtitle.bo}</p>
                         </div>
                     </div>
                     <div className="flex-grow flex flex-col items-center justify-center w-full max-w-md gap-4 md:gap-8 my-2 md:my-4">
@@ -706,7 +709,7 @@ const App: React.FC = () => {
                                     className={`w-full bg-black/40 border-b-2 ${firstName.trim() ? 'border-amber-600' : 'border-stone-800'} focus:border-amber-500 p-3 text-stone-100 outline-none text-center text-xl font-cinzel tracking-widest transition-all`} 
                                     maxLength={20} 
                                 />
-                                {!isNameValid && <p className="text-[10px] text-amber-700 font-serif mt-2 text-center">ཁྱེད་ཀྱི་མིང་འབྲི་རོགས། (Please enter your name)</p>}
+                                {!isNameEntered && <p className="text-[10px] text-amber-700/50 font-serif mt-2 text-center uppercase tracking-widest">Optional འདེམས་ཁ།</p>}
                             </div>
                             <div>
                                 <label className="text-stone-500 text-[10px] uppercase block mb-4 tracking-widest font-bold px-1 text-center">
@@ -722,26 +725,23 @@ const App: React.FC = () => {
                         {onlineLobbyStatus === 'IDLE' ? (
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 w-full px-2">
                                 <button 
-                                    disabled={!isNameValid}
-                                    className={`bg-stone-900/40 border-2 border-stone-800/80 p-4 md:p-6 rounded-[2rem] hover:border-amber-600/50 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 md:gap-2 ${!isNameValid ? 'opacity-40 grayscale cursor-not-allowed' : ''}`} 
-                                    onClick={() => { setGameMode(GameMode.LOCAL); initializeGame({name: fullPlayerName, color: selectedColor}, {name: 'Opponent', color: COLOR_PALETTE[1].hex}); }}
+                                    className={`bg-stone-900/40 border-2 border-stone-800/80 p-4 md:p-6 rounded-[2rem] hover:border-amber-600/50 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 md:gap-2`} 
+                                    onClick={() => { setGameMode(GameMode.LOCAL); initializeGame({name: getSafePlayerName(), color: selectedColor}, {name: 'Opponent', color: COLOR_PALETTE[1].hex}); }}
                                 >
                                     <span className="text-xl md:text-2xl">🏔️</span>
                                     <h3 className="text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest text-amber-100 leading-none">{T.lobby.modeLocal.en}</h3>
                                     <span className="text-[9px] text-stone-500 font-serif">{T.lobby.modeLocal.bo}</span>
                                 </button>
                                 <button 
-                                    disabled={!isNameValid}
-                                    className={`bg-stone-900/40 border-2 border-stone-800/80 p-4 md:p-6 rounded-[2rem] hover:border-amber-600/50 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 md:gap-2 ${!isNameValid ? 'opacity-40 grayscale cursor-not-allowed' : ''}`} 
-                                    onClick={() => { setGameMode(GameMode.AI); initializeGame({name: fullPlayerName, color: selectedColor}, {name: 'Sho Bot', color: '#999'}); }}
+                                    className={`bg-stone-900/40 border-2 border-stone-800/80 p-4 md:p-6 rounded-[2rem] hover:border-amber-600/50 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 md:gap-2`} 
+                                    onClick={() => { setGameMode(GameMode.AI); initializeGame({name: getSafePlayerName(), color: selectedColor}, {name: 'Sho Bot', color: '#999'}); }}
                                 >
                                     <span className="text-xl md:text-2xl">🤖</span>
                                     <h3 className="text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest text-amber-100 leading-none">VS AI</h3>
                                     <span className="text-[9px] text-stone-500 font-serif">{T.lobby.modeAI.bo}</span>
                                 </button>
                                 <button 
-                                    disabled={!isNameValid}
-                                    className={`col-span-2 md:col-span-1 bg-amber-900/20 border-2 border-amber-800/40 p-4 md:p-6 rounded-[2rem] hover:border-amber-500/80 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 md:gap-2 relative overflow-hidden ${!isNameValid ? 'opacity-40 grayscale cursor-not-allowed' : ''}`} 
+                                    className={`col-span-2 md:col-span-1 bg-amber-900/20 border-2 border-amber-800/40 p-4 md:p-6 rounded-[2rem] hover:border-amber-500/80 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 md:gap-2 relative overflow-hidden`} 
                                     onClick={handleOnlineClick}
                                 >
                                     {!isPro && <span className="absolute top-2 right-2 text-[8px] bg-amber-600 text-white px-1.5 py-0.5 rounded-full font-bold">PRO</span>}
@@ -809,7 +809,7 @@ const App: React.FC = () => {
                     </div>
                     <div className="w-full flex flex-col items-center gap-6 md:gap-10 mt-2">
                         <div className="flex gap-12 md:gap-16">
-                            <button onClick={() => { if(!isNameValid) return; setGameMode(GameMode.TUTORIAL); initializeGame({name: fullPlayerName, color: selectedColor}, {name: 'Guide', color: '#999'}, true); }} className={`text-stone-500 hover:text-amber-500 flex flex-col items-center group transition-colors ${!isNameValid ? 'opacity-40 grayscale cursor-not-allowed' : ''}`}>
+                            <button onClick={() => { setGameMode(GameMode.TUTORIAL); initializeGame({name: getSafePlayerName(), color: selectedColor}, {name: 'Guide', color: '#999'}, true); }} className={`text-stone-500 hover:text-amber-500 flex flex-col items-center group transition-colors`}>
                                 <span className="font-bold uppercase text-[10px] md:text-[11px] tracking-widest font-cinzel leading-none">{T.lobby.tutorial.en}</span>
                                 <span className="text-[11px] md:text-[13px] font-serif mt-1">{T.lobby.tutorial.bo}</span>
                             </button>
