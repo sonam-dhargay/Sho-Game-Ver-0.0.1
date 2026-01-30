@@ -24,6 +24,7 @@ const generatePlayers = (
 const triggerHaptic = (pattern: number | number[]) => {
   if (typeof navigator !== 'undefined' && navigator.vibrate) {
     try {
+      // Small vibrate call helps "prime" the browser's haptic engine on user gesture
       navigator.vibrate(pattern);
     } catch (e) {
       console.warn("Haptics blocked:", e);
@@ -233,8 +234,13 @@ const App: React.FC = () => {
     const s = gameStateRef.current; 
     if (s.phase !== GamePhase.ROLLING) return;
 
+    // Trigger immediate priming haptic on roll click to bypass browser restrictions
+    triggerHaptic(10);
     setIsRolling(true); SFX.playShake();
-    triggerHaptic([25, 800, 50]);
+    
+    // Patterned haptic for the shake feel
+    triggerHaptic([20, 30, 20]);
+    
     await new Promise(resolve => setTimeout(resolve, 800)); 
     let d1, d2;
     if (forcedRoll) { d1 = forcedRoll.die1; d2 = forcedRoll.die2; }
@@ -258,6 +264,7 @@ const App: React.FC = () => {
         SFX.playPaRa(); const newCount = s.paRaCount + 1;
         if (newCount === 3) { addLog(`TRIPLE PA RA! ${players[turnIndex].name} wins instantly!`, 'alert'); setPhase(GamePhase.GAME_OVER); return; }
         setPaRaCount(newCount); addLog(`PA RA (1,1)! Stacked bonuses: ${newCount}. Roll again.`, 'alert'); 
+        triggerHaptic([50, 50, 50]);
     } else { 
         const isOpening = players[s.turnIndex].coinsInHand === COINS_PER_PLAYER;
         if (s.paRaCount > 0 && isOpening) { setIsOpeningPaRa(true); addLog(`OPENING PA RA! You can place 3 coins!`, 'alert'); }
@@ -269,6 +276,10 @@ const App: React.FC = () => {
 
   const performMove = (sourceIdx: number, targetIdx: number, isRemote = false) => {
     const s = gameStateRef.current;
+    
+    // Prime haptic on move click
+    if (!isRemote) triggerHaptic(10);
+
     const currentMovesList = getAvailableMoves(s.turnIndex, s.board, s.players, s.pendingMoveValues, s.isNinerMode, s.isOpeningPaRa);
     let move = currentMovesList.find(m => m.sourceIndex === sourceIdx && m.targetIndex === targetIdx);
     
@@ -326,6 +337,7 @@ const App: React.FC = () => {
   };
 
   const toggleMic = async () => {
+    triggerHaptic(10);
     if (!isPro) { setIsProUpgradeOpen(true); return; }
     if (isMicActive) {
         if (localStreamRef.current) {
@@ -346,6 +358,7 @@ const App: React.FC = () => {
 
   const handleAuthSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    triggerHaptic(15);
     if (authMode === 'SIGNUP' && authForm.password !== authForm.confirmPassword) { alert("Passwords do not match!"); return; }
     setFirstName(authForm.firstName); 
     setLastName(authForm.lastName); 
@@ -356,19 +369,24 @@ const App: React.FC = () => {
     addLog(`Welcome back, ${authForm.firstName} ${authForm.lastName}!`, 'info');
   };
 
-  const handleLogout = () => { setIsLoggedIn(false); setFirstName(''); setLastName(''); setIsSplashVisible(true); setIsPro(false); addLog(`Logged out successfully.`, 'info'); };
+  const handleLogout = () => { triggerHaptic(15); setIsLoggedIn(false); setFirstName(''); setLastName(''); setIsSplashVisible(true); setIsPro(false); addLog(`Logged out successfully.`, 'info'); };
 
   const handleOnlineClick = () => {
+    triggerHaptic(15);
     if (!isLoggedIn) { setIsLoginGateOpen(true); return; }
     if (!isPro) { setIsProUpgradeOpen(true); return; }
     setOnlineLobbyStatus('WAITING');
   };
 
   const startOnlineHost = () => {
+    triggerHaptic(15);
     setOnlineLobbyStatus('WAITING');
     const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
     const newPeer = new Peer(roomCode, { config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } });
-    newPeer.on('open', (id) => setMyPeerId(id));
+    newPeer.on('open', (id) => {
+        setMyPeerId(id);
+        addLog(`Room created: ${id}`, 'info');
+    });
     newPeer.on('connection', (conn) => { 
         setActiveConnections(prev => [...prev, conn]);
         setupPeerEvents(conn, true); 
@@ -382,13 +400,22 @@ const App: React.FC = () => {
   };
 
   const joinOnlineGame = (roomId: string) => {
-    if (!roomId) return; setIsPeerConnecting(true); const newPeer = new Peer();
+    triggerHaptic(20);
+    if (!roomId) return; 
+    setIsPeerConnecting(true); 
+    const newPeer = new Peer();
     newPeer.on('open', (id) => {
       const conn = newPeer.connect(roomId.toUpperCase().trim(), { reliable: true });
       conn.on('open', () => { 
         setActiveConnections([conn]); 
         setIsPeerConnecting(false); 
-        setupPeerEvents(conn, false); 
+        // Immediately set state to connected on guest to prevent UI hang
+        setOnlineLobbyStatus('CONNECTED'); 
+        
+        // Wait a small delay before sending initial sync to ensure host listener is ready
+        setTimeout(() => {
+          setupPeerEvents(conn, false); 
+        }, 500);
       });
       conn.on('error', () => { addLog("Failed to connect to room.", 'alert'); setIsPeerConnecting(false); newPeer.destroy(); });
     });
@@ -482,6 +509,10 @@ const App: React.FC = () => {
   const handleFromHandClick = () => {
     if (phase !== GamePhase.MOVING || !isLocalTurn) return;
     const player = players[turnIndex];
+    
+    // Prime haptic
+    triggerHaptic(10);
+
     if (player.coinsInHand <= 0) { 
       SFX.playBlocked(); 
       triggerHaptic(100); 
@@ -518,12 +549,12 @@ const App: React.FC = () => {
         `}} />
 
         {phase === GamePhase.SETUP && gameMode !== null && <div className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center p-4 text-amber-500 font-cinzel">Initializing...</div>}
-        <RulesModal isOpen={showRules} onClose={() => setShowRules(false)} isNinerMode={isNinerMode} onToggleNinerMode={() => setIsNinerMode(prev => !prev)} />
+        <RulesModal isOpen={showRules} onClose={() => { triggerHaptic(10); setShowRules(false); }} isNinerMode={isNinerMode} onToggleNinerMode={() => { triggerHaptic(15); setIsNinerMode(prev => !prev); }} />
         
         {isAuthModalOpen && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
             <div className="bg-stone-900 border-2 border-amber-600/50 p-8 rounded-[3rem] w-full max-sm shadow-[0_0_50px_rgba(0,0,0,0.8)] relative">
-              <button onClick={() => setIsAuthModalOpen(false)} className="absolute top-6 right-6 text-stone-500 hover:text-white text-xl">×</button>
+              <button onClick={() => { triggerHaptic(10); setIsAuthModalOpen(false); }} className="absolute top-6 right-6 text-stone-500 hover:text-white text-xl">×</button>
               <h2 className="text-3xl font-cinzel text-amber-500 text-center mb-8 font-bold tracking-widest">{authMode === 'LOGIN' ? 'Login' : 'Sign Up'}</h2>
               <form onSubmit={handleAuthSubmit} className="flex flex-col gap-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -538,7 +569,7 @@ const App: React.FC = () => {
                 </button>
               </form>
               <div className="mt-6 text-center">
-                <button onClick={() => setAuthMode(authMode === 'LOGIN' ? 'SIGNUP' : 'LOGIN')} className="text-stone-500 hover:text-amber-500 text-xs font-bold uppercase tracking-widest transition-colors">
+                <button onClick={() => { triggerHaptic(10); setAuthMode(authMode === 'LOGIN' ? 'SIGNUP' : 'LOGIN'); }} className="text-stone-500 hover:text-amber-500 text-xs font-bold uppercase tracking-widest transition-colors">
                   {authMode === 'LOGIN' ? "Don't have an account? Sign Up" : "Already have an account? Login"}
                 </button>
               </div>
@@ -555,9 +586,9 @@ const App: React.FC = () => {
                 Online matches require an account so we can connect players and keep games fair.
               </p>
               <div className="flex flex-col gap-4 mb-8">
-                <button onClick={() => { setAuthMode('LOGIN'); setIsAuthModalOpen(true); setIsLoginGateOpen(false); }} className="w-full py-4 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-2xl uppercase tracking-[0.2em] transition-all shadow-lg shadow-amber-900/20 active:scale-95">Log In</button>
-                <button onClick={() => { setAuthMode('SIGNUP'); setIsAuthModalOpen(true); setIsLoginGateOpen(false); }} className="w-full py-4 bg-stone-800 border border-stone-700 hover:border-amber-600 text-stone-200 font-bold rounded-2xl uppercase tracking-[0.2em] transition-all active:scale-95">Create Account</button>
-                <button onClick={() => setIsLoginGateOpen(false)} className="mt-2 text-stone-500 hover:text-white uppercase text-[11px] tracking-widest font-bold transition-colors">Cancel</button>
+                <button onClick={() => { triggerHaptic(15); setAuthMode('LOGIN'); setIsAuthModalOpen(true); setIsLoginGateOpen(false); }} className="w-full py-4 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-2xl uppercase tracking-[0.2em] transition-all shadow-lg shadow-amber-900/20 active:scale-95">Log In</button>
+                <button onClick={() => { triggerHaptic(15); setAuthMode('SIGNUP'); setIsAuthModalOpen(true); setIsLoginGateOpen(false); }} className="w-full py-4 bg-stone-800 border border-stone-700 hover:border-amber-600 text-stone-200 font-bold rounded-2xl uppercase tracking-[0.2em] transition-all active:scale-95">Create Account</button>
+                <button onClick={() => { triggerHaptic(10); setIsLoginGateOpen(false); }} className="mt-2 text-stone-500 hover:text-white uppercase text-[11px] tracking-widest font-bold transition-colors">Cancel</button>
               </div>
               <div className="pt-6 border-t border-stone-800">
                 <p className="text-stone-600 text-[10px] uppercase tracking-wider font-bold">You can play Local or AI without signing in.</p>
@@ -577,6 +608,7 @@ const App: React.FC = () => {
                 <ul className="w-full space-y-4 mb-12">
                   {[
                     { icon: '🌐', text: 'Unlimited Online Multiplayer' },
+                    { icon: '🎙️', text: 'Live Voice Chat (Microphone)' },
                     { icon: '☁️', text: 'Cloud Progress Sync' },
                     { icon: '💎', text: 'Exclusive Gold Piece Skins' },
                     { icon: '✨', text: 'Ad-Free Experience' }
@@ -587,8 +619,8 @@ const App: React.FC = () => {
                     </li>
                   ))}
                 </ul>
-                <button onClick={() => { setIsPro(true); setIsProUpgradeOpen(false); setOnlineLobbyStatus('WAITING'); addLog("Upgraded to PRO! Welcome to the elite.", 'alert'); }} className="w-full py-5 bg-gradient-to-r from-amber-700 via-amber-500 to-amber-700 bg-[length:200%_auto] hover:bg-right transition-all duration-500 text-white font-bold rounded-2xl uppercase tracking-[0.3em] shadow-[0_0_25px_rgba(217,119,6,0.4)] animate-gold-pulse">Upgrade Now ($4.99)</button>
-                <button onClick={() => setIsProUpgradeOpen(false)} className="mt-8 text-stone-500 hover:text-white uppercase text-[10px] tracking-widest font-bold transition-colors">Not Now</button>
+                <button onClick={() => { triggerHaptic(25); setIsPro(true); setIsProUpgradeOpen(false); setOnlineLobbyStatus('WAITING'); addLog("Upgraded to PRO! Welcome to the elite.", 'alert'); }} className="w-full py-5 bg-gradient-to-r from-amber-700 via-amber-500 to-amber-700 bg-[length:200%_auto] hover:bg-right transition-all duration-500 text-white font-bold rounded-2xl uppercase tracking-[0.3em] shadow-[0_0_25px_rgba(217,119,6,0.4)] animate-gold-pulse">Upgrade Now ($4.99)</button>
+                <button onClick={() => { triggerHaptic(10); setIsProUpgradeOpen(false); }} className="mt-8 text-stone-500 hover:text-white uppercase text-[10px] tracking-widest font-bold transition-colors">Not Now</button>
               </div>
             </div>
           </div>
@@ -611,7 +643,7 @@ const App: React.FC = () => {
                           </div>
                       </div>
                       <div className="w-full flex flex-col gap-4 mt-2 px-4">
-                          <button onClick={() => setIsSplashVisible(false)} className="w-full py-4 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-2xl transition-all shadow-lg flex flex-col items-center justify-center">
+                          <button onClick={() => { triggerHaptic(15); setIsSplashVisible(false); }} className="w-full py-4 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-2xl transition-all shadow-lg flex flex-col items-center justify-center">
                               <span className="uppercase tracking-[0.1em] text-sm leading-tight">{T.lobby.guestContinue.en}</span>
                               <span className="font-serif text-sm leading-tight mt-0.5">{T.lobby.guestContinue.bo}</span>
                           </button>
@@ -624,11 +656,11 @@ const App: React.FC = () => {
                               <div className="flex-grow border-t border-stone-800"></div>
                           </div>
                           <div className="grid grid-cols-2 gap-4">
-                              <button onClick={() => { setAuthMode('LOGIN'); setIsAuthModalOpen(true); }} className="py-3 bg-stone-900 border border-stone-800 hover:border-amber-600 text-stone-300 font-bold rounded-2xl transition-all flex flex-col items-center justify-center">
+                              <button onClick={() => { triggerHaptic(10); setAuthMode('LOGIN'); setIsAuthModalOpen(true); }} className="py-3 bg-stone-900 border border-stone-800 hover:border-amber-600 text-stone-300 font-bold rounded-2xl transition-all flex flex-col items-center justify-center">
                                   <span className="uppercase tracking-[0.1em] text-[11px] leading-tight">{T.lobby.loginSplash.en}</span>
                                   <span className="font-serif text-[12px] leading-tight mt-0.5 text-stone-400">{T.lobby.loginSplash.bo}</span>
                               </button>
-                              <button onClick={() => { setAuthMode('SIGNUP'); setIsAuthModalOpen(true); }} className="py-3 bg-stone-900 border border-stone-800 hover:border-amber-600 text-stone-300 font-bold rounded-2xl transition-all flex flex-col items-center justify-center">
+                              <button onClick={() => { triggerHaptic(10); setAuthMode('SIGNUP'); setIsAuthModalOpen(true); }} className="py-3 bg-stone-900 border border-stone-800 hover:border-amber-600 text-stone-300 font-bold rounded-2xl transition-all flex flex-col items-center justify-center">
                                   <span className="uppercase tracking-[0.1em] text-[11px] leading-tight">{T.lobby.signupSplash.en}</span>
                                   <span className="font-serif text-[12px] leading-tight mt-0.5 text-stone-400">{T.lobby.signupSplash.bo}</span>
                               </button>
@@ -689,7 +721,7 @@ const App: React.FC = () => {
                                 </label>
                                 <div className="flex justify-between px-2 gap-2">
                                 {COLOR_PALETTE.map((c) => ( 
-                                    <button key={c.hex} onClick={() => setSelectedColor(c.hex)} className={`w-10 h-10 rounded-xl transition-all rotate-45 ${selectedColor === c.hex ? 'border-2 border-white scale-110 shadow-[0_0_25px_rgba(255,255,255,0.2)]' : 'opacity-40 hover:opacity-100'}`} style={{ backgroundColor: c.hex }} /> 
+                                    <button key={c.hex} onClick={() => { triggerHaptic(10); setSelectedColor(c.hex); }} className={`w-10 h-10 rounded-xl transition-all rotate-45 ${selectedColor === c.hex ? 'border-2 border-white scale-110 shadow-[0_0_25px_rgba(255,255,255,0.2)]' : 'opacity-40 hover:opacity-100'}`} style={{ backgroundColor: c.hex }} /> 
                                 ))}
                                 </div>
                             </div>
@@ -698,7 +730,7 @@ const App: React.FC = () => {
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 w-full px-2">
                                 <button 
                                     className={`bg-stone-900/40 border-2 border-stone-800/80 p-4 md:p-6 rounded-[2rem] hover:border-amber-600/50 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 md:gap-2`} 
-                                    onClick={() => { setGameMode(GameMode.LOCAL); initializeGame({name: getSafePlayerName(), color: selectedColor}, {name: 'Opponent', color: COLOR_PALETTE[1].hex}); }}
+                                    onClick={() => { triggerHaptic(20); setGameMode(GameMode.LOCAL); initializeGame({name: getSafePlayerName(), color: selectedColor}, {name: 'Opponent', color: COLOR_PALETTE[1].hex}); }}
                                 >
                                     <span className="text-xl md:text-2xl">🏔️</span>
                                     <h3 className="text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest text-amber-100 leading-none">{T.lobby.modeLocal.en}</h3>
@@ -706,7 +738,7 @@ const App: React.FC = () => {
                                 </button>
                                 <button 
                                     className={`bg-stone-900/40 border-2 border-stone-800/80 p-4 md:p-6 rounded-[2rem] hover:border-amber-600/50 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 md:gap-2`} 
-                                    onClick={() => { setGameMode(GameMode.AI); initializeGame({name: getSafePlayerName(), color: selectedColor}, {name: 'Sho Bot', color: '#999'}); }}
+                                    onClick={() => { triggerHaptic(20); setGameMode(GameMode.AI); initializeGame({name: getSafePlayerName(), color: selectedColor}, {name: 'Sho Bot', color: '#999'}); }}
                                 >
                                     <span className="text-xl md:text-2xl">🤖</span>
                                     <h3 className="text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest text-amber-100 leading-none">VS AI</h3>
@@ -742,7 +774,7 @@ const App: React.FC = () => {
                                                     <p className="text-[11px] text-stone-500 font-serif leading-tight">{T.lobby.hostInstruction.bo}</p>
                                                 </div>
                                             </div>
-                                            <button className="w-full py-4 bg-amber-600 text-white rounded-xl font-bold uppercase tracking-widest hover:bg-amber-500 transition-colors shadow-lg text-sm" onClick={() => { if(!myPeerId) startOnlineHost(); else navigator.clipboard.writeText(myPeerId); }}>
+                                            <button className="w-full py-4 bg-amber-600 text-white rounded-xl font-bold uppercase tracking-widest hover:bg-amber-500 transition-colors shadow-lg text-sm" onClick={() => { triggerHaptic(20); if(!myPeerId) startOnlineHost(); else navigator.clipboard.writeText(myPeerId); }}>
                                                 {myPeerId ? `ROOM CODE: ${myPeerId} 📋` : T.lobby.hostHeader.en}
                                             </button>
                                         </div>
@@ -770,7 +802,7 @@ const App: React.FC = () => {
                                             </div>
                                         </div>
                                     </div>
-                                    <button className="text-stone-500 hover:text-white uppercase text-[10px] tracking-widest font-bold mt-4" onClick={() => { if(peer) peer.destroy(); setOnlineLobbyStatus('IDLE'); }}>Cancel ཕྱིར་ལོག།</button>
+                                    <button className="text-stone-500 hover:text-white uppercase text-[10px] tracking-widest font-bold mt-4" onClick={() => { triggerHaptic(10); if(peer) peer.destroy(); setOnlineLobbyStatus('IDLE'); }}>Cancel ཕྱིར་ལོག།</button>
                                 </div>
                                 )}
                             </div>
@@ -778,11 +810,11 @@ const App: React.FC = () => {
                     </div>
                     <div className="w-full flex flex-col items-center gap-6 md:gap-10 mt-2">
                         <div className="flex gap-12 md:gap-16">
-                            <button onClick={() => { setGameMode(GameMode.TUTORIAL); initializeGame({name: getSafePlayerName(), color: selectedColor}, {name: 'Guide', color: '#999'}, true); }} className={`text-stone-500 hover:text-amber-500 flex flex-col items-center group transition-colors`}>
+                            <button onClick={() => { triggerHaptic(15); setGameMode(GameMode.TUTORIAL); initializeGame({name: getSafePlayerName(), color: selectedColor}, {name: 'Guide', color: '#999'}, true); }} className={`text-stone-500 hover:text-amber-500 flex flex-col items-center group transition-colors`}>
                                 <span className="font-bold uppercase text-[10px] md:text-[11px] tracking-widest font-cinzel leading-none">{T.lobby.tutorial.en}</span>
                                 <span className="text-[11px] md:text-[13px] font-serif mt-1">{T.lobby.tutorial.bo}</span>
                             </button>
-                            <button onClick={() => setShowRules(true)} className="text-stone-500 hover:text-amber-500 flex flex-col items-center group transition-colors">
+                            <button onClick={() => { triggerHaptic(15); setShowRules(true); }} className="text-stone-500 hover:text-amber-500 flex flex-col items-center group transition-colors">
                                 <span className="font-bold uppercase text-[10px] md:text-[11px] tracking-widest font-cinzel leading-none">{T.lobby.rules.en}</span>
                                 <span className="text-[11px] md:text-[13px] font-serif mt-1">{T.lobby.rules.bo}</span>
                             </button>
@@ -804,7 +836,7 @@ const App: React.FC = () => {
                 <div className="w-full md:w-1/4 flex flex-col border-b md:border-b-0 md:border-r border-stone-800 bg-stone-950 z-20 shadow-2xl h-[45dvh] md:h-full order-1 overflow-hidden flex-shrink-0 mobile-landscape-sidebar">
                     <div className="p-1.5 md:p-4 flex flex-col gap-0 md:gap-3 flex-shrink-0 bg-stone-950 mobile-landscape-compact-stats">
                         <header className="flex justify-between items-center border-b border-stone-800 pb-1 md:pb-4">
-                            <div className="flex items-center gap-2 cursor-pointer" onClick={() => { if (peer) peer.destroy(); setGameMode(null); setOnlineLobbyStatus('IDLE'); }}>
+                            <div className="flex items-center gap-2 cursor-pointer" onClick={() => { triggerHaptic(10); if (peer) peer.destroy(); setGameMode(null); setOnlineLobbyStatus('IDLE'); }}>
                                 <h1 className="text-amber-500 font-cinzel text-[10px] md:text-sm">Sho</h1>
                             </div>
                             <div className="flex items-center gap-2 md:gap-4">
@@ -819,7 +851,7 @@ const App: React.FC = () => {
                                         </span>
                                     </button>
                                 )}
-                                <button onClick={() => setShowRules(true)} className="w-5 h-5 md:w-8 md:h-8 rounded-full border border-stone-600 text-stone-400 flex items-center justify-center text-[10px] md:text-xs">?</button>
+                                <button onClick={() => { triggerHaptic(10); setShowRules(true); }} className="w-5 h-5 md:w-8 md:h-8 rounded-full border border-stone-600 text-stone-400 flex items-center justify-center text-[10px] md:text-xs">?</button>
                             </div>
                         </header>
                         <div className="grid grid-cols-2 gap-1 md:gap-2 mt-4 md:mt-8 relative px-1">
@@ -851,7 +883,7 @@ const App: React.FC = () => {
                             <div className="text-center p-2 bg-stone-800 rounded-xl border border-amber-500 animate-pulse">
                                 <h2 className="text-base text-amber-400 font-cinzel">{T.game.victory.en}</h2>
                                 <h3 className="text-lg text-amber-500 font-serif leading-none mb-2">{T.game.victory.bo}</h3>
-                                <button onClick={() => { if(peer) peer.destroy(); setGameMode(null); setOnlineLobbyStatus('IDLE'); }} className="bg-amber-600 text-white px-4 py-1.5 rounded-full font-bold uppercase text-[9px] transition-all hover:bg-amber-500">
+                                <button onClick={() => { triggerHaptic(20); if(peer) peer.destroy(); setGameMode(null); setOnlineLobbyStatus('IDLE'); }} className="bg-amber-600 text-white px-4 py-1.5 rounded-full font-bold uppercase text-[9px] transition-all hover:bg-amber-500">
                                     {T.common.back.en} <span className="font-serif ml-1">{T.common.back.bo}</span>
                                 </button>
                             </div> 
@@ -865,7 +897,7 @@ const App: React.FC = () => {
                                         <span className="text-[11px] text-stone-200 font-cinzel mt-1 font-bold">({players[turnIndex].coinsInHand})</span>
                                     </div>
                                     {currentValidMovesList.length === 0 && phase === GamePhase.MOVING && !isRolling && paRaCount === 0 && isLocalTurn && ( 
-                                        <button onClick={() => handleSkipTurn()} className="flex-1 bg-amber-800/50 hover:bg-amber-700 text-amber-200 border border-amber-600/50 p-1 rounded-xl font-bold flex flex-col items-center justify-center">
+                                        <button onClick={() => { triggerHaptic(10); handleSkipTurn(); }} className="flex-1 bg-amber-800/50 hover:bg-amber-700 text-amber-200 border border-amber-600/50 p-1 rounded-xl font-bold flex flex-col items-center justify-center">
                                             <span className="text-[9px] uppercase font-cinzel">{T.game.skipTurn.en}</span>
                                             <span className="text-[10px] text-amber-500 font-serif leading-none">{T.game.skipTurn.bo}</span>
                                         </button> 
