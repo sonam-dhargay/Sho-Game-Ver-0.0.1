@@ -592,9 +592,9 @@ const App: React.FC = () => {
           <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-in fade-in zoom-in duration-300">
             <div className="bg-stone-900 border-2 border-amber-600/30 p-8 rounded-[3rem] w-full max-w-sm shadow-[0_0_80px_rgba(0,0,0,0.9)] text-center relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent opacity-50"></div>
-              <h2 className="text-3xl font-cinzel text-amber-500 mb-6 font-bold tracking-widest">Play Online</h2>
+              <h2 className="text-3xl font-cinzel text-amber-500 mb-6 font-bold tracking-widest">Play Multi-Player</h2>
               <p className="text-stone-300 text-sm mb-10 font-serif leading-relaxed px-2">
-                Online matches require an account so we can connect players and keep games fair.
+                Multi-Player matches require an account so we can connect players and keep games fair.
               </p>
               <div className="flex flex-col gap-4 mb-8">
                 <button onClick={() => { triggerHaptic(15); setAuthMode('LOGIN'); setIsAuthModalOpen(true); setIsLoginGateOpen(false); }} className="w-full py-4 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-2xl uppercase tracking-[0.2em] transition-all shadow-lg shadow-amber-900/20 active:scale-95">Log In</button>
@@ -602,7 +602,7 @@ const App: React.FC = () => {
                 <button onClick={() => { triggerHaptic(10); setIsLoginGateOpen(false); }} className="mt-2 text-stone-500 hover:text-white uppercase text-[11px] tracking-widest font-bold transition-colors">Cancel</button>
               </div>
               <div className="pt-6 border-t border-stone-800">
-                <p className="text-stone-600 text-[10px] uppercase tracking-wider font-bold">You can play Local or AI without signing in.</p>
+                <p className="text-stone-600 text-[10px] uppercase tracking-wider font-bold">You can play Single-Player or AI without signing in.</p>
               </div>
             </div>
           </div>
@@ -618,7 +618,7 @@ const App: React.FC = () => {
                 <p className="text-stone-400 text-center mb-10 text-sm font-serif italic">Play Sho with voice, banter, and tradition.</p>
                 <ul className="w-full space-y-4 mb-12">
                   {[
-                    { icon: '🌐', text: 'Unlimited Online Multiplayer' },
+                    { icon: '🌐', text: 'Unlimited Multi-Player Matches' },
                     { icon: '🎙️', text: 'Live Voice Chat (Microphone)' },
                     { icon: '☁️', text: 'Cloud Progress Sync' },
                     { icon: '💎', text: 'Exclusive Gold Piece Skins' },
@@ -679,7 +679,7 @@ const App: React.FC = () => {
                       </div>
                    </div>
                    <p className="text-stone-600 text-[10px] uppercase tracking-wider font-bold mt-8 opacity-60 text-center animate-in fade-in slide-in-from-bottom duration-1000 delay-500">
-                     Login required for online multiplayer and syncing progress.
+                     Login required for multi-player and syncing progress.
                    </p>
                  </>
                ) : (
@@ -743,7 +743,7 @@ const App: React.FC = () => {
                                     className={`bg-stone-900/40 border-2 border-stone-800/80 p-4 md:p-6 rounded-[2rem] hover:border-amber-600/50 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 md:gap-2`} 
                                     onClick={() => { triggerHaptic(20); setGameMode(GameMode.LOCAL); initializeGame({name: getSafePlayerName(), color: selectedColor}, {name: 'Opponent', color: COLOR_PALETTE[1].hex}); }}
                                 >
-                                    <span className="text-xl md:text-2xl">🏔️</span>
+                                    <span className="text-xl md:text-2xl">👤</span>
                                     <h3 className="text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest text-amber-100 leading-none">{T.lobby.modeLocal.en}</h3>
                                     <span className="text-[9px] text-stone-500 font-serif">{T.lobby.modeLocal.bo}</span>
                                 </button>
@@ -752,7 +752,7 @@ const App: React.FC = () => {
                                     onClick={() => { triggerHaptic(20); setGameMode(GameMode.AI); initializeGame({name: getSafePlayerName(), color: selectedColor}, {name: 'Sho Bot', color: '#999'}); }}
                                 >
                                     <span className="text-xl md:text-2xl">🤖</span>
-                                    <h3 className="text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest text-amber-100 leading-none">VS AI</h3>
+                                    <h3 className="text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest text-amber-100 leading-none">Vs AI</h3>
                                     <span className="text-[9px] text-stone-500 font-serif">{T.lobby.modeAI.bo}</span>
                                 </button>
                                 <button 
@@ -761,7 +761,7 @@ const App: React.FC = () => {
                                 >
                                     {!isPro && <span className="absolute top-2 right-2 text-[8px] bg-amber-600 text-white px-1.5 py-0.5 rounded-full font-bold">PRO</span>}
                                     <span className="text-xl md:text-2xl">🌐</span>
-                                    <h3 className="text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest text-amber-100 leading-none">Online</h3>
+                                    <h3 className="text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest text-amber-100 leading-none">{T.lobby.modeMulti.en}</h3>
                                     <span className="text-[9px] text-stone-500 font-serif">དྲྭ་ཐོག།</span>
                                 </button>
                             </div>
