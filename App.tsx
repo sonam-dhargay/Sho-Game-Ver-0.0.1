@@ -461,12 +461,11 @@ const App: React.FC = () => {
     const prompt = `You are a Grandmaster Sho Bot (འཆམ་པོ་ཤོ་མཁན།).
 Objective: Move all 9 coins past the 64th shell to finish. Efficiency and aggression win games.
 
-Strategic Directives:
-1. FINISH (རྒྱལ་ཁ།): Top priority. Completing a coin's journey is always the best move.
-2. KILL (བསད་པ།): Landing on an opponent stack of equal or smaller size resets their progress. Killing a stack of 2+ coins is high value.
-3. STACK (བརྩེགས་པ།): Group your coins! Stacks move as a single unit, making your turns much more efficient and protecting your pieces. Build large stacks (moving as a unit) whenever possible.
-4. BLOCK (བཀག་པ།): Positions where you have a larger stack than the opponent block them. Position yourself ahead of their large stacks.
-5. SURVIVAL: Avoid landing small single coins in the "kill zone" (1-12 spaces) in front of large opponent stacks.
+Strategic Directives for Unit Efficiency:
+1. STACK & UNIT MOVEMENT: The core of Sho strategy is to build a large stack and move it as a single unit. Moving a stack of 3 coins forward 5 spaces is 3x more efficient than moving 1 coin. Always look for STACK opportunities to group your pieces.
+2. BLOCKING TACTICS: Position larger stacks (3+) strategically to block the opponent. They cannot land on a stack larger than theirs. A large stack is a mobile fortress.
+3. KILLING FOR MOMENTUM: Killing an opponent stack resets their progress and earns you a Bonus Roll. Prioritize kills, especially of their units/stacks.
+4. FINISH THE RACE: Once you have a large stack near the end (positions 50-64), prioritize FINISH moves to bank those coins.
 
 Board state: ${boardBrief.join(', ')}
 My status: ${s.players[s.turnIndex].coinsInHand} in hand, ${s.players[s.turnIndex].coinsFinished} finished.
@@ -476,7 +475,7 @@ Pending rolls: [${s.pendingMoveValues.join(', ')}]
 Available options:
 ${aiMoves.map((m, i) => `Option ${i}: from ${m.sourceIndex === 0 ? 'Hand' : m.sourceIndex} to ${m.targetIndex} (Type: ${m.type})`).join('\n')}
 
-Select the optimal index and provide a strategic taunt or commentary in English and Tibetan.
+Task: Select the optimal index (0 to ${aiMoves.length - 1}). Favor building/moving stacks for "unit efficiency".
 Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
 
     try {
@@ -521,20 +520,33 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
               setAiCommentary(`${geminiDecision.commentaryEn} (${geminiDecision.commentaryBo})`);
               setTimeout(() => setAiCommentary(null), 5000);
             } else {
-              // Fallback refined heuristic
+              // Refined fallback heuristic favoring stack growth and unit efficiency
               const scores = aiMoves.map(m => {
-                  let score = m.targetIndex * 5; // Preference for moving forward
-                  if (m.type === MoveResultType.FINISH) score += 10000;
+                  let score = m.targetIndex * 4; // Basic progress
+                  
+                  // Move size efficiency: moving a larger stack is better
+                  const moverStack = m.sourceIndex === 0 ? 1 : (s.board.get(m.sourceIndex)?.stackSize || 1);
+                  score += moverStack * 100;
+
+                  if (m.type === MoveResultType.FINISH) score += 15000 + (moverStack * 1000);
+                  
                   if (m.type === MoveResultType.KILL) {
                       const killed = s.board.get(m.targetIndex);
-                      score += 5000 + (killed?.stackSize || 0) * 500;
+                      score += 8000 + (killed?.stackSize || 0) * 800;
                   }
+                  
                   if (m.type === MoveResultType.STACK) {
                       const target = s.board.get(m.targetIndex);
-                      score += 2000 + (target?.stackSize || 0) * 300;
+                      // High reward for building larger stacks (unit efficiency)
+                      score += 5000 + (target?.stackSize || 0) * 1200;
                   }
-                  // Moving out of hand is good if we have few pieces on board
-                  if (m.sourceIndex === 0) score += 1000;
+                  
+                  // Discourage leaving single pieces in danger zones
+                  if (moverStack === 1 && m.targetIndex < 40) score -= 500;
+
+                  // High reward for moving out of hand to establish board presence
+                  if (m.sourceIndex === 0) score += 1200;
+                  
                   return { move: m, score };
               }).sort((a, b) => b.score - a.score);
               selectedIdx = aiMoves.indexOf(scores[0].move);
