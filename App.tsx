@@ -230,7 +230,6 @@ const App: React.FC = () => {
     }
   }, [players, turnIndex, addLog, gameMode, broadcastPacket]);
 
-  // Fix: Wrapped performRoll in useCallback for consistent reference in handleNetworkPacket
   const performRoll = useCallback(async (forcedRoll?: DiceRoll) => {
     const s = gameStateRef.current; 
     if (s.phase !== GamePhase.ROLLING) return;
@@ -266,9 +265,8 @@ const App: React.FC = () => {
         setPendingMoveValues(movePool); setPaRaCount(0); setPhase(GamePhase.MOVING); 
     }
     if (s.gameMode === GameMode.TUTORIAL && s.tutorialStep === 2) setTutorialStep(3);
-  }, [players, turnIndex, addLog, gameMode, broadcastPacket]);
+  }, [players, turnIndex, addLog, broadcastPacket]);
 
-  // Fix: Wrapped performMove in useCallback for consistent reference in handleNetworkPacket
   const performMove = useCallback((sourceIdx: number, targetIdx: number, isRemote = false) => {
     const s = gameStateRef.current;
     if (!isRemote) triggerHaptic(10);
@@ -325,7 +323,6 @@ const App: React.FC = () => {
     if (s.gameMode === GameMode.TUTORIAL && s.tutorialStep === 3) setTutorialStep(4);
   }, [players, addLog, broadcastPacket]);
 
-  // Fix: Implement missing handleNetworkPacket for peer data processing
   const handleNetworkPacket = useCallback((packet: NetworkPacket) => {
     switch (packet.type) {
       case 'ROLL_REQ':
@@ -346,7 +343,6 @@ const App: React.FC = () => {
     }
   }, [performRoll, performMove, handleSkipTurn]);
 
-  // Fix: Implement missing Auth handlers
   const handleAuthSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     triggerHaptic(15);
@@ -366,7 +362,6 @@ const App: React.FC = () => {
     addLog("Logged out successfully.", 'info');
   };
 
-  // Fix: Implement missing Lobby/Online handlers
   const handleOnlineClick = () => {
     triggerHaptic(15);
     if (!isLoggedIn) {
@@ -426,7 +421,6 @@ const App: React.FC = () => {
     });
   };
 
-  // Fix: Implement missing Tutorial handlers
   const handleTutorialNext = () => {
     setTutorialStep(prev => prev + 1);
     triggerHaptic(10);
@@ -437,7 +431,6 @@ const App: React.FC = () => {
     triggerHaptic(10);
   };
 
-  // Fix: Implement missing Mic handler
   const toggleMic = async () => {
     triggerHaptic(15);
     if (isMicActive) {
@@ -465,16 +458,26 @@ const App: React.FC = () => {
       .filter(([_, shell]) => shell.stackSize > 0)
       .map(([idx, shell]) => `Pos ${idx}: ${shell.stackSize} coins of ${shell.owner}`);
     
-    const prompt = `You are a Grandmaster Sho Bot.
-Board state: ${boardBrief.join(', ')}
-My hand: ${s.players[s.turnIndex].coinsInHand}, My finished: ${s.players[s.turnIndex].coinsFinished}
-Opponent hand: ${s.players[(s.turnIndex+1)%2].coinsInHand}, Opponent finished: ${s.players[(s.turnIndex+1)%2].coinsFinished}
-Movement Pool: [${s.pendingMoveValues.join(', ')}]
-Available moves: ${aiMoves.map((m, i) => `Option ${i}: from ${m.sourceIndex === 0 ? 'Hand' : m.sourceIndex} to ${m.targetIndex} (Type: ${m.type})`).join('; ')}
+    const prompt = `You are a Grandmaster Sho Bot (འཆམ་པོ་ཤོ་མཁན།).
+Objective: Move all 9 coins past the 64th shell to finish. Efficiency and aggression win games.
 
-Select the optimal Move Option index (0 to ${aiMoves.length-1}) and provide a very short, humorous trash-talk or strategic taunt in English and Tibetan.
-Heuristics to follow: 1. FINISH > 2. KILL > 3. STACK > 4. PROGRESS.
-Avoid landing where opponent can easily kill you.`;
+Strategic Directives:
+1. FINISH (རྒྱལ་ཁ།): Top priority. Completing a coin's journey is always the best move.
+2. KILL (བསད་པ།): Landing on an opponent stack of equal or smaller size resets their progress. Killing a stack of 2+ coins is high value.
+3. STACK (བརྩེགས་པ།): Group your coins! Stacks move as a single unit, making your turns much more efficient and protecting your pieces. Build large stacks (moving as a unit) whenever possible.
+4. BLOCK (བཀག་པ།): Positions where you have a larger stack than the opponent block them. Position yourself ahead of their large stacks.
+5. SURVIVAL: Avoid landing small single coins in the "kill zone" (1-12 spaces) in front of large opponent stacks.
+
+Board state: ${boardBrief.join(', ')}
+My status: ${s.players[s.turnIndex].coinsInHand} in hand, ${s.players[s.turnIndex].coinsFinished} finished.
+Opponent status: ${s.players[(s.turnIndex+1)%2].coinsInHand} in hand, ${s.players[(s.turnIndex+1)%2].coinsFinished} finished.
+Pending rolls: [${s.pendingMoveValues.join(', ')}]
+
+Available options:
+${aiMoves.map((m, i) => `Option ${i}: from ${m.sourceIndex === 0 ? 'Hand' : m.sourceIndex} to ${m.targetIndex} (Type: ${m.type})`).join('\n')}
+
+Select the optimal index and provide a strategic taunt or commentary in English and Tibetan.
+Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
 
     try {
       const response = await aiClient.models.generateContent({
@@ -493,11 +496,9 @@ Avoid landing where opponent can easily kill you.`;
           }
         }
       });
-      
-      const result = JSON.parse(response.text);
-      return result;
+      return JSON.parse(response.text);
     } catch (err) {
-      console.error("Gemini Error:", err);
+      console.error("Gemini AI Error:", err);
       return null;
     }
   };
@@ -514,25 +515,34 @@ Avoid landing where opponent can easily kill you.`;
             const geminiDecision = await getGeminiStrategy(aiMoves);
             setIsAiThinking(false);
             
-            let selectedIdx = 0;
+            let selectedIdx = -1;
             if (geminiDecision && geminiDecision.moveIndex >= 0 && geminiDecision.moveIndex < aiMoves.length) {
               selectedIdx = geminiDecision.moveIndex;
               setAiCommentary(`${geminiDecision.commentaryEn} (${geminiDecision.commentaryBo})`);
               setTimeout(() => setAiCommentary(null), 5000);
             } else {
+              // Fallback refined heuristic
               const scores = aiMoves.map(m => {
-                  let score = m.targetIndex * 10;
-                  if (m.type === MoveResultType.FINISH) score += 5000;
-                  if (m.type === MoveResultType.KILL) score += 3000;
-                  if (m.type === MoveResultType.STACK) score += 500;
+                  let score = m.targetIndex * 5; // Preference for moving forward
+                  if (m.type === MoveResultType.FINISH) score += 10000;
+                  if (m.type === MoveResultType.KILL) {
+                      const killed = s.board.get(m.targetIndex);
+                      score += 5000 + (killed?.stackSize || 0) * 500;
+                  }
+                  if (m.type === MoveResultType.STACK) {
+                      const target = s.board.get(m.targetIndex);
+                      score += 2000 + (target?.stackSize || 0) * 300;
+                  }
+                  // Moving out of hand is good if we have few pieces on board
+                  if (m.sourceIndex === 0) score += 1000;
                   return { move: m, score };
               }).sort((a, b) => b.score - a.score);
               selectedIdx = aiMoves.indexOf(scores[0].move);
             }
-            performMove(aiMoves[selectedIdx].sourceIndex, aiMoves[selectedIdx].targetIndex);
+            if (selectedIdx !== -1) performMove(aiMoves[selectedIdx].sourceIndex, aiMoves[selectedIdx].targetIndex);
           } else handleSkipTurn();
         }
-      }, 1200);
+      }, 1000);
       return () => clearTimeout(timer);
     }
   }, [turnIndex, phase, gameMode, isRolling, paRaCount, extraRolls, board, pendingMoveValues, isNinerMode, players, handleSkipTurn, isOpeningPaRa, isAiThinking, performRoll, performMove]);
