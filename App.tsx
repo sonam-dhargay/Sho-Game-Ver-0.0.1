@@ -566,22 +566,44 @@ const App: React.FC = () => {
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
             <div className="bg-stone-900 border-2 border-amber-600/50 p-8 rounded-[3rem] w-full max-sm shadow-[0_0_50px_rgba(0,0,0,0.8)] relative">
               <button onClick={() => { triggerHaptic(10); setIsAuthModalOpen(false); }} className="absolute top-6 right-6 text-stone-500 hover:text-white text-xl">×</button>
-              <h2 className="text-3xl font-cinzel text-amber-500 text-center mb-8 font-bold tracking-widest">{authMode === 'LOGIN' ? 'Login' : 'Sign Up'}</h2>
+              <h2 className="text-3xl font-cinzel text-amber-500 text-center mb-8 font-bold tracking-widest">
+                {authMode === 'LOGIN' ? T.auth.loginBtn.en : T.auth.signupBtn.en}
+                <div className="text-lg font-serif mt-1">{authMode === 'LOGIN' ? T.auth.loginBtn.bo : T.auth.signupBtn.bo}</div>
+              </h2>
               <form onSubmit={handleAuthSubmit} className="flex flex-col gap-4">
                 <div className="grid grid-cols-2 gap-4">
-                    <input required type="text" value={authForm.firstName} onChange={(e) => setAuthForm({ ...authForm, firstName: e.target.value })} className="bg-black/40 border border-stone-800 p-4 rounded-xl text-stone-100 outline-none focus:border-amber-600 transition-colors" placeholder="First Name" />
-                    <input required type="text" value={authForm.lastName} onChange={(e) => setAuthForm({ ...authForm, lastName: e.target.value })} className="bg-black/40 border border-stone-800 p-4 rounded-xl text-stone-100 outline-none focus:border-amber-600 transition-colors" placeholder="Last Name" />
+                    <div className="flex flex-col gap-1">
+                      <input required type="text" value={authForm.firstName} onChange={(e) => setAuthForm({ ...authForm, firstName: e.target.value })} className="bg-black/40 border border-stone-800 p-4 rounded-xl text-stone-100 outline-none focus:border-amber-600 transition-colors text-sm" placeholder={T.auth.firstName.en} />
+                      <span className="text-[9px] text-stone-600 font-serif ml-2">{T.auth.firstName.bo}</span>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <input required type="text" value={authForm.lastName} onChange={(e) => setAuthForm({ ...authForm, lastName: e.target.value })} className="bg-black/40 border border-stone-800 p-4 rounded-xl text-stone-100 outline-none focus:border-amber-600 transition-colors text-sm" placeholder={T.auth.lastName.en} />
+                      <span className="text-[9px] text-stone-600 font-serif ml-2">{T.auth.lastName.bo}</span>
+                    </div>
                 </div>
-                <input required type="email" value={authForm.email} onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })} className="bg-black/40 border border-stone-800 p-4 rounded-xl text-stone-100 outline-none focus:border-amber-600 transition-colors" placeholder="Email" />
-                <input required type="password" value={authForm.password} onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })} className="bg-black/40 border border-stone-800 p-4 rounded-xl text-stone-100 outline-none focus:border-amber-600 transition-colors" placeholder="Password" />
-                {authMode === 'SIGNUP' && <input required type="password" value={authForm.confirmPassword} onChange={(e) => setAuthForm({ ...authForm, confirmPassword: e.target.value })} className="bg-black/40 border border-stone-800 p-4 rounded-xl text-stone-100 outline-none focus:border-amber-600 transition-colors" placeholder="Confirm Password" />}
-                <button type="submit" className="mt-4 w-full py-4 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl uppercase tracking-widest transition-all shadow-lg active:scale-95">
-                  {authMode === 'LOGIN' ? 'Enter Game' : 'Register'}
+                <div className="flex flex-col gap-1">
+                  <input required type="email" value={authForm.email} onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })} className="bg-black/40 border border-stone-800 p-4 rounded-xl text-stone-100 outline-none focus:border-amber-600 transition-colors text-sm" placeholder={T.auth.email.en} />
+                  <span className="text-[9px] text-stone-600 font-serif ml-2">{T.auth.email.bo}</span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <input required type="password" value={authForm.password} onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })} className="bg-black/40 border border-stone-800 p-4 rounded-xl text-stone-100 outline-none focus:border-amber-600 transition-colors text-sm" placeholder={T.auth.password.en} />
+                  <span className="text-[9px] text-stone-600 font-serif ml-2">{T.auth.password.bo}</span>
+                </div>
+                {authMode === 'SIGNUP' && (
+                  <div className="flex flex-col gap-1">
+                    <input required type="password" value={authForm.confirmPassword} onChange={(e) => setAuthForm({ ...authForm, confirmPassword: e.target.value })} className="bg-black/40 border border-stone-800 p-4 rounded-xl text-stone-100 outline-none focus:border-amber-600 transition-colors text-sm" placeholder={T.auth.confirmPassword.en} />
+                    <span className="text-[9px] text-stone-600 font-serif ml-2">{T.auth.confirmPassword.bo}</span>
+                  </div>
+                )}
+                <button type="submit" className="mt-4 w-full py-4 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl transition-all shadow-lg active:scale-95 flex flex-col items-center">
+                  <span className="uppercase tracking-widest">{authMode === 'LOGIN' ? T.auth.enterGame.en : T.auth.register.en}</span>
+                  <span className="font-serif text-sm mt-0.5">{authMode === 'LOGIN' ? T.auth.enterGame.bo : T.auth.register.bo}</span>
                 </button>
               </form>
               <div className="mt-6 text-center">
-                <button onClick={() => { triggerHaptic(10); setAuthMode(authMode === 'LOGIN' ? 'SIGNUP' : 'LOGIN'); }} className="text-stone-500 hover:text-amber-500 text-xs font-bold uppercase tracking-widest transition-colors">
-                  {authMode === 'LOGIN' ? "Don't have an account? Sign Up" : "Already have an account? Login"}
+                <button onClick={() => { triggerHaptic(10); setAuthMode(authMode === 'LOGIN' ? 'SIGNUP' : 'LOGIN'); }} className="text-stone-500 hover:text-amber-500 text-xs font-bold uppercase tracking-widest transition-colors flex flex-col items-center w-full gap-1">
+                  <span>{authMode === 'LOGIN' ? T.auth.noAccount.en : T.auth.hasAccount.en}</span>
+                  <span className="font-serif normal-case opacity-70">{authMode === 'LOGIN' ? T.auth.noAccount.bo : T.auth.hasAccount.bo}</span>
                 </button>
               </div>
             </div>
@@ -592,17 +614,30 @@ const App: React.FC = () => {
           <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-in fade-in zoom-in duration-300">
             <div className="bg-stone-900 border-2 border-amber-600/30 p-8 rounded-[3rem] w-full max-w-sm shadow-[0_0_80px_rgba(0,0,0,0.9)] text-center relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent opacity-50"></div>
-              <h2 className="text-3xl font-cinzel text-amber-500 mb-6 font-bold tracking-widest">Play Multi-Player</h2>
-              <p className="text-stone-300 text-sm mb-10 font-serif leading-relaxed px-2">
-                Multi-Player matches require an account so we can connect players and keep games fair.
-              </p>
+              <h2 className="text-3xl font-cinzel text-amber-500 mb-2 font-bold tracking-widest">{T.auth.gateTitle.en}</h2>
+              <div className="text-lg font-serif text-amber-600 mb-6">{T.auth.gateTitle.bo}</div>
+              
+              <div className="flex flex-col gap-2 mb-10">
+                <p className="text-stone-300 text-sm font-serif leading-relaxed px-2">{T.auth.gateDesc.en}</p>
+                <p className="text-stone-500 text-[13px] font-serif leading-relaxed px-2">{T.auth.gateDesc.bo}</p>
+              </div>
+
               <div className="flex flex-col gap-4 mb-8">
-                <button onClick={() => { triggerHaptic(15); setAuthMode('LOGIN'); setIsAuthModalOpen(true); setIsLoginGateOpen(false); }} className="w-full py-4 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-2xl uppercase tracking-[0.2em] transition-all shadow-lg shadow-amber-900/20 active:scale-95">Log In</button>
-                <button onClick={() => { triggerHaptic(15); setAuthMode('SIGNUP'); setIsAuthModalOpen(true); setIsLoginGateOpen(false); }} className="w-full py-4 bg-stone-800 border border-stone-700 hover:border-amber-600 text-stone-200 font-bold rounded-2xl uppercase tracking-[0.2em] transition-all active:scale-95">Create Account</button>
-                <button onClick={() => { triggerHaptic(10); setIsLoginGateOpen(false); }} className="mt-2 text-stone-500 hover:text-white uppercase text-[11px] tracking-widest font-bold transition-colors">Cancel</button>
+                <button onClick={() => { triggerHaptic(15); setAuthMode('LOGIN'); setIsAuthModalOpen(true); setIsLoginGateOpen(false); }} className="w-full py-4 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-2xl transition-all shadow-lg shadow-amber-900/20 active:scale-95 flex flex-col items-center">
+                  <span className="uppercase tracking-[0.2em]">{T.auth.loginBtn.en}</span>
+                  <span className="font-serif text-sm mt-0.5">{T.auth.loginBtn.bo}</span>
+                </button>
+                <button onClick={() => { triggerHaptic(15); setAuthMode('SIGNUP'); setIsAuthModalOpen(true); setIsLoginGateOpen(false); }} className="w-full py-4 bg-stone-800 border border-stone-700 hover:border-amber-600 text-stone-200 font-bold rounded-2xl transition-all active:scale-95 flex flex-col items-center">
+                  <span className="uppercase tracking-[0.2em]">{T.auth.signupBtn.en}</span>
+                  <span className="font-serif text-sm mt-0.5">{T.auth.signupBtn.bo}</span>
+                </button>
+                <button onClick={() => { triggerHaptic(10); setIsLoginGateOpen(false); }} className="mt-2 text-stone-500 hover:text-white uppercase text-[11px] tracking-widest font-bold transition-colors">
+                  {T.common.cancel.en} <span className="font-serif ml-1">{T.common.cancel.bo}</span>
+                </button>
               </div>
               <div className="pt-6 border-t border-stone-800">
-                <p className="text-stone-600 text-[10px] uppercase tracking-wider font-bold">You can play Single-Player or AI without signing in.</p>
+                <p className="text-stone-600 text-[10px] uppercase tracking-wider font-bold">{T.auth.gateHint.en}</p>
+                <p className="text-stone-700 text-[11px] font-serif mt-1">{T.auth.gateHint.bo}</p>
               </div>
             </div>
           </div>
@@ -613,25 +648,37 @@ const App: React.FC = () => {
             <div className="bg-stone-900 border-2 border-amber-600 p-1 rounded-[3.5rem] w-full max-w-md shadow-[0_0_80px_rgba(217,119,6,0.3)]">
               <div className="bg-stone-950/80 p-8 md:p-12 rounded-[3.2rem] h-full flex flex-col items-center">
                 <div className="w-20 h-20 bg-amber-600 rounded-full flex items-center justify-center text-4xl mb-6 shadow-[0_0_30px_rgba(217,119,6,0.5)] animate-pulse">⭐</div>
-                <h2 className="text-4xl font-cinzel text-white mb-2 font-bold tracking-[0.2em]">PRO ACCESS</h2>
+                <h2 className="text-4xl font-cinzel text-white mb-1 font-bold tracking-[0.2em]">{T.pro.title.en}</h2>
+                <div className="text-lg font-serif text-amber-500 mb-2">{T.pro.title.bo}</div>
                 <div className="h-0.5 w-16 bg-amber-600 mb-6" />
-                <p className="text-stone-400 text-center mb-10 text-sm font-serif italic">Play Sho with voice, banter, and tradition.</p>
+                <div className="flex flex-col gap-1 text-center mb-10">
+                  <p className="text-stone-400 text-sm font-serif italic">{T.pro.desc.en}</p>
+                  <p className="text-stone-600 text-xs font-serif">{T.pro.desc.bo}</p>
+                </div>
                 <ul className="w-full space-y-4 mb-12">
                   {[
-                    { icon: '🌐', text: 'Unlimited Multi-Player Matches' },
-                    { icon: '🎙️', text: 'Live Voice Chat (Microphone)' },
-                    { icon: '☁️', text: 'Cloud Progress Sync' },
-                    { icon: '💎', text: 'Exclusive Gold Piece Skins' },
-                    { icon: '✨', text: 'Ad-Free Experience' }
+                    { icon: '🌐', key: 'feat1' },
+                    { icon: '🎙️', key: 'feat2' },
+                    { icon: '☁️', key: 'feat3' },
+                    { icon: '💎', key: 'feat4' },
+                    { icon: '✨', key: 'feat5' }
                   ].map((feat, idx) => (
-                    <li key={idx} className="flex items-center gap-4 text-stone-200 font-bold tracking-widest text-[11px] uppercase">
+                    <li key={idx} className="flex items-center gap-4 text-stone-200 font-bold">
                       <span className="w-8 h-8 rounded-lg bg-stone-800 flex items-center justify-center flex-shrink-0">{feat.icon}</span>
-                      {feat.text}
+                      <div className="flex flex-col">
+                        <span className="uppercase tracking-widest text-[10px]">{T.pro[feat.key].en}</span>
+                        <span className="text-[11px] font-serif text-stone-500 leading-tight">{T.pro[feat.key].bo}</span>
+                      </div>
                     </li>
                   ))}
                 </ul>
-                <button onClick={() => { triggerHaptic(25); setIsPro(true); setIsProUpgradeOpen(false); setOnlineLobbyStatus('WAITING'); addLog("Upgraded to PRO! Welcome to the elite.", 'alert'); }} className="w-full py-5 bg-gradient-to-r from-amber-700 via-amber-500 to-amber-700 bg-[length:200%_auto] hover:bg-right transition-all duration-500 text-white font-bold rounded-2xl uppercase tracking-[0.3em] shadow-[0_0_25px_rgba(217,119,6,0.4)] animate-gold-pulse">Upgrade Now ($4.99)</button>
-                <button onClick={() => { triggerHaptic(10); setIsProUpgradeOpen(false); }} className="mt-8 text-stone-500 hover:text-white uppercase text-[10px] tracking-widest font-bold transition-colors">Not Now</button>
+                <button onClick={() => { triggerHaptic(25); setIsPro(true); setIsProUpgradeOpen(false); setOnlineLobbyStatus('WAITING'); addLog("Upgraded to PRO! Welcome to the elite.", 'alert'); }} className="w-full py-5 bg-gradient-to-r from-amber-700 via-amber-500 to-amber-700 bg-[length:200%_auto] hover:bg-right transition-all duration-500 text-white font-bold rounded-2xl shadow-[0_0_25px_rgba(217,119,6,0.4)] animate-gold-pulse flex flex-col items-center">
+                  <span className="uppercase tracking-[0.3em]">{T.pro.upgrade.en}</span>
+                  <span className="font-serif text-sm mt-0.5">{T.pro.upgrade.bo}</span>
+                </button>
+                <button onClick={() => { triggerHaptic(10); setIsProUpgradeOpen(false); }} className="mt-8 text-stone-500 hover:text-white uppercase text-[10px] tracking-widest font-bold transition-colors">
+                  {T.pro.notNow.en} <span className="font-serif ml-1">{T.pro.notNow.bo}</span>
+                </button>
               </div>
             </div>
           </div>
@@ -676,11 +723,11 @@ const App: React.FC = () => {
                                   <span className="font-serif text-[12px] leading-tight mt-0.5 text-stone-400">{T.lobby.signupSplash.bo}</span>
                               </button>
                           </div>
+                          <p className="text-stone-600 text-[10px] uppercase tracking-wider font-bold mt-2 opacity-60 text-center animate-in fade-in duration-1000 delay-500">
+                            Login required for multi-player and syncing progress.
+                          </p>
                       </div>
                    </div>
-                   <p className="text-stone-600 text-[10px] uppercase tracking-wider font-bold mt-8 opacity-60 text-center animate-in fade-in slide-in-from-bottom duration-1000 delay-500">
-                     Login required for multi-player and syncing progress.
-                   </p>
                  </>
                ) : (
                  <>
@@ -738,31 +785,29 @@ const App: React.FC = () => {
                             </div>
                         </div>
                         {onlineLobbyStatus === 'IDLE' ? (
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 w-full px-2">
-                                <button 
-                                    className={`bg-stone-900/40 border-2 border-stone-800/80 p-4 md:p-6 rounded-[2rem] hover:border-amber-600/50 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 md:gap-2`} 
-                                    onClick={() => { triggerHaptic(20); setGameMode(GameMode.LOCAL); initializeGame({name: getSafePlayerName(), color: selectedColor}, {name: 'Opponent', color: COLOR_PALETTE[1].hex}); }}
-                                >
-                                    <span className="text-xl md:text-2xl">👤</span>
-                                    <h3 className="text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest text-amber-100 leading-none">{T.lobby.modeLocal.en}</h3>
-                                    <span className="text-[9px] text-stone-500 font-serif">{T.lobby.modeLocal.bo}</span>
-                                </button>
+                            <div className="grid grid-cols-2 gap-3 md:gap-6 w-full px-2">
                                 <button 
                                     className={`bg-stone-900/40 border-2 border-stone-800/80 p-4 md:p-6 rounded-[2rem] hover:border-amber-600/50 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 md:gap-2`} 
                                     onClick={() => { triggerHaptic(20); setGameMode(GameMode.AI); initializeGame({name: getSafePlayerName(), color: selectedColor}, {name: 'Sho Bot', color: '#999'}); }}
                                 >
-                                    <span className="text-xl md:text-2xl">🤖</span>
-                                    <h3 className="text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest text-amber-100 leading-none">Vs AI</h3>
-                                    <span className="text-[9px] text-stone-500 font-serif">{T.lobby.modeAI.bo}</span>
+                                    <span className="text-xl md:text-2xl">👤</span>
+                                    <h3 className="text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest text-amber-100 leading-none">{T.lobby.modeLocal.en}</h3>
+                                    <div className="flex flex-col items-center gap-0.5">
+                                      <span className="text-[10px] text-stone-400 font-bold uppercase tracking-widest leading-none">{T.lobby.modeLocalSub.en}</span>
+                                      <span className="text-[9px] text-stone-500 font-serif">{T.lobby.modeLocalSub.bo}</span>
+                                    </div>
                                 </button>
                                 <button 
-                                    className={`col-span-2 md:col-span-1 bg-amber-900/20 border-2 border-amber-800/40 p-4 md:p-6 rounded-[2rem] hover:border-amber-500/80 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 md:gap-2 relative overflow-hidden`} 
+                                    className={`bg-amber-900/20 border-2 border-amber-800/40 p-4 md:p-6 rounded-[2rem] hover:border-amber-500/80 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 md:gap-2 relative overflow-hidden`} 
                                     onClick={handleOnlineClick}
                                 >
                                     {!isPro && <span className="absolute top-2 right-2 text-[8px] bg-amber-600 text-white px-1.5 py-0.5 rounded-full font-bold">PRO</span>}
                                     <span className="text-xl md:text-2xl">🌐</span>
                                     <h3 className="text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest text-amber-100 leading-none">{T.lobby.modeMulti.en}</h3>
-                                    <span className="text-[9px] text-stone-500 font-serif">དྲྭ་ཐོག།</span>
+                                    <div className="flex flex-col items-center gap-0.5">
+                                      <span className="text-[10px] text-stone-400 font-bold uppercase tracking-widest leading-none text-center px-1">{T.lobby.modeMultiSub.en}</span>
+                                      <span className="text-[9px] text-stone-500 font-serif">{T.lobby.modeMultiSub.bo}</span>
+                                    </div>
                                 </button>
                             </div>
                         ) : (

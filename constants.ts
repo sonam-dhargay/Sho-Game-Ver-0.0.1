@@ -32,7 +32,6 @@ export const COLOR_PALETTE = [
   { id: 'sapphire', name: 'Sapphire', hex: '#3b82f6' }, // Blue-500
   { id: 'emerald', name: 'Emerald', hex: '#22c55e' },   // Green-500
   { id: 'gold', name: 'Gold', hex: '#eab308' },      // Yellow-500
-  { id: 'amethyst', name: 'Amethyst', hex: '#a855f7' }, // Purple-500
 ];
 
 export const AVATAR_PRESETS = ["🐲", "🐯", "🦁", "🦅", "☸️"];
