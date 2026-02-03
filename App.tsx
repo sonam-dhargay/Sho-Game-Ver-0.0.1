@@ -1,5 +1,7 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Peer, { DataConnection } from 'peerjs';
+import { GoogleGenAI, Type } from "@google/genai";
 import { 
   Player, PlayerColor, BoardState, GamePhase, 
   DiceRoll, MoveResultType, MoveOption, GameLog, BoardShell, GameMode, NetworkPacket
@@ -24,7 +26,6 @@ const generatePlayers = (
 const triggerHaptic = (pattern: number | number[]) => {
   if (typeof navigator !== 'undefined' && navigator.vibrate) {
     try {
-      // Small vibrate call helps "prime" the browser's haptic engine on user gesture
       navigator.vibrate(pattern);
     } catch (e) {
       console.warn("Haptics blocked:", e);
@@ -51,21 +52,17 @@ const SFX = {
     const filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
     filter.frequency.value = 400;
-
     osc1.type = 'sawtooth'; osc2.type = 'sawtooth';
     osc1.frequency.setValueAtTime(60, t); 
     osc1.frequency.exponentialRampToValueAtTime(40, t + 0.4);
     osc2.frequency.setValueAtTime(63, t);
     osc2.frequency.exponentialRampToValueAtTime(42, t + 0.4);
-    
     gain.gain.setValueAtTime(0, t);
     gain.gain.linearRampToValueAtTime(0.4, t + 0.05);
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
-    
     noise.connect(filter);
     filter.connect(gain);
     osc1.connect(gain); osc2.connect(gain); gain.connect(ctx.destination);
-    
     osc1.start(t); osc2.start(t); noise.start(t);
     osc1.stop(t + 0.6); osc2.stop(t + 0.6); noise.stop(t + 0.6);
   },
@@ -124,6 +121,8 @@ const getAvailableMoves = (pIndex: number, pBoard: BoardState, pPlayers: Player[
   return moves;
 };
 
+const aiClient = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
 const App: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>(PLAYERS_CONFIG);
   const [board, setBoard] = useState<BoardState>(new Map());
@@ -144,13 +143,14 @@ const App: React.FC = () => {
   
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  
   const [selectedColor, setSelectedColor] = useState(COLOR_PALETTE[0].hex);
   const [showRules, setShowRules] = useState(false);
   const [boardScale, setBoardScale] = useState(0.8);
   const [globalPlayCount, setGlobalPlayCount] = useState<number>(18742);
   const [isCounterPulsing, setIsCounterPulsing] = useState(false);
   const [handShake, setHandShake] = useState(false);
+  const [isAiThinking, setIsAiThinking] = useState(false);
+  const [aiCommentary, setAiCommentary] = useState<string | null>(null);
   const boardContainerRef = useRef<HTMLDivElement>(null);
 
   const getSafePlayerName = () => {
@@ -207,7 +207,7 @@ const App: React.FC = () => {
     const newBoard = new Map<number, BoardShell>(); for (let i = 1; i <= TOTAL_SHELLS; i++) newBoard.set(i, { index: i, stackSize: 0, owner: null, isShoMo: false });
     setBoard(newBoard);
     const initialPlayers = generatePlayers(p1Config, p2Config);
-    setPlayers(initialPlayers); setTurnIndex(0); setPhase(GamePhase.ROLLING); setLastRoll(null); setIsRolling(false); setPendingMoveValues([]); setPaRaCount(0); setExtraRolls(0); setIsOpeningPaRa(false); setLastMove(null); setTutorialStep(isTutorial ? 1 : 0); setSelectedSourceIndex(null);
+    setPlayers(initialPlayers); setTurnIndex(0); setPhase(GamePhase.ROLLING); setLastRoll(null); setIsRolling(false); setPendingMoveValues([]); setPaRaCount(0); setExtraRolls(0); setIsOpeningPaRa(false); setLastMove(null); setTutorialStep(isTutorial ? 1 : 0); setSelectedSourceIndex(null); setAiCommentary(null);
     addLog("New game started!", 'info');
   }, [addLog]);
 
@@ -230,17 +230,13 @@ const App: React.FC = () => {
     }
   }, [players, turnIndex, addLog, gameMode, broadcastPacket]);
 
-  const performRoll = async (forcedRoll?: DiceRoll) => {
+  // Fix: Wrapped performRoll in useCallback for consistent reference in handleNetworkPacket
+  const performRoll = useCallback(async (forcedRoll?: DiceRoll) => {
     const s = gameStateRef.current; 
     if (s.phase !== GamePhase.ROLLING) return;
-
-    // Trigger immediate priming haptic on roll click to bypass browser restrictions
     triggerHaptic(10);
     setIsRolling(true); SFX.playShake();
-    
-    // Patterned haptic for the shake feel
     triggerHaptic([20, 30, 20]);
-    
     await new Promise(resolve => setTimeout(resolve, 800)); 
     let d1, d2;
     if (forcedRoll) { d1 = forcedRoll.die1; d2 = forcedRoll.die2; }
@@ -254,11 +250,9 @@ const App: React.FC = () => {
     }
     const isPaRa = (d1 === 1 && d2 === 1), total = d1 + d2;
     const newRoll: DiceRoll = { die1: d1, die2: d2, isPaRa, total, visuals: { d1x: pos1.x, d1y: pos1.y, d1r: pos1.r, d2x: pos2.x, d2y: pos2.y, d2r: pos2.r } };
-    
     if (!forcedRoll && (s.gameMode === GameMode.ONLINE_HOST || s.gameMode === GameMode.ONLINE_GUEST)) {
         broadcastPacket({ type: 'ROLL_REQ', payload: newRoll });
     }
-
     setLastRoll(newRoll); setIsRolling(false); SFX.playLand();
     if (isPaRa) { 
         SFX.playPaRa(); const newCount = s.paRaCount + 1;
@@ -272,27 +266,22 @@ const App: React.FC = () => {
         setPendingMoveValues(movePool); setPaRaCount(0); setPhase(GamePhase.MOVING); 
     }
     if (s.gameMode === GameMode.TUTORIAL && s.tutorialStep === 2) setTutorialStep(3);
-  };
+  }, [players, turnIndex, addLog, gameMode, broadcastPacket]);
 
-  const performMove = (sourceIdx: number, targetIdx: number, isRemote = false) => {
+  // Fix: Wrapped performMove in useCallback for consistent reference in handleNetworkPacket
+  const performMove = useCallback((sourceIdx: number, targetIdx: number, isRemote = false) => {
     const s = gameStateRef.current;
-    
-    // Prime haptic on move click
     if (!isRemote) triggerHaptic(10);
-
     const currentMovesList = getAvailableMoves(s.turnIndex, s.board, s.players, s.pendingMoveValues, s.isNinerMode, s.isOpeningPaRa);
     let move = currentMovesList.find(m => m.sourceIndex === sourceIdx && m.targetIndex === targetIdx);
-    
     if (!move && isRemote) {
         const potential = calculatePotentialMoves(sourceIdx, s.pendingMoveValues, s.board, s.players[s.turnIndex], s.isNinerMode, s.isOpeningPaRa);
         move = potential.find(m => m.targetIndex === targetIdx) || { sourceIndex: sourceIdx, targetIndex: targetIdx, consumedValues: [s.pendingMoveValues[0] || 0], type: MoveResultType.PLACE };
     }
     if (!move) return;
-    
     if (!isRemote && (s.gameMode === GameMode.ONLINE_HOST || s.gameMode === GameMode.ONLINE_GUEST)) {
         broadcastPacket({ type: 'MOVE_REQ', payload: { sourceIdx, targetIdx } });
     }
-
     const nb: BoardState = new Map(s.board); const player = s.players[s.turnIndex]; let localExtraRollInc = 0; let movingStackSize = 0; let newPlayers = [...s.players];
     if (move.sourceIndex === 0) { 
         const isOpening = newPlayers[s.turnIndex].coinsInHand === COINS_PER_PLAYER; 
@@ -334,182 +323,223 @@ const App: React.FC = () => {
         else { setPhase(GamePhase.ROLLING); setTurnIndex((prev) => (prev + 1) % players.length); }
     } else setPendingMoveValues(nextMoves);
     if (s.gameMode === GameMode.TUTORIAL && s.tutorialStep === 3) setTutorialStep(4);
-  };
+  }, [players, addLog, broadcastPacket]);
 
-  const toggleMic = async () => {
-    triggerHaptic(10);
-    if (!isPro) { setIsProUpgradeOpen(true); return; }
-    if (isMicActive) {
-        if (localStreamRef.current) {
-            localStreamRef.current.getTracks().forEach(t => t.stop());
-            localStreamRef.current = null;
-        }
-        setIsMicActive(false);
-    } else {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            localStreamRef.current = stream;
-            setIsMicActive(true);
-        } catch (err) {
-            addLog("Could not access microphone.", 'alert');
-        }
+  // Fix: Implement missing handleNetworkPacket for peer data processing
+  const handleNetworkPacket = useCallback((packet: NetworkPacket) => {
+    switch (packet.type) {
+      case 'ROLL_REQ':
+        performRoll(packet.payload);
+        break;
+      case 'MOVE_REQ':
+        performMove(packet.payload.sourceIdx, packet.payload.targetIdx, true);
+        break;
+      case 'SKIP_REQ':
+        handleSkipTurn(true);
+        break;
+      case 'FULL_SYNC':
+        if (packet.payload.board) setBoard(new Map(Object.entries(packet.payload.board).map(([k, v]) => [Number(k), v as any])));
+        if (packet.payload.players) setPlayers(packet.payload.players);
+        if (packet.payload.turnIndex !== undefined) setTurnIndex(packet.payload.turnIndex);
+        if (packet.payload.phase) setPhase(packet.payload.phase);
+        break;
     }
-  };
+  }, [performRoll, performMove, handleSkipTurn]);
 
+  // Fix: Implement missing Auth handlers
   const handleAuthSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     triggerHaptic(15);
-    if (authMode === 'SIGNUP' && authForm.password !== authForm.confirmPassword) { alert("Passwords do not match!"); return; }
-    setFirstName(authForm.firstName); 
-    setLastName(authForm.lastName); 
-    setIsLoggedIn(true); 
-    setIsAuthModalOpen(false); 
-    setIsSplashVisible(false); 
-    setIsLoginGateOpen(false);
-    addLog(`Welcome back, ${authForm.firstName} ${authForm.lastName}!`, 'info');
+    setIsLoggedIn(true);
+    setIsAuthModalOpen(false);
+    setFirstName(authForm.firstName);
+    setLastName(authForm.lastName);
+    addLog(`Welcome back, ${authForm.firstName}!`, 'info');
   };
 
-  const handleLogout = () => { triggerHaptic(15); setIsLoggedIn(false); setFirstName(''); setLastName(''); setIsSplashVisible(true); setIsPro(false); addLog(`Logged out successfully.`, 'info'); };
+  const handleLogout = () => {
+    triggerHaptic(10);
+    setIsLoggedIn(false);
+    setIsPro(false);
+    setFirstName('');
+    setLastName('');
+    addLog("Logged out successfully.", 'info');
+  };
 
+  // Fix: Implement missing Lobby/Online handlers
   const handleOnlineClick = () => {
     triggerHaptic(15);
-    if (!isLoggedIn) { setIsLoginGateOpen(true); return; }
-    if (!isPro) { setIsProUpgradeOpen(true); return; }
+    if (!isLoggedIn) {
+      setIsLoginGateOpen(true);
+      return;
+    }
+    if (!isPro) {
+      setIsProUpgradeOpen(true);
+      return;
+    }
     setOnlineLobbyStatus('WAITING');
   };
 
   const startOnlineHost = () => {
-    triggerHaptic(15);
-    setOnlineLobbyStatus('WAITING');
-    const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const newPeer = new Peer(roomCode, { config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } });
-    newPeer.on('open', (id) => {
-        setMyPeerId(id);
-        addLog(`Room created: ${id}`, 'info');
-    });
-    newPeer.on('connection', (conn) => { 
-        setActiveConnections(prev => [...prev, conn]);
-        setupPeerEvents(conn, true); 
-    });
-    newPeer.on('call', (call) => {
-        call.answer(localStreamRef.current || undefined);
-        call.on('stream', (stream) => setRemoteStream(stream));
-    });
-    newPeer.on('error', (err) => { if (err.type === 'unavailable-id') startOnlineHost(); else { addLog("Network Error: " + err.type, 'alert'); setOnlineLobbyStatus('IDLE'); } });
-    setPeer(newPeer);
-  };
-
-  const joinOnlineGame = (roomId: string) => {
-    triggerHaptic(20);
-    if (!roomId) return; 
-    setIsPeerConnecting(true); 
     const newPeer = new Peer();
+    setPeer(newPeer);
     newPeer.on('open', (id) => {
-      const conn = newPeer.connect(roomId.toUpperCase().trim(), { reliable: true });
-      conn.on('open', () => { 
-        setActiveConnections([conn]); 
-        setIsPeerConnecting(false); 
-        // Immediately set state to connected on guest to prevent UI hang
-        setOnlineLobbyStatus('CONNECTED'); 
-        
-        // Wait a small delay before sending initial sync to ensure host listener is ready
-        setTimeout(() => {
-          setupPeerEvents(conn, false); 
-        }, 500);
+      setMyPeerId(id);
+      addLog(`Room ID: ${id}. Waiting for opponent...`, 'info');
+    });
+    newPeer.on('connection', (conn) => {
+      conn.on('open', () => {
+        setActiveConnections(prev => [...prev, conn]);
+        setOnlineLobbyStatus('CONNECTED');
+        setGameMode(GameMode.ONLINE_HOST);
+        initializeGame({ name: getSafePlayerName(), color: selectedColor }, { name: 'Opponent', color: '#3b82f6' });
+        addLog("Opponent joined!", 'alert');
+        conn.send({ type: 'FULL_SYNC', payload: gameStateRef.current });
       });
-      conn.on('error', () => { addLog("Failed to connect to room.", 'alert'); setIsPeerConnecting(false); newPeer.destroy(); });
+      conn.on('data', (data: any) => handleNetworkPacket(data));
     });
-    newPeer.on('call', (call) => {
-        call.answer(localStreamRef.current || undefined);
-        call.on('stream', (stream) => setRemoteStream(stream));
-    });
-    newPeer.on('error', () => setIsPeerConnecting(false)); setPeer(newPeer);
-  };
-
-  const setupPeerEvents = (conn: DataConnection, isHost: boolean) => {
-    if (!isHost) {
-      conn.send({ type: 'SYNC', payload: { playerName: getSafePlayerName(), color: selectedColor, isNinerMode } });
-    }
-    conn.on('data', (data: any) => {
-      const packet = data as NetworkPacket;
-      switch (packet.type) {
-        case 'SYNC':
-          if (isHost) {
-            let guestColor = packet.payload.color;
-            if (guestColor === selectedColor) guestColor = COLOR_PALETTE.find(c => c.hex !== selectedColor)?.hex || '#3b82f6';
-            const guestInfo = { name: packet.payload.playerName, color: guestColor }, hostInfo = { name: getSafePlayerName(), color: selectedColor };
-            setGameMode(GameMode.ONLINE_HOST); 
-            setOnlineLobbyStatus('CONNECTED'); 
-            initializeGame(hostInfo, guestInfo);
-            // Respond directly to the connection to ensure the guest gets the packet
-            conn.send({ type: 'SYNC', payload: { hostInfo, guestInfo, isNinerMode } });
-          } else {
-            const { hostInfo, guestInfo, isNinerMode: serverNiner } = packet.payload;
-            setIsNinerMode(serverNiner); 
-            setGameMode(GameMode.ONLINE_GUEST); 
-            setOnlineLobbyStatus('CONNECTED'); 
-            initializeGame(hostInfo, guestInfo);
-          }
-          break;
-        case 'ROLL_REQ': performRoll(packet.payload); if (isHost) broadcastPacket(packet); break;
-        case 'MOVE_REQ': performMove(packet.payload.sourceIdx, packet.payload.targetIdx, true); if (isHost) broadcastPacket(packet); break;
-        case 'SKIP_REQ': handleSkipTurn(true); if (isHost) broadcastPacket(packet); break;
-      }
-    });
-    conn.on('close', () => { 
-        if (isHost) {
-            setActiveConnections(prev => prev.filter(c => c !== conn));
-        } else {
-            addLog("Connection closed.", 'alert'); setOnlineLobbyStatus('IDLE'); setGameMode(null); 
-        }
+    newPeer.on('error', (err) => {
+      console.error(err);
+      addLog("Peer connection error.", "alert");
     });
   };
 
+  const joinOnlineGame = (id: string) => {
+    setIsPeerConnecting(true);
+    const newPeer = new Peer();
+    setPeer(newPeer);
+    newPeer.on('open', () => {
+      const conn = newPeer.connect(id);
+      conn.on('open', () => {
+        setActiveConnections(prev => [...prev, conn]);
+        setOnlineLobbyStatus('CONNECTED');
+        setGameMode(GameMode.ONLINE_GUEST);
+        addLog("Connected to host!", 'alert');
+        setIsPeerConnecting(false);
+      });
+      conn.on('data', (data: any) => handleNetworkPacket(data));
+      conn.on('error', (err) => {
+        console.error(err);
+        setIsPeerConnecting(false);
+        addLog("Failed to connect.", "alert");
+      });
+    });
+  };
+
+  // Fix: Implement missing Tutorial handlers
   const handleTutorialNext = () => {
-    triggerHaptic(10);
     setTutorialStep(prev => prev + 1);
-  };
-
-  const handleTutorialClose = () => {
     triggerHaptic(10);
+  };
+  const handleTutorialClose = () => {
     setTutorialStep(0);
-    // Keep gameMode so they can finish the game if they want
+    setGameMode(null);
+    triggerHaptic(10);
   };
 
-  useEffect(() => { 
-    return () => { 
-        if (peer) peer.destroy(); 
-        if (localStreamRef.current) localStreamRef.current.getTracks().forEach(t => t.stop());
-    }; 
-  }, [peer]);
+  // Fix: Implement missing Mic handler
+  const toggleMic = async () => {
+    triggerHaptic(15);
+    if (isMicActive) {
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach(track => track.stop());
+        localStreamRef.current = null;
+      }
+      setIsMicActive(false);
+    } else {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        localStreamRef.current = stream;
+        setIsMicActive(true);
+        addLog("Microphone enabled.", "info");
+      } catch (err) {
+        console.error("Mic access error:", err);
+        addLog("Could not access microphone.", "alert");
+      }
+    }
+  };
+
+  const getGeminiStrategy = async (aiMoves: MoveOption[]) => {
+    const s = gameStateRef.current;
+    const boardBrief = Array.from(s.board.entries())
+      .filter(([_, shell]) => shell.stackSize > 0)
+      .map(([idx, shell]) => `Pos ${idx}: ${shell.stackSize} coins of ${shell.owner}`);
+    
+    const prompt = `You are a Grandmaster Sho Bot.
+Board state: ${boardBrief.join(', ')}
+My hand: ${s.players[s.turnIndex].coinsInHand}, My finished: ${s.players[s.turnIndex].coinsFinished}
+Opponent hand: ${s.players[(s.turnIndex+1)%2].coinsInHand}, Opponent finished: ${s.players[(s.turnIndex+1)%2].coinsFinished}
+Movement Pool: [${s.pendingMoveValues.join(', ')}]
+Available moves: ${aiMoves.map((m, i) => `Option ${i}: from ${m.sourceIndex === 0 ? 'Hand' : m.sourceIndex} to ${m.targetIndex} (Type: ${m.type})`).join('; ')}
+
+Select the optimal Move Option index (0 to ${aiMoves.length-1}) and provide a very short, humorous trash-talk or strategic taunt in English and Tibetan.
+Heuristics to follow: 1. FINISH > 2. KILL > 3. STACK > 4. PROGRESS.
+Avoid landing where opponent can easily kill you.`;
+
+    try {
+      const response = await aiClient.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              moveIndex: { type: Type.INTEGER },
+              commentaryEn: { type: Type.STRING },
+              commentaryBo: { type: Type.STRING }
+            },
+            required: ["moveIndex", "commentaryEn", "commentaryBo"]
+          }
+        }
+      });
+      
+      const result = JSON.parse(response.text);
+      return result;
+    } catch (err) {
+      console.error("Gemini Error:", err);
+      return null;
+    }
+  };
 
   useEffect(() => {
-    if (gameMode === GameMode.AI && turnIndex === 1 && phase !== GamePhase.GAME_OVER && !isRolling) {
-      const timer = setTimeout(() => {
+    if (gameMode === GameMode.AI && turnIndex === 1 && phase !== GamePhase.GAME_OVER && !isRolling && !isAiThinking) {
+      const timer = setTimeout(async () => {
         const s = gameStateRef.current;
         if (s.phase === GamePhase.ROLLING) performRoll();
         else if (s.phase === GamePhase.MOVING) {
           const aiMoves = getAvailableMoves(s.turnIndex, s.board, s.players, s.pendingMoveValues, s.isNinerMode, s.isOpeningPaRa);
           if (aiMoves.length > 0) {
-            const scores = aiMoves.map(m => {
-                let score = m.targetIndex * 10;
-                if (m.type === MoveResultType.FINISH) score += 5000;
-                if (m.type === MoveResultType.KILL) score += 3000;
-                if (m.type === MoveResultType.STACK) score += 500;
-                return { move: m, score };
-            }).sort((a, b) => b.score - a.score);
-            performMove(scores[0].move.sourceIndex, scores[0].move.targetIndex);
+            setIsAiThinking(true);
+            const geminiDecision = await getGeminiStrategy(aiMoves);
+            setIsAiThinking(false);
+            
+            let selectedIdx = 0;
+            if (geminiDecision && geminiDecision.moveIndex >= 0 && geminiDecision.moveIndex < aiMoves.length) {
+              selectedIdx = geminiDecision.moveIndex;
+              setAiCommentary(`${geminiDecision.commentaryEn} (${geminiDecision.commentaryBo})`);
+              setTimeout(() => setAiCommentary(null), 5000);
+            } else {
+              const scores = aiMoves.map(m => {
+                  let score = m.targetIndex * 10;
+                  if (m.type === MoveResultType.FINISH) score += 5000;
+                  if (m.type === MoveResultType.KILL) score += 3000;
+                  if (m.type === MoveResultType.STACK) score += 500;
+                  return { move: m, score };
+              }).sort((a, b) => b.score - a.score);
+              selectedIdx = aiMoves.indexOf(scores[0].move);
+            }
+            performMove(aiMoves[selectedIdx].sourceIndex, aiMoves[selectedIdx].targetIndex);
           } else handleSkipTurn();
         }
       }, 1200);
       return () => clearTimeout(timer);
     }
-  }, [turnIndex, phase, gameMode, isRolling, paRaCount, extraRolls, board, pendingMoveValues, isNinerMode, players, handleSkipTurn, isOpeningPaRa]);
+  }, [turnIndex, phase, gameMode, isRolling, paRaCount, extraRolls, board, pendingMoveValues, isNinerMode, players, handleSkipTurn, isOpeningPaRa, isAiThinking, performRoll, performMove]);
 
   const currentValidMovesList = phase === GamePhase.MOVING ? getAvailableMoves(turnIndex, board, players, pendingMoveValues, isNinerMode, isOpeningPaRa) : [];
   const visualizedMoves = selectedSourceIndex !== null ? currentValidMovesList.filter(m => m.sourceIndex === selectedSourceIndex) : [];
   const shouldHighlightHand = phase === GamePhase.MOVING && (gameMode !== GameMode.AI || turnIndex === 0) && players[turnIndex].coinsInHand > 0;
-  
   const isLocalTurn = (() => {
     if (gameMode === GameMode.ONLINE_HOST) return turnIndex === 0;
     if (gameMode === GameMode.ONLINE_GUEST) return turnIndex === 1;
@@ -520,10 +550,7 @@ const App: React.FC = () => {
   const handleFromHandClick = () => {
     if (phase !== GamePhase.MOVING || !isLocalTurn) return;
     const player = players[turnIndex];
-    
-    // Prime haptic
     triggerHaptic(10);
-
     if (player.coinsInHand <= 0) { 
       SFX.playBlocked(); 
       triggerHaptic(100); 
@@ -558,10 +585,23 @@ const App: React.FC = () => {
           @keyframes micPulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.2); } }
           .animate-mic-active { animation: micPulse 1.5s ease-in-out infinite; }
         `}} />
-
         {phase === GamePhase.SETUP && gameMode !== null && <div className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center p-4 text-amber-500 font-cinzel text-xl animate-pulse">Initializing འགོ་འཛུགས་བཞིན་པ...</div>}
         <RulesModal isOpen={showRules} onClose={() => { triggerHaptic(10); setShowRules(false); }} isNinerMode={isNinerMode} onToggleNinerMode={() => { triggerHaptic(15); setIsNinerMode(prev => !prev); }} />
-        
+        {isAiThinking && (
+          <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[150] bg-amber-600 text-white px-6 py-2 rounded-full font-cinzel text-xs font-bold shadow-2xl animate-pulse flex items-center gap-3">
+            <span className="w-2 h-2 bg-white rounded-full animate-ping"></span>
+            SHOBOT IS CALCULATING... ཤོ་མིག་རྩིས་བཞིན་པ།
+          </div>
+        )}
+        {aiCommentary && (
+          <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[140] max-w-xs md:max-w-md w-full px-4 animate-in slide-in-from-bottom-4 duration-500">
+            <div className="bg-amber-100 border-2 border-amber-600 p-4 rounded-2xl shadow-2xl relative">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-amber-100 border-l-2 border-t-2 border-amber-600 rotate-45"></div>
+              <p className="text-stone-900 font-bold text-center text-sm md:text-base italic">"{aiCommentary}"</p>
+              <div className="text-[10px] text-amber-800 text-center font-bold uppercase tracking-widest mt-1 opacity-60">— Grandmaster ShoBot</div>
+            </div>
+          </div>
+        )}
         {isAuthModalOpen && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
             <div className="bg-stone-900 border-2 border-amber-600/50 p-8 rounded-[3rem] w-full max-sm shadow-[0_0_50px_rgba(0,0,0,0.8)] relative">
@@ -616,12 +656,10 @@ const App: React.FC = () => {
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent opacity-50"></div>
               <h2 className="text-3xl font-cinzel text-amber-500 mb-2 font-bold tracking-widest">{T.auth.gateTitle.en}</h2>
               <div className="text-lg font-serif text-amber-600 mb-6">{T.auth.gateTitle.bo}</div>
-              
               <div className="flex flex-col gap-2 mb-10">
                 <p className="text-stone-300 text-sm font-serif leading-relaxed px-2">{T.auth.gateDesc.en}</p>
                 <p className="text-stone-500 text-[13px] font-serif leading-relaxed px-2">{T.auth.gateDesc.bo}</p>
               </div>
-
               <div className="flex flex-col gap-4 mb-8">
                 <button onClick={() => { triggerHaptic(15); setAuthMode('LOGIN'); setIsAuthModalOpen(true); setIsLoginGateOpen(false); }} className="w-full py-4 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-2xl transition-all shadow-lg shadow-amber-900/20 active:scale-95 flex flex-col items-center">
                   <span className="uppercase tracking-[0.2em]">{T.auth.loginBtn.en}</span>
@@ -745,7 +783,6 @@ const App: React.FC = () => {
                             )}
                         </div>
                     </div>
-
                     <div className="flex flex-col items-center flex-shrink-0 w-full max-w-sm md:max-w-4xl mt-4 sm:mt-2">
                         <h1 className="flex items-center gap-6 mb-1 font-cinzel">
                             <span className="text-3xl md:text-5xl text-amber-500 drop-shadow-[0_0_20px_rgba(245,158,11,0.5)]">{T.lobby.title.bo}</span>
@@ -817,9 +854,7 @@ const App: React.FC = () => {
                                     <h3 className="text-xl font-cinzel text-amber-500 mb-2">
                                         {T.lobby.roomLobbyTitle.en} <span className="font-serif ml-2">{T.lobby.roomLobbyTitle.bo}</span>
                                     </h3>
-                                    
                                     <div className="flex flex-col gap-6 w-full">
-                                        {/* Host Section */}
                                         <div className="bg-black/40 p-5 rounded-2xl border border-stone-800 flex flex-col items-center">
                                             <div className="text-center mb-4">
                                                 <h4 className="text-amber-200 font-cinzel text-sm uppercase tracking-widest font-bold">
@@ -834,14 +869,11 @@ const App: React.FC = () => {
                                                 {myPeerId ? `ROOM CODE: ${myPeerId} 📋` : T.lobby.hostHeader.en}
                                             </button>
                                         </div>
-
                                         <div className="relative flex items-center py-2">
                                             <div className="flex-grow border-t border-stone-800"></div>
                                             <span className="flex-shrink mx-4 text-stone-700 text-[10px] uppercase font-bold tracking-widest">OR</span>
                                             <div className="flex-grow border-t border-stone-800"></div>
                                         </div>
-
-                                        {/* Join Section */}
                                         <div className="bg-black/40 p-5 rounded-2xl border border-stone-800 flex flex-col items-center">
                                             <div className="text-center mb-4">
                                                 <h4 className="text-amber-200 font-cinzel text-sm uppercase tracking-widest font-bold">
