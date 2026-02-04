@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface RulesModalProps {
@@ -81,17 +80,39 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, isNiner
             </div>
           </section>
 
+          <section className={`${isDarkMode ? 'bg-amber-950/20 border-amber-900/30' : 'bg-amber-50 border-amber-200'} p-6 rounded-2xl border space-y-4`}>
+            <h3 className={`text-xl font-cinzel ${isDarkMode ? 'text-amber-400' : 'text-amber-800'} font-bold border-b ${isDarkMode ? 'border-amber-600/30' : 'border-amber-700/20'} pb-2`}>Pa Ra (Snake Eyes) པ་རའི་སྒྲིག་གཞི།</h3>
+            <p>The only dice roll with special significance in the basic game is <strong>(1,1)</strong>, which is called <em>pa ra</em> in Tibetan.</p>
+            <ul className="list-disc list-inside space-y-2 ml-2">
+              <li>The player rolls the dice again before moving.</li>
+              <li>The player may then choose from several possible move values (e.g., if you roll (1,1) then (5,3), you can move <strong>2</strong>, <strong>8</strong>, or <strong>10</strong>).</li>
+            </ul>
+            
+            <div className={`mt-4 pt-4 border-t ${isDarkMode ? 'border-amber-900/40' : 'border-amber-700/20'}`}>
+              <h4 className="font-bold text-amber-600 mb-2 uppercase text-xs tracking-widest">Carrying Forward Unused Values</h4>
+              <p className="text-sm">If the player chooses one of the two values (not the combined total) and that move results in a <strong>kill</strong> or <strong>stack</strong>, the unused value is <strong>carried forward</strong> to the next roll.</p>
+              <p className="text-sm mt-2">This can continue across multiple rolls, allowing for moves much larger than the usual maximum of 12.</p>
+            </div>
+
+            <div className={`mt-4 p-4 rounded-xl ${isDarkMode ? 'bg-black/40' : 'bg-white/60'} text-xs md:text-sm space-y-3`}>
+              <h4 className="font-bold text-amber-500 uppercase tracking-tighter">Pa Ra Example པ་རའི་དཔེར་ན།</h4>
+              <div className="space-y-2 font-mono">
+                <p>1. Roll (1,1), then roll again and get (5,6). <br/><span className="text-amber-600">Possible moves: 2, 11, or 13.</span></p>
+                <p>2. Choose to move 2 (Kill!). Roll again and get (3,4) = 7.</p>
+                <p>3. Unused 11 is carried forward. <br/><span className="text-amber-600">Possible moves: 11, 7, or 18.</span></p>
+                <p>4. Choose 11 (Stack!). Roll again and get (2,3) = 5.</p>
+                <p>5. Unused 7 is carried forward. <br/><span className="text-amber-600">Possible moves: 7, 5, or 12.</span></p>
+                <p>6. Choose 12 to move a stack into a vacant space. Turn ends.</p>
+              </div>
+            </div>
+          </section>
+
           <section className={`${isDarkMode ? 'bg-stone-800/50 border-stone-700' : 'bg-white border-stone-200'} p-6 rounded-2xl border flex flex-col md:flex-row justify-between items-center gap-4`}>
               <div className="text-center md:text-left">
                   <h4 className="font-bold text-amber-600 mb-2">Game Variant རྩེད་རིགས་འདམ་ག</h4>
                   <p className={`text-sm ${isDarkMode ? 'text-stone-400' : 'text-stone-500'} italic`}>{isNinerMode ? "Niner Mode: Build a full stack of 9 coins." : "No-Niner Mode: 9-stacks forbidden."}</p>
               </div>
               <button onClick={onToggleNinerMode} className="bg-amber-700 hover:bg-amber-600 px-8 py-3 rounded-xl font-bold text-white text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg">Switch Variant</button>
-          </section>
-
-          <section className={`${isDarkMode ? 'bg-amber-950/20 border-amber-900/30' : 'bg-amber-50 border-amber-200'} p-6 rounded-2xl border space-y-4`}>
-            <h3 className={`text-xl font-cinzel ${isDarkMode ? 'text-amber-400' : 'text-amber-800'} font-bold border-b ${isDarkMode ? 'border-amber-600/30' : 'border-amber-700/20'} pb-2`}>Pa Ra (Snake Eyes) པ་རའི་སྒྲིག་གཞི།</h3>
-            <p>Rolling (1,1) is <em>pa ra</em>: Roll again before moving. Choose from values 2, X, or 2+X.</p>
           </section>
         </div>
 
