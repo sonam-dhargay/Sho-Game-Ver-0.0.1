@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Peer, { DataConnection } from 'peerjs';
-import { GoogleGenAI, Type } from "@google/genai";
 import { 
   Player, PlayerColor, BoardState, GamePhase, 
   DiceRoll, MoveResultType, MoveOption, GameLog, BoardShell, GameMode, NetworkPacket
@@ -122,8 +121,6 @@ const getAvailableMoves = (pIndex: number, pBoard: BoardState, pPlayers: Player[
   return moves;
 };
 
-const aiClient = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 const App: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>(PLAYERS_CONFIG);
   const [board, setBoard] = useState<BoardState>(new Map());
@@ -152,15 +149,12 @@ const App: React.FC = () => {
   const [globalPlayCount, setGlobalPlayCount] = useState<number>(18742);
   const [isCounterPulsing, setIsCounterPulsing] = useState(false);
   const [handShake, setHandShake] = useState(false);
-  const [isAiThinking, setIsAiThinking] = useState(false);
-  const [aiCommentary, setAiCommentary] = useState<string | null>(null);
   const boardContainerRef = useRef<HTMLDivElement>(null);
 
   const getSafePlayerName = () => {
       const trimmed = `${firstName} ${lastName}`.trim();
       return trimmed.length > 0 ? trimmed : 'Player';
   };
-  const isNameEntered = firstName.trim().length > 0;
 
   const [isSplashVisible, setIsSplashVisible] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -175,7 +169,6 @@ const App: React.FC = () => {
   const [activeConnections, setActiveConnections] = useState<DataConnection[]>([]);
   const connectionsRef = useRef<DataConnection[]>([]);
   const [myPeerId, setMyPeerId] = useState<string>('');
-  const [targetPeerId, setTargetPeerId] = useState<string>('');
   const [isPeerConnecting, setIsPeerConnecting] = useState(false);
   const [onlineLobbyStatus, setOnlineLobbyStatus] = useState<'IDLE' | 'WAITING' | 'CONNECTED'>('IDLE');
   const [isMicActive, setIsMicActive] = useState(false);
@@ -210,7 +203,7 @@ const App: React.FC = () => {
     const newBoard = new Map<number, BoardShell>(); for (let i = 1; i <= TOTAL_SHELLS; i++) newBoard.set(i, { index: i, stackSize: 0, owner: null, isShoMo: false });
     setBoard(newBoard);
     const initialPlayers = generatePlayers(p1Config, p2Config);
-    setPlayers(initialPlayers); setTurnIndex(0); setPhase(GamePhase.ROLLING); setLastRoll(null); setIsRolling(false); setPendingMoveValues([]); setPaRaCount(0); setExtraRolls(0); setIsOpeningPaRa(false); setLastMove(null); setTutorialStep(isTutorial ? 1 : 0); setSelectedSourceIndex(null); setAiCommentary(null);
+    setPlayers(initialPlayers); setTurnIndex(0); setPhase(GamePhase.ROLLING); setLastRoll(null); setIsRolling(false); setPendingMoveValues([]); setPaRaCount(0); setExtraRolls(0); setIsOpeningPaRa(false); setLastMove(null); setTutorialStep(isTutorial ? 1 : 0); setSelectedSourceIndex(null);
     addLog("New game started!", 'info');
   }, [addLog]);
 
@@ -264,7 +257,6 @@ const App: React.FC = () => {
     } else { 
         const isOpening = players[s.turnIndex].coinsInHand === COINS_PER_PLAYER;
         if (s.paRaCount > 0 && isOpening) { setIsOpeningPaRa(true); addLog(`OPENING PA RA! You can place 3 coins!`, 'alert'); }
-        // Flexible Pa Ra Rule: Each Pa Ra counts as two '2' moves.
         const movePool = [...Array(s.paRaCount * 2).fill(2), total];
         setPendingMoveValues(movePool); setPaRaCount(0); setPhase(GamePhase.MOVING); 
     }
@@ -403,28 +395,6 @@ const App: React.FC = () => {
     });
   };
 
-  const joinOnlineGame = (id: string) => {
-    setIsPeerConnecting(true);
-    const newPeer = new Peer();
-    setPeer(newPeer);
-    newPeer.on('open', () => {
-      const conn = newPeer.connect(id);
-      conn.on('open', () => {
-        setActiveConnections(prev => [...prev, conn]);
-        setOnlineLobbyStatus('CONNECTED');
-        setGameMode(GameMode.ONLINE_GUEST);
-        addLog("Connected to host!", 'alert');
-        setIsPeerConnecting(false);
-      });
-      conn.on('data', (data: any) => handleNetworkPacket(data));
-      conn.on('error', (err) => {
-        console.error(err);
-        setIsPeerConnecting(false);
-        addLog("Failed to connect.", "alert");
-      });
-    });
-  };
-
   const handleTutorialNext = () => {
     setTutorialStep(prev => prev + 1);
     triggerHaptic(10);
@@ -459,128 +429,14 @@ const App: React.FC = () => {
     }
   };
 
-  const getGeminiStrategy = async (aiMoves: MoveOption[]) => {
-    const s = gameStateRef.current;
-    const boardBrief = Array.from(s.board.entries())
-      .filter(([_, shell]) => shell.stackSize > 0)
-      .map(([idx, shell]) => `Pos ${idx}: ${shell.stackSize} coins of ${shell.owner}`);
-    
-    const prompt = `You are an elite Grandmaster Sho AI (འཆམ་པོ་ཤོ་མཁན།).
-Objective: Move all 9 coins past the 64th shell.
-
-ADVANCED STRATEGIC DIRECTIVES:
-1. UNIT EFFICIENCY (CRITICAL): The mathematical core of Sho is moving coins as a unit. Moving a stack of 3 coins forward 5 spaces is 3x more efficient than moving 1 coin. Always favor moving your largest stack to maximize total progress.
-2. AGGRESSIVE CAPTURE (KILL): Capturing an opponent stack (KILL) resets their hard-earned progress and gives you a Bonus Roll. Prioritize kills of stacks size 2 or greater.
-3. DEFENSIVE STACKING: Use small movement values (like the '2's from a Pa Ra) to consolidate single coins into stacks. A stack of 2 is much safer and more efficient than two stacks of 1.
-4. BLOCKING: Position your largest stacks (size 3+) to block the opponent. They cannot land on or pass through a stack larger than their own mover.
-5. FINISHING: When near the end (Position 55+), bank your large stacks to secure the win.
-
-Board state: ${boardBrief.join(', ')}
-My status: ${s.players[s.turnIndex].coinsInHand} in hand, ${s.players[s.turnIndex].coinsFinished} finished.
-Opponent status: ${s.players[(s.turnIndex+1)%2].coinsInHand} in hand, ${s.players[(s.turnIndex+1)%2].coinsFinished} finished.
-Available dice pool: [${s.pendingMoveValues.join(', ')}]
-
-Available options:
-${aiMoves.map((m, i) => `Option ${i}: from ${m.sourceIndex === 0 ? 'Hand' : m.sourceIndex} to ${m.targetIndex} (Type: ${m.type}, Mover Size: ${m.sourceIndex === 0 ? (s.isOpeningPaRa ? 3 : 2) : (s.board.get(m.sourceIndex)?.stackSize || 1)})`).join('\n')}
-
-Task: Return the index of the move that maximizes Unit Efficiency and Tactical Advantage.
-Provide a short strategic commentary in English and Tibetan.
-Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
-
-    try {
-      const response = await aiClient.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              moveIndex: { type: Type.INTEGER },
-              commentaryEn: { type: Type.STRING },
-              commentaryBo: { type: Type.STRING }
-            },
-            required: ["moveIndex", "commentaryEn", "commentaryBo"]
-          }
-        }
-      });
-      return JSON.parse(response.text);
-    } catch (err) {
-      console.error("Gemini AI Error:", err);
-      return null;
-    }
-  };
-
-  useEffect(() => {
-    if (gameMode === GameMode.AI && turnIndex === 1 && phase !== GamePhase.GAME_OVER && !isRolling && !isAiThinking) {
-      const timer = setTimeout(async () => {
-        const s = gameStateRef.current;
-        if (s.phase === GamePhase.ROLLING) performRoll();
-        else if (s.phase === GamePhase.MOVING) {
-          const aiMoves = getAvailableMoves(s.turnIndex, s.board, s.players, s.pendingMoveValues, s.isNinerMode, s.isOpeningPaRa);
-          if (aiMoves.length > 0) {
-            setIsAiThinking(true);
-            const geminiDecision = await getGeminiStrategy(aiMoves);
-            setIsAiThinking(false);
-            
-            let selectedIdx = -1;
-            if (geminiDecision && geminiDecision.moveIndex >= 0 && geminiDecision.moveIndex < aiMoves.length) {
-              selectedIdx = geminiDecision.moveIndex;
-              setAiCommentary(`${geminiDecision.commentaryEn} (${geminiDecision.commentaryBo})`);
-              setTimeout(() => setAiCommentary(null), 5000);
-            } else {
-              // Sophisticated Fallback Heuristic
-              const scores = aiMoves.map(m => {
-                  const moverStack = m.sourceIndex === 0 ? (s.isOpeningPaRa ? 3 : 2) : (s.board.get(m.sourceIndex)?.stackSize || 1);
-                  const distance = m.type === MoveResultType.FINISH ? (TOTAL_SHELLS + 1 - m.sourceIndex) : (m.targetIndex - m.sourceIndex);
-                  
-                  // Unit Efficiency (Total token-steps)
-                  let score = moverStack * distance * 15;
-                  
-                  // Strategic bonuses
-                  if (m.type === MoveResultType.FINISH) {
-                      score += 25000 + (moverStack * 2000); // Massive priority to finishing
-                  }
-                  
-                  if (m.type === MoveResultType.KILL) {
-                      const killed = s.board.get(m.targetIndex);
-                      const killedSize = killed?.stackSize || 1;
-                      score += 12000 + (killedSize * 2500); // High priority to kills, especially large stacks
-                  }
-                  
-                  if (m.type === MoveResultType.STACK) {
-                      const target = s.board.get(m.targetIndex);
-                      const existingSize = target?.stackSize || 0;
-                      // Grouping is good, especially creating stacks of 3+ (defensive units)
-                      score += 6000 + (existingSize * 1500); 
-                  }
-
-                  // Moving out of hand is good for establishing presence
-                  if (m.sourceIndex === 0) score += 4000;
-
-                  // Progress penalty (avoid leaving small pieces behind in the "death zone")
-                  if (moverStack === 1 && m.targetIndex < 30) score -= 2000;
-
-                  return { move: m, score };
-              }).sort((a, b) => b.score - a.score);
-              selectedIdx = aiMoves.indexOf(scores[0].move);
-            }
-            if (selectedIdx !== -1) performMove(aiMoves[selectedIdx].sourceIndex, aiMoves[selectedIdx].targetIndex);
-          } else handleSkipTurn();
-        }
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [turnIndex, phase, gameMode, isRolling, paRaCount, extraRolls, board, pendingMoveValues, isNinerMode, players, handleSkipTurn, isOpeningPaRa, isAiThinking, performRoll, performMove]);
-
   const currentValidMovesList = phase === GamePhase.MOVING ? getAvailableMoves(turnIndex, board, players, pendingMoveValues, isNinerMode, isOpeningPaRa) : [];
   const visualizedMoves = selectedSourceIndex !== null ? currentValidMovesList.filter(m => m.sourceIndex === selectedSourceIndex) : [];
-  const shouldHighlightHand = phase === GamePhase.MOVING && (gameMode !== GameMode.AI || turnIndex === 0) && players[turnIndex].coinsInHand > 0;
+  const shouldHighlightHand = phase === GamePhase.MOVING && players[turnIndex].coinsInHand > 0;
+  
   const isLocalTurn = (() => {
     if (gameMode === GameMode.ONLINE_HOST) return turnIndex === 0;
     if (gameMode === GameMode.ONLINE_GUEST) return turnIndex === 1;
-    if (gameMode === GameMode.AI) return turnIndex === 0;
-    return true;
+    return true; 
   })();
 
   const handleFromHandClick = () => {
@@ -622,7 +478,7 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
           .animate-mic-active { animation: micPulse 1.5s ease-in-out infinite; }
         `}} />
         {phase === GamePhase.SETUP && gameMode !== null && <div className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center p-4 text-amber-500 font-cinzel text-xl animate-pulse">Initializing འགོ་འཛུགས་བཞིན་པ...</div>}
-        <RulesModal isOpen={showRules} onClose={() => { triggerHaptic(10); setShowRules(false); }} isNinerMode={isNinerMode} onToggleNinerMode={() => { triggerHaptic(15); setIsNinerMode(prev => !prev); }} />
+        <RulesModal isOpen={showRules} onClose={() => { triggerHaptic(10); setShowRules(false); }} isNinerMode={isNinerMode} onToggleNinerMode={() => { triggerHaptic(15); setIsNinerMode(prev => !prev); }} isDarkMode={isDarkMode} />
         <MenuOverlay 
           isOpen={showMenu} 
           onClose={() => { triggerHaptic(10); setShowMenu(false); }} 
@@ -631,25 +487,10 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
           isDarkMode={isDarkMode}
           onToggleTheme={() => { triggerHaptic(15); setIsDarkMode(prev => !prev); }}
         />
-        {isAiThinking && (
-          <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[150] bg-amber-600 text-white px-6 py-2 rounded-full font-cinzel text-xs font-bold shadow-2xl animate-pulse flex items-center gap-3">
-            <span className="w-2 h-2 bg-white rounded-full animate-ping"></span>
-            SHOBOT IS CALCULATING... ཤོ་མིག་རྩིས་བཞིན་པ།
-          </div>
-        )}
-        {aiCommentary && (
-          <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[140] max-w-xs md:max-w-md w-full px-4 animate-in slide-in-from-bottom-4 duration-500">
-            <div className="bg-amber-100 border-2 border-amber-600 p-4 rounded-2xl shadow-2xl relative">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-amber-100 border-l-2 border-t-2 border-amber-600 rotate-45"></div>
-              <p className="text-stone-900 font-bold text-center text-sm md:text-base italic">"{aiCommentary}"</p>
-              <div className="text-[10px] text-amber-800 text-center font-bold uppercase tracking-widest mt-1 opacity-60">— Grandmaster ShoBot</div>
-            </div>
-          </div>
-        )}
         {isAuthModalOpen && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
-            <div className="bg-stone-900 border-2 border-amber-600/50 p-8 rounded-[3rem] w-full max-sm shadow-[0_0_50px_rgba(0,0,0,0.8)] relative">
-              <button onClick={() => { triggerHaptic(10); setIsAuthModalOpen(false); }} className="absolute top-6 right-6 text-stone-500 hover:text-white text-xl">×</button>
+            <div className={`${isDarkMode ? 'bg-stone-900 border-amber-600/50' : 'bg-stone-50 border-amber-800/20'} border-2 p-8 rounded-[3rem] w-full max-w-sm shadow-[0_0_50px_rgba(0,0,0,0.8)] relative`}>
+              <button onClick={() => { triggerHaptic(10); setIsAuthModalOpen(false); }} className="absolute top-6 right-6 text-stone-500 hover:text-amber-600 text-xl">×</button>
               <h2 className="text-3xl font-cinzel text-amber-500 text-center mb-8 font-bold tracking-widest">
                 {authMode === 'LOGIN' ? T.auth.loginBtn.en : T.auth.signupBtn.en}
                 <div className="text-lg font-serif mt-1">{authMode === 'LOGIN' ? T.auth.loginBtn.bo : T.auth.signupBtn.bo}</div>
@@ -657,25 +498,25 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
               <form onSubmit={handleAuthSubmit} className="flex flex-col gap-4">
                 <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1">
-                      <input required type="text" value={authForm.firstName} onChange={(e) => setAuthForm({ ...authForm, firstName: e.target.value })} className="bg-black/40 border border-stone-800 p-4 rounded-xl text-stone-100 outline-none focus:border-amber-600 transition-colors text-sm" placeholder={T.auth.firstName.en} />
+                      <input required type="text" value={authForm.firstName} onChange={(e) => setAuthForm({ ...authForm, firstName: e.target.value })} className={`${isDarkMode ? 'bg-black/40 border-stone-800 text-stone-100' : 'bg-white border-stone-300 text-stone-900'} border p-4 rounded-xl outline-none focus:border-amber-600 transition-colors text-sm`} placeholder={T.auth.firstName.en} />
                       <span className="text-[9px] text-stone-600 font-serif ml-2">{T.auth.firstName.bo}</span>
                     </div>
                     <div className="flex flex-col gap-1">
-                      <input required type="text" value={authForm.lastName} onChange={(e) => setAuthForm({ ...authForm, lastName: e.target.value })} className="bg-black/40 border border-stone-800 p-4 rounded-xl text-stone-100 outline-none focus:border-amber-600 transition-colors text-sm" placeholder={T.auth.lastName.en} />
+                      <input required type="text" value={authForm.lastName} onChange={(e) => setAuthForm({ ...authForm, lastName: e.target.value })} className={`${isDarkMode ? 'bg-black/40 border-stone-800 text-stone-100' : 'bg-white border-stone-300 text-stone-900'} border p-4 rounded-xl outline-none focus:border-amber-600 transition-colors text-sm`} placeholder={T.auth.lastName.en} />
                       <span className="text-[9px] text-stone-600 font-serif ml-2">{T.auth.lastName.bo}</span>
                     </div>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <input required type="email" value={authForm.email} onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })} className="bg-black/40 border border-stone-800 p-4 rounded-xl text-stone-100 outline-none focus:border-amber-600 transition-colors text-sm" placeholder={T.auth.email.en} />
+                  <input required type="email" value={authForm.email} onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })} className={`${isDarkMode ? 'bg-black/40 border-stone-800 text-stone-100' : 'bg-white border-stone-300 text-stone-900'} border p-4 rounded-xl outline-none focus:border-amber-600 transition-colors text-sm`} placeholder={T.auth.email.en} />
                   <span className="text-[9px] text-stone-600 font-serif ml-2">{T.auth.email.bo}</span>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <input required type="password" value={authForm.password} onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })} className="bg-black/40 border border-stone-800 p-4 rounded-xl text-stone-100 outline-none focus:border-amber-600 transition-colors text-sm" placeholder={T.auth.password.en} />
+                  <input required type="password" value={authForm.password} onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })} className={`${isDarkMode ? 'bg-black/40 border-stone-800 text-stone-100' : 'bg-white border-stone-300 text-stone-900'} border p-4 rounded-xl outline-none focus:border-amber-600 transition-colors text-sm`} placeholder={T.auth.password.en} />
                   <span className="text-[9px] text-stone-600 font-serif ml-2">{T.auth.password.bo}</span>
                 </div>
                 {authMode === 'SIGNUP' && (
                   <div className="flex flex-col gap-1">
-                    <input required type="password" value={authForm.confirmPassword} onChange={(e) => setAuthForm({ ...authForm, confirmPassword: e.target.value })} className="bg-black/40 border border-stone-800 p-4 rounded-xl text-stone-100 outline-none focus:border-amber-600 transition-colors text-sm" placeholder={T.auth.confirmPassword.en} />
+                    <input required type="password" value={authForm.confirmPassword} onChange={(e) => setAuthForm({ ...authForm, confirmPassword: e.target.value })} className={`${isDarkMode ? 'bg-black/40 border-stone-800 text-stone-100' : 'bg-white border-stone-300 text-stone-900'} border p-4 rounded-xl outline-none focus:border-amber-600 transition-colors text-sm`} placeholder={T.auth.confirmPassword.en} />
                     <span className="text-[9px] text-stone-600 font-serif ml-2">{T.auth.confirmPassword.bo}</span>
                   </div>
                 )}
@@ -696,12 +537,12 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
 
         {isLoginGateOpen && (
           <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-in fade-in zoom-in duration-300">
-            <div className="bg-stone-900 border-2 border-amber-600/30 p-8 rounded-[3rem] w-full max-w-sm shadow-[0_0_80px_rgba(0,0,0,0.9)] text-center relative overflow-hidden">
+            <div className={`${isDarkMode ? 'bg-stone-900 border-amber-600/30' : 'bg-white border-stone-300'} border-2 p-8 rounded-[3rem] w-full max-w-sm shadow-[0_0_80px_rgba(0,0,0,0.9)] text-center relative overflow-hidden`}>
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent opacity-50"></div>
               <h2 className="text-3xl font-cinzel text-amber-500 mb-2 font-bold tracking-widest">{T.auth.gateTitle.en}</h2>
               <div className="text-lg font-serif text-amber-600 mb-6">{T.auth.gateTitle.bo}</div>
               <div className="flex flex-col gap-2 mb-10">
-                <p className="text-stone-300 text-sm font-serif leading-relaxed px-2">{T.auth.gateDesc.en}</p>
+                <p className={`${isDarkMode ? 'text-stone-300' : 'text-stone-600'} text-sm font-serif leading-relaxed px-2`}>{T.auth.gateDesc.en}</p>
                 <p className="text-stone-500 text-[13px] font-serif leading-relaxed px-2">{T.auth.gateDesc.bo}</p>
               </div>
               <div className="flex flex-col gap-4 mb-8">
@@ -709,11 +550,11 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
                   <span className="uppercase tracking-[0.2em]">{T.auth.loginBtn.en}</span>
                   <span className="font-serif text-sm mt-0.5">{T.auth.loginBtn.bo}</span>
                 </button>
-                <button onClick={() => { triggerHaptic(15); setAuthMode('SIGNUP'); setIsAuthModalOpen(true); setIsLoginGateOpen(false); }} className="w-full py-4 bg-stone-800 border border-stone-700 hover:border-amber-600 text-stone-200 font-bold rounded-2xl transition-all active:scale-95 flex flex-col items-center">
+                <button onClick={() => { triggerHaptic(15); setAuthMode('SIGNUP'); setIsAuthModalOpen(true); setIsLoginGateOpen(false); }} className={`w-full py-4 ${isDarkMode ? 'bg-stone-800 border-stone-700 text-stone-200' : 'bg-stone-100 border-stone-200 text-stone-700'} border hover:border-amber-600 font-bold rounded-2xl transition-all active:scale-95 flex flex-col items-center`}>
                   <span className="uppercase tracking-[0.2em]">{T.auth.signupBtn.en}</span>
                   <span className="font-serif text-sm mt-0.5">{T.auth.signupBtn.bo}</span>
                 </button>
-                <button onClick={() => { triggerHaptic(10); setIsLoginGateOpen(false); }} className="mt-2 text-stone-500 hover:text-white uppercase text-[11px] tracking-widest font-bold transition-colors">
+                <button onClick={() => { triggerHaptic(10); setIsLoginGateOpen(false); }} className="mt-2 text-stone-500 hover:text-amber-600 uppercase text-[11px] tracking-widest font-bold transition-colors">
                   {T.common.cancel.en} <span className="font-serif ml-1">{T.common.cancel.bo}</span>
                 </button>
               </div>
@@ -727,15 +568,15 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
 
         {isProUpgradeOpen && (
           <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-in fade-in slide-in-from-bottom duration-500">
-            <div className="bg-stone-900 border-2 border-amber-600 p-1 rounded-[3.5rem] w-full max-w-md shadow-[0_0_80px_rgba(217,119,6,0.3)]">
-              <div className="bg-stone-950/80 p-8 md:p-12 rounded-[3.2rem] h-full flex flex-col items-center">
+            <div className={`${isDarkMode ? 'bg-stone-900 border-amber-600' : 'bg-white border-amber-800'} border-2 p-1 rounded-[3.5rem] w-full max-w-md shadow-[0_0_80px_rgba(217,119,6,0.3)]`}>
+              <div className={`${isDarkMode ? 'bg-stone-950/80' : 'bg-stone-50/80'} p-8 md:p-12 rounded-[3.2rem] h-full flex flex-col items-center`}>
                 <div className="w-20 h-20 bg-amber-600 rounded-full flex items-center justify-center text-4xl mb-6 shadow-[0_0_30px_rgba(217,119,6,0.5)] animate-pulse">⭐</div>
-                <h2 className="text-4xl font-cinzel text-white mb-1 font-bold tracking-[0.2em]">{T.pro.title.en}</h2>
-                <div className="text-lg font-serif text-amber-500 mb-2">{T.pro.title.bo}</div>
+                <h2 className={`text-4xl font-cinzel ${isDarkMode ? 'text-white' : 'text-stone-900'} mb-1 font-bold tracking-[0.2em]`}>{T.pro.title.en}</h2>
+                <div className="text-lg font-serif text-amber-600 mb-2">{T.pro.title.bo}</div>
                 <div className="h-0.5 w-16 bg-amber-600 mb-6" />
                 <div className="flex flex-col gap-1 text-center mb-10">
-                  <p className="text-stone-400 text-sm font-serif italic">{T.pro.desc.en}</p>
-                  <p className="text-stone-600 text-xs font-serif">{T.pro.desc.bo}</p>
+                  <p className={`${isDarkMode ? 'text-stone-400' : 'text-stone-600'} text-sm font-serif italic`}>{T.pro.desc.en}</p>
+                  <p className="text-stone-500 text-xs font-serif">{T.pro.desc.bo}</p>
                 </div>
                 <ul className="w-full space-y-4 mb-12">
                   {[
@@ -745,8 +586,8 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
                     { icon: '💎', key: 'feat4' },
                     { icon: '✨', key: 'feat5' }
                   ].map((feat, idx) => (
-                    <li key={idx} className="flex items-center gap-4 text-stone-200 font-bold">
-                      <span className="w-8 h-8 rounded-lg bg-stone-800 flex items-center justify-center flex-shrink-0">{feat.icon}</span>
+                    <li key={idx} className={`flex items-center gap-4 ${isDarkMode ? 'text-stone-200' : 'text-stone-700'} font-bold`}>
+                      <span className={`w-8 h-8 rounded-lg ${isDarkMode ? 'bg-stone-800' : 'bg-white border border-stone-200'} flex items-center justify-center flex-shrink-0`}>{feat.icon}</span>
                       <div className="flex flex-col">
                         <span className="uppercase tracking-widest text-[10px]">{T.pro[feat.key].en}</span>
                         <span className="text-[11px] font-serif text-stone-500 leading-tight">{T.pro[feat.key].bo}</span>
@@ -758,7 +599,7 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
                   <span className="uppercase tracking-[0.3em]">{T.pro.upgrade.en}</span>
                   <span className="font-serif text-sm mt-0.5">{T.pro.upgrade.bo}</span>
                 </button>
-                <button onClick={() => { triggerHaptic(10); setIsProUpgradeOpen(false); }} className="mt-8 text-stone-500 hover:text-white uppercase text-[10px] tracking-widest font-bold transition-colors">
+                <button onClick={() => { triggerHaptic(10); setIsProUpgradeOpen(false); }} className={`mt-8 ${isDarkMode ? 'text-stone-500 hover:text-white' : 'text-stone-400 hover:text-stone-900'} uppercase text-[10px] tracking-widest font-bold transition-colors`}>
                   {T.pro.notNow.en} <span className="font-serif ml-1">{T.pro.notNow.bo}</span>
                 </button>
               </div>
@@ -813,7 +654,7 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
                     <div className={`fixed top-0 left-0 right-0 p-4 flex justify-between items-center z-[60] ${isDarkMode ? 'bg-gradient-to-b from-stone-950 via-stone-950/80 to-transparent' : 'bg-stone-50/90'}`}>
                         <div className="flex items-center gap-2">
                             <span className="text-amber-600/60 text-[10px] font-cinzel font-bold tracking-[0.3em] hidden sm:block uppercase">EST. 2024</span>
-                            {isPro && <span className="ml-4 bg-amber-600 text-white text-[8px] font-bold transparency-0 px-2 py-0.5 rounded-full tracking-widest shadow-[0_0_10px_rgba(217,119,6,0.5)]">PRO MEMBER</span>}
+                            {isPro && <span className="ml-4 bg-amber-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full tracking-widest shadow-[0_0_10px_rgba(217,119,6,0.5)]">PRO MEMBER</span>}
                         </div>
                         <div className="flex items-center gap-4 sm:gap-6">
                             {isLoggedIn && (
@@ -869,7 +710,7 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
                             <div className="grid grid-cols-2 gap-3 md:gap-6 w-full px-2">
                                 <button 
                                     className={`border-2 ${isDarkMode ? 'bg-stone-900/40 border-stone-800/80' : 'bg-white border-stone-200'} p-4 md:p-6 rounded-[2rem] hover:border-amber-600/50 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 md:gap-2`} 
-                                    onClick={() => { triggerHaptic(20); setGameMode(GameMode.AI); initializeGame({name: getSafePlayerName(), color: selectedColor}, {name: 'Sho Bot', color: '#999'}); }}
+                                    onClick={() => { triggerHaptic(20); setGameMode(GameMode.LOCAL); initializeGame({name: getSafePlayerName(), color: selectedColor}, {name: 'Player 2', color: '#999'}); }}
                                 >
                                     <span className="text-xl md:text-2xl">👤</span>
                                     <h3 className={`text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest leading-none ${isDarkMode ? 'text-amber-100' : 'text-amber-800'}`}>{T.lobby.modeLocal.en}</h3>
@@ -882,7 +723,7 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
                                     className={`border-2 ${isDarkMode ? 'bg-amber-900/20 border-amber-800/40' : 'bg-amber-50 border-amber-200'} p-4 md:p-6 rounded-[2rem] hover:border-amber-500/80 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 md:gap-2 relative overflow-hidden`} 
                                     onClick={handleOnlineClick}
                                 >
-                                    {!isPro && <span className="absolute top-2 right-2 text-[8px] transparency-0 bg-amber-600 text-white px-1.5 py-0.5 rounded-full font-bold">PRO</span>}
+                                    {!isPro && <span className="absolute top-2 right-2 text-[8px] bg-amber-600 text-white px-1.5 py-0.5 rounded-full font-bold">PRO</span>}
                                     <span className="text-xl md:text-2xl">🌐</span>
                                     <h3 className={`text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest leading-none ${isDarkMode ? 'text-amber-100' : 'text-amber-800'}`}>{T.lobby.modeMulti.en}</h3>
                                     <div className="flex flex-col items-center gap-0.5">
@@ -950,6 +791,7 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
                     step={tutorialStep} 
                     onNext={handleTutorialNext} 
                     onClose={handleTutorialClose} 
+                    isDarkMode={isDarkMode}
                   />
                 )}
                 <div className={`w-full md:w-1/4 flex flex-col border-b md:border-b-0 md:border-r ${isDarkMode ? 'border-stone-800 bg-stone-950' : 'border-stone-200 bg-white'} z-20 shadow-2xl h-[45dvh] md:h-full order-1 overflow-hidden flex-shrink-0 mobile-landscape-sidebar transition-colors duration-500`}>
