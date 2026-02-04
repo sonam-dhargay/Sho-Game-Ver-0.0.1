@@ -4,7 +4,24 @@ export const T = {
     close: { en: "Close", bo: "ཁ་རྒྱོབ།" },
     cancel: { en: "Cancel", bo: "རྩིས་མེད་གཏོང་།" },
     ok: { en: "OK", bo: "ལགས་སོ།" },
-    or: { en: "or", bo: "ཡང་ན།" }
+    or: { en: "or", bo: "ཡང་ན།" },
+    menu: { en: "Menu", bo: "དཀར་ཆག" }
+  },
+  menu: {
+    about: { en: "About", bo: "འདི་གའི་སྐོར།" },
+    settings: { en: "Settings", bo: "བཀོད་སྒྲིག" },
+    developedBy: { en: "Developed by Lungta Studios", bo: "རླུང་རྟ་བཟོ་སྐྲུན་ཁང་གིས་གསར་བཟོ་བྱས།" },
+    copyright: { en: "© 2026 Lungta Studios. All rights reserved.", bo: "© ༢༠༢༦ རླུང་རྟ་བཟོ་སྐྲུན་ཁང་། བདག་དབང་ཆ་ཚང་ཡོད།" },
+    thanks: { 
+      en: "With thanks to Sho players and community members who shared knowledge of the game.", 
+      bo: "ཤོ་རྩེད་ཀྱི་ཤེས་བྱ་མཁོ་འདོན་གནང་མཁན་གྱི་ཤོ་བ་རྣམས་དང་སྤྱི་ཚོགས་ཀྱི་ཚོགས་མི་རྣམས་ལ་ཐུགས་རྗེ་ཆེ་ཞུ།" 
+    },
+    themes: { en: "Themes", bo: "བརྗོད་གཞི།" },
+    lightMode: { en: "Light Mode", bo: "འོད་གསལ་བ།" },
+    darkMode: { en: "Dark Mode", bo: "མུན་ནག་པ།" },
+    gameVariant: { en: "Game Variant", bo: "རྩེད་མོ་འདམ་ག" },
+    niner: { en: "Niner", bo: "དགུ་མ།" },
+    noNiner: { en: "No-Niner", bo: "དགུ་མ་མིན་པ།" }
   },
   lobby: {
     title: { en: "Sho", bo: "ཤོ" },
@@ -26,7 +43,7 @@ export const T = {
     hostHeader: { en: "Host a Match", bo: "རྩེད་མོའི་མགྲོན་བདག་བྱོས།" },
     hostInstruction: { en: "Click below to generate a room code, then send it to your opponent.", bo: "གཤམ་གྱི་མཐེབ་ཅི་མནན་ནས་ཁང་བའི་ཨང་གྲངས་བཟོས་རྗེས་ཁ་གཏད་ལ་ཐོང་།" },
     joinHeader: { en: "Join a Match", bo: "རྩེད་མོར་ཞུགས་པ།" },
-    joinInstruction: { en: "Enter the room code shared by your opponent.", bo: "ཁ་གཏད་ཀྱིས་བསྐུར་བའི་ཁང་བའི་ཨང་གྲངས་དེ་འདི་རུ་བྲིས།" },
+    joinInstruction: { en: "Enter the room code shared by your opponent.", bo: "ཁ་གཏད་ཀྱྱིས་བསྐུར་བའི་ཁང་བའི་ཨང་གྲངས་དེ་འདི་རུ་བྲིས།" },
   },
   auth: {
     gateTitle: { en: "Play Multi-Player", bo: "དུ་མའ'ི་རྩེད་མོ་ལ་རོལ་བ།" },
@@ -51,7 +68,7 @@ export const T = {
     feat2: { en: "Live Voice Chat (Microphone)", bo: "ཐད་གཏོང་སྐད་ཆའི་གླེང་མོལ།" },
     feat3: { en: "Cloud Progress Sync", bo: "སྤྲིན་ཚོགས་རྩེད་གྲངས་ཉར་ཚགས།" },
     feat4: { en: "Exclusive Gold Piece Skins", bo: "དམིགས་བསལ་གསེར་གྱི་ལག་ཁྱི།" },
-    feat5: { en: "Ad-Free Experience", bo: "ཁྱབ་བསྒྲགས་མེད་པའི་ཁོར་ཡུག" },
+    feat5: { en: "Ad-Free Experience", bo: "ཁྱབ་བསྒབྲགས་མེད་པའི་ཁོར་ཡུག" },
     upgrade: { en: "Upgrade Now ($4.99)", bo: "ད་ལྟ་རིམ་པ་སྤོར། ($4.99)" },
     notNow: { en: "Not Now", bo: "ད་ལྟ་མིན།" }
   },
@@ -81,7 +98,7 @@ export const T = {
     objectiveDesc: { en: "Sho is a race game played on a spiral of 64 shells. Each player has 9 coins. The goal is to move all your coins from your hand (start) to the end of the spiral.", bo: "ཤོ་ནི་འགྲན་བསྡུར་གྱི་རྩེད་མོ་ཞིག་ཡིན་ཞིང་། དུང་དཀར་ ༦༤ ཡི་ཐོག་ཏུ་རྩེ་དགོས། རྩེད་མོ་བ་རེར་ཤོ་རྡོག་ ༩ རེ་ཡོད། དམིགས་ཡུལ་ནི་ཤོ་རྡོག་ཚང་མ་མཇུག་བསྡུ་སར་བསྐྱོད་རྒྱུ་དེ་ཡིན།" },
     shomoTitle: { en: "The 'Sho-mo'", bo: "ཤོ་མོ།" },
     shomoRule1: { en: "On the very first roll of the opening round, players can place two coins. This initial stack is called the 'Sho-mo'.", bo: "འགོ་འཛུགས་སྐབས་ཤོ་ཐེངས་དང་པོ་དེར་ཤོ་རྡོག་ gnyis-'jog-chog. 'di-la-'sho-mo'-zer." },
-    shomoRule2: { en: "Killer Bonus: If an opponent lands on and kills your 'Sho-mo', they can place three coins in its place immediately (taking the extra from their hand).", bo: "གསོད་པའི་ཁེ་ཕན། གལ་ཏེ་ཕ་རོལ་པོས་ཁྱེད་ཀྱི་'ཤོ་མོ་'བསད་པ་ཡིན་ན། ཁོ་ཚོས་དེའི་ཚབ་ཏུ་ཤོ་རྡོག་གསུམ་འཇོག་ཆོག" },
+    shomoRule2: { en: "Killer Bonus: If an opponent lands on and kills your 'Sho-mo', they can place three coins in its place immediately (taking the extra from their hand).", bo: "གསོད་པའི་ཁེ་ཕན། གལ་ཏེ་པ་རོལ་པོས་ཁྱེད་ཀྱི་'ཤོ་མོ་'བསད་པ་ཡིན་ན། ཁོ་ཚོས་དེའི་ཚབ་ཏུ་ཤོ་རྡོག་གསུམ་འཇོག་ཆོག" },
     paraTitle: { en: "The Pa Ra Rule", bo: "པ་རའི་སྒྲིག་གཞི།" },
     paraDesc: { en: "Rolling a 1 and 1 is called 'Pa Ra':", bo: "ཤོ་མིག་ ༡ དང་ ༡ བབས་ན་'པ་ར་'ཟེར།" },
     paraRule1: { en: "You get to roll again immediately.", bo: "དེ་མ་ཐག་ཤོ་བསྐྱར་དུ་རྒྱག་ཆོག" },
@@ -92,7 +109,7 @@ export const T = {
     stackedDice: { en: "Stacked Dice: If the dice physically land stacked on top of each other during a roll, the player wins on the spot.", bo: "ཤོ་བརྩེགས་བབས་པ། གལ་ཏེ་ཤོ་གཅིག་གི་སྟེང་དུ་གཅིག་བརྩེགས་ནས་བབས་ན་རྒྱལ་ཁ་ཐོབ་སྲིད།" },
     tacticsTitle: { en: "Tactics", bo: "ཐབས་ཇུས།" },
     stackingTitle: { en: "Stacking", bo: "བརྩེགས་སྟངས།" },
-    stackingDesc: { en: "If you land on your own piece, they stack together. Stacks move as a single unit.", bo: "གལ་ཏེ་རང་གི་ལག་ཁྱི་ཐོག་ཏུ་ཤོ་བབས་ན་དེའི་སྟེང་བརྩེགས་ནས་ mnyam-du-'gro-thub." },
+    stackingDesc: { en: "If you land on your own piece, they stack together. Stacks move as a single unit.", bo: "གལ་ཏེ་རང་གི་ལག་ཁྱིའི་ཐོག་བབས་ན་བརྩེགས་ནས་ mnyam-du-'gro-thub." },
     killingTitle: { en: "Killing", bo: "བསད་སྟངས།" },
     killingDesc: { en: "If you land on an opponent's stack that is equal to or smaller than yours, you 'kill' it. They return to hand, and you get a Bonus Roll!", bo: "གལ་ཏེ་ཁ་གཏད་ཀྱི་ལག་ཁྱི་ཁྱེད་ལས་ཉུང་བའམ་མཉམ་པ་ཡོད་ན། དེ་བསད་ནས་ལག་པར་སློག་ཆོག ཁྱེད་ལ་ཤོ་ཐེངས་གཅིག་རྒྱག་རྒྱུའི་ཁེ་ཕན།ཐོབ།" },
     finishingTitle: { en: "Finishing", bo: "རྩེད་མོ་མཇུག་སྒྲིལ་སྟངས།" },

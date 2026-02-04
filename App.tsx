@@ -11,6 +11,7 @@ import { Board } from './components/Board';
 import { DiceArea } from './components/DiceArea';
 import { RulesModal } from './components/RulesModal';
 import { TutorialOverlay } from './components/TutorialOverlay';
+import { MenuOverlay } from './components/MenuOverlay';
 import { T } from './translations';
 
 const generatePlayers = (
@@ -140,11 +141,13 @@ const App: React.FC = () => {
   const [isNinerMode, setIsNinerMode] = useState(true);
   const [gameMode, setGameMode] = useState<GameMode | null>(null);
   const [tutorialStep, setTutorialStep] = useState(0);
+  const [isDarkMode, setIsDarkMode] = useState(true);
   
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [selectedColor, setSelectedColor] = useState(COLOR_PALETTE[0].hex);
   const [showRules, setShowRules] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const [boardScale, setBoardScale] = useState(0.8);
   const [globalPlayCount, setGlobalPlayCount] = useState<number>(18742);
   const [isCounterPulsing, setIsCounterPulsing] = useState(false);
@@ -604,7 +607,7 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
   };
 
   return (
-    <div className="min-h-screen bg-stone-900 text-stone-100 flex flex-col md:flex-row fixed inset-0 font-sans mobile-landscape-row">
+    <div className={`min-h-screen ${isDarkMode ? 'bg-stone-900 text-stone-100' : 'bg-stone-100 text-stone-900'} flex flex-col md:flex-row fixed inset-0 font-sans mobile-landscape-row transition-colors duration-500`}>
         {remoteStream && <audio autoPlay ref={el => { if (el) el.srcObject = remoteStream; }} />}
         <style dangerouslySetInnerHTML={{__html: `
           @keyframes handBlockedShake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-4px); } 40%, 80% { transform: translateX(4px); } }
@@ -620,6 +623,14 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
         `}} />
         {phase === GamePhase.SETUP && gameMode !== null && <div className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center p-4 text-amber-500 font-cinzel text-xl animate-pulse">Initializing འགོ་འཛུགས་བཞིན་པ...</div>}
         <RulesModal isOpen={showRules} onClose={() => { triggerHaptic(10); setShowRules(false); }} isNinerMode={isNinerMode} onToggleNinerMode={() => { triggerHaptic(15); setIsNinerMode(prev => !prev); }} />
+        <MenuOverlay 
+          isOpen={showMenu} 
+          onClose={() => { triggerHaptic(10); setShowMenu(false); }} 
+          isNinerMode={isNinerMode}
+          onToggleNinerMode={() => { triggerHaptic(15); setIsNinerMode(prev => !prev); }}
+          isDarkMode={isDarkMode}
+          onToggleTheme={() => { triggerHaptic(15); setIsDarkMode(prev => !prev); }}
+        />
         {isAiThinking && (
           <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[150] bg-amber-600 text-white px-6 py-2 rounded-full font-cinzel text-xs font-bold shadow-2xl animate-pulse flex items-center gap-3">
             <span className="w-2 h-2 bg-white rounded-full animate-ping"></span>
@@ -756,14 +767,14 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
         )}
 
         {!gameMode && (
-          <div className="fixed inset-0 z-50 bg-stone-950 text-amber-500 overflow-y-auto flex flex-col items-center justify-between p-6 py-6 md:py-10">
+          <div className={`fixed inset-0 z-50 ${isDarkMode ? 'bg-stone-950 text-amber-500' : 'bg-stone-50 text-amber-700'} overflow-y-auto flex flex-col items-center justify-between p-6 py-6 md:py-10 transition-colors duration-500`}>
                {isSplashVisible && !isLoggedIn ? (
                  <>
                    <div className="flex-grow flex flex-col items-center justify-center w-full max-w-md gap-6 animate-in fade-in duration-700">
                       <div className="flex flex-col items-center text-center">
                           <h1 className="flex items-center gap-6 mb-2 font-cinzel">
-                              <span className="text-5xl md:text-7xl text-amber-500 drop-shadow-[0_0_30px_rgba(245,158,11,0.6)]">{T.lobby.title.bo}</span>
-                              <span className="text-3xl md:text-5xl text-amber-500 tracking-widest drop-shadow-lg">{T.lobby.title.en}</span>
+                              <span className="text-5xl md:text-7xl drop-shadow-[0_0_30px_rgba(245,158,11,0.6)]">{T.lobby.title.bo}</span>
+                              <span className="text-3xl md:text-5xl tracking-widest drop-shadow-lg">{T.lobby.title.en}</span>
                           </h1>
                           <div className="h-px w-32 bg-amber-900/40 mb-3" />
                           <div className="flex flex-col gap-1 mb-6">
@@ -777,32 +788,29 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
                               <span className="font-serif text-sm leading-tight mt-0.5">{T.lobby.guestContinue.bo}</span>
                           </button>
                           <div className="relative flex items-center py-2">
-                              <div className="flex-grow border-t border-stone-800"></div>
+                              <div className="flex-grow border-t border-stone-800/30"></div>
                               <div className="flex flex-col items-center mx-4 gap-0.5">
                                   <span className="text-stone-600 text-[10px] uppercase font-bold tracking-widest">{T.common.or.en}</span>
                                   <span className="text-stone-700 font-serif text-[11px] leading-none">{T.common.or.bo}</span>
                               </div>
-                              <div className="flex-grow border-t border-stone-800"></div>
+                              <div className="flex-grow border-t border-stone-800/30"></div>
                           </div>
                           <div className="grid grid-cols-2 gap-4">
-                              <button onClick={() => { triggerHaptic(10); setAuthMode('LOGIN'); setIsAuthModalOpen(true); }} className="py-3 bg-stone-900 border border-stone-800 hover:border-amber-600 text-stone-300 font-bold rounded-2xl transition-all flex flex-col items-center justify-center">
+                              <button onClick={() => { triggerHaptic(10); setAuthMode('LOGIN'); setIsAuthModalOpen(true); }} className={`py-3 ${isDarkMode ? 'bg-stone-900 border-stone-800 text-stone-300' : 'bg-white border-stone-300 text-stone-700'} border hover:border-amber-600 font-bold rounded-2xl transition-all flex flex-col items-center justify-center`}>
                                   <span className="uppercase tracking-[0.1em] text-[11px] leading-tight">{T.lobby.loginSplash.en}</span>
-                                  <span className="font-serif text-[12px] leading-tight mt-0.5 text-stone-400">{T.lobby.loginSplash.bo}</span>
+                                  <span className="font-serif text-[12px] leading-tight mt-0.5">{T.lobby.loginSplash.bo}</span>
                               </button>
-                              <button onClick={() => { triggerHaptic(10); setAuthMode('SIGNUP'); setIsAuthModalOpen(true); }} className="py-3 bg-stone-900 border border-stone-800 hover:border-amber-600 text-stone-300 font-bold rounded-2xl transition-all flex flex-col items-center justify-center">
+                              <button onClick={() => { triggerHaptic(10); setAuthMode('SIGNUP'); setIsAuthModalOpen(true); }} className={`py-3 ${isDarkMode ? 'bg-stone-900 border-stone-800 text-stone-300' : 'bg-white border-stone-300 text-stone-700'} border hover:border-amber-600 font-bold rounded-2xl transition-all flex flex-col items-center justify-center`}>
                                   <span className="uppercase tracking-[0.1em] text-[11px] leading-tight">{T.lobby.signupSplash.en}</span>
-                                  <span className="font-serif text-[12px] leading-tight mt-0.5 text-stone-400">{T.lobby.signupSplash.bo}</span>
+                                  <span className="font-serif text-[12px] leading-tight mt-0.5">{T.lobby.signupSplash.bo}</span>
                               </button>
                           </div>
-                          <p className="text-stone-600 text-[10px] uppercase tracking-wider font-bold mt-2 opacity-60 text-center animate-in fade-in duration-1000 delay-500">
-                            Login required for multi-player and syncing progress.
-                          </p>
                       </div>
                    </div>
                  </>
                ) : (
                  <>
-                    <div className="fixed top-0 left-0 right-0 p-4 flex justify-between items-center z-[60] bg-gradient-to-b from-stone-950 via-stone-950/80 to-transparent">
+                    <div className={`fixed top-0 left-0 right-0 p-4 flex justify-between items-center z-[60] ${isDarkMode ? 'bg-gradient-to-b from-stone-950 via-stone-950/80 to-transparent' : 'bg-stone-50/90'}`}>
                         <div className="flex items-center gap-2">
                             <span className="text-amber-600/60 text-[10px] font-cinzel font-bold tracking-[0.3em] hidden sm:block uppercase">EST. 2024</span>
                             {isPro && <span className="ml-4 bg-amber-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full tracking-widest shadow-[0_0_10px_rgba(217,119,6,0.5)]">PRO MEMBER</span>}
@@ -811,15 +819,19 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
                             {isLoggedIn && (
                                 <div className="flex items-center gap-4">
                                     <span className="text-amber-400 font-cinzel text-xs sm:text-sm tracking-widest">ཕེབས་པར་དགའ་བསུ་ཞུ། {getSafePlayerName().toUpperCase()}</span>
-                                    <button onClick={handleLogout} className="bg-stone-900/80 border border-stone-700 px-4 py-2 rounded-full text-[10px] uppercase font-bold text-stone-400 hover:text-white hover:border-amber-600 transition-all">Logout</button>
+                                    <button onClick={handleLogout} className={`border ${isDarkMode ? 'bg-stone-900/80 border-stone-700 text-stone-400' : 'bg-white border-stone-300 text-stone-500'} px-4 py-2 rounded-full text-[10px] uppercase font-bold hover:text-white hover:border-amber-600 transition-all`}>Logout</button>
                                 </div>
                             )}
+                            <button onClick={() => { triggerHaptic(10); setShowMenu(true); }} className={`border p-2 rounded-xl transition-all shadow-lg flex flex-col items-center ${isDarkMode ? 'bg-stone-800 hover:bg-stone-700 border-stone-600' : 'bg-white border-stone-300'}`}>
+                              <span className="text-lg">☰</span>
+                              <span className="text-[8px] font-cinzel font-bold uppercase tracking-tighter">{T.common.menu.en}</span>
+                            </button>
                         </div>
                     </div>
                     <div className="flex flex-col items-center flex-shrink-0 w-full max-w-sm md:max-w-4xl mt-4 sm:mt-2">
                         <h1 className="flex items-center gap-6 mb-1 font-cinzel">
-                            <span className="text-3xl md:text-5xl text-amber-500 drop-shadow-[0_0_20px_rgba(245,158,11,0.5)]">{T.lobby.title.bo}</span>
-                            <span className="text-lg md:text-2xl text-amber-500 tracking-widest drop-shadow-lg">{T.lobby.title.en}</span>
+                            <span className="text-3xl md:text-5xl drop-shadow-[0_0_20px_rgba(245,158,11,0.5)]">{T.lobby.title.bo}</span>
+                            <span className="text-lg md:text-2xl tracking-widest drop-shadow-lg">{T.lobby.title.en}</span>
                         </h1>
                         <div className="h-px w-32 bg-amber-900/40 mb-2" />
                         <div className="flex flex-col items-center">
@@ -828,7 +840,7 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
                         </div>
                     </div>
                     <div className="flex-grow flex flex-col items-center justify-center w-full max-w-md gap-4 md:gap-8 my-2 md:my-4">
-                        <div className="w-full bg-stone-900/30 p-5 md:p-8 rounded-[3rem] border border-stone-800/50 backdrop-blur-2xl shadow-2xl">
+                        <div className={`w-full ${isDarkMode ? 'bg-stone-900/30' : 'bg-white/80'} p-5 md:p-8 rounded-[3rem] border border-stone-800/20 backdrop-blur-2xl shadow-2xl`}>
                             <div className="mb-6">
                                 <label className="text-stone-500 text-[10px] uppercase block mb-3 tracking-widest font-bold px-1 text-center">
                                     {T.lobby.nameLabel.en} <span className="text-stone-600 font-serif ml-1">{T.lobby.nameLabel.bo}</span>
@@ -838,10 +850,9 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
                                     value={firstName} 
                                     placeholder="..." 
                                     onChange={(e) => setFirstName(e.target.value)} 
-                                    className={`w-full bg-black/40 border-b-2 ${firstName.trim() ? 'border-amber-600' : 'border-stone-800'} focus:border-amber-500 p-3 text-stone-100 outline-none text-center text-xl font-cinzel tracking-widest transition-all`} 
+                                    className={`w-full bg-transparent border-b-2 ${firstName.trim() ? 'border-amber-600' : 'border-stone-800/30'} focus:border-amber-500 p-3 outline-none text-center text-xl font-cinzel tracking-widest transition-all ${isDarkMode ? 'text-stone-100' : 'text-stone-900'}`} 
                                     maxLength={20} 
                                 />
-                                {!isNameEntered && <p className="text-[10px] text-amber-700/50 font-serif mt-2 text-center uppercase tracking-widest">Optional འདེམས་ཁ།</p>}
                             </div>
                             <div>
                                 <label className="text-stone-500 text-[10px] uppercase block mb-4 tracking-widest font-bold px-1 text-center">
@@ -857,23 +868,23 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
                         {onlineLobbyStatus === 'IDLE' ? (
                             <div className="grid grid-cols-2 gap-3 md:gap-6 w-full px-2">
                                 <button 
-                                    className={`bg-stone-900/40 border-2 border-stone-800/80 p-4 md:p-6 rounded-[2rem] hover:border-amber-600/50 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 md:gap-2`} 
+                                    className={`border-2 ${isDarkMode ? 'bg-stone-900/40 border-stone-800/80' : 'bg-white border-stone-200'} p-4 md:p-6 rounded-[2rem] hover:border-amber-600/50 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 md:gap-2`} 
                                     onClick={() => { triggerHaptic(20); setGameMode(GameMode.AI); initializeGame({name: getSafePlayerName(), color: selectedColor}, {name: 'Sho Bot', color: '#999'}); }}
                                 >
                                     <span className="text-xl md:text-2xl">👤</span>
-                                    <h3 className="text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest text-amber-100 leading-none">{T.lobby.modeLocal.en}</h3>
+                                    <h3 className={`text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest leading-none ${isDarkMode ? 'text-amber-100' : 'text-amber-800'}`}>{T.lobby.modeLocal.en}</h3>
                                     <div className="flex flex-col items-center gap-0.5">
                                       <span className="text-[10px] text-stone-400 font-bold uppercase tracking-widest leading-none">{T.lobby.modeLocalSub.en}</span>
                                       <span className="text-[9px] text-stone-500 font-serif">{T.lobby.modeLocalSub.bo}</span>
                                     </div>
                                 </button>
                                 <button 
-                                    className={`bg-amber-900/20 border-2 border-amber-800/40 p-4 md:p-6 rounded-[2rem] hover:border-amber-500/80 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 md:gap-2 relative overflow-hidden`} 
+                                    className={`border-2 ${isDarkMode ? 'bg-amber-900/20 border-amber-800/40' : 'bg-amber-50 border-amber-200'} p-4 md:p-6 rounded-[2rem] hover:border-amber-500/80 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 md:gap-2 relative overflow-hidden`} 
                                     onClick={handleOnlineClick}
                                 >
                                     {!isPro && <span className="absolute top-2 right-2 text-[8px] bg-amber-600 text-white px-1.5 py-0.5 rounded-full font-bold">PRO</span>}
                                     <span className="text-xl md:text-2xl">🌐</span>
-                                    <h3 className="text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest text-amber-100 leading-none">{T.lobby.modeMulti.en}</h3>
+                                    <h3 className={`text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest leading-none ${isDarkMode ? 'text-amber-100' : 'text-amber-800'}`}>{T.lobby.modeMulti.en}</h3>
                                     <div className="flex flex-col items-center gap-0.5">
                                       <span className="text-[10px] text-stone-400 font-bold uppercase tracking-widest leading-none text-center px-1">{T.lobby.modeMultiSub.en}</span>
                                       <span className="text-[9px] text-stone-500 font-serif">{T.lobby.modeMultiSub.bo}</span>
@@ -881,16 +892,16 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
                                 </button>
                             </div>
                         ) : (
-                            <div className="w-full bg-stone-900/50 border-2 border-amber-700/50 p-6 rounded-[3rem] animate-in fade-in zoom-in duration-300 max-h-[70vh] overflow-y-auto no-scrollbar">
+                            <div className={`w-full ${isDarkMode ? 'bg-stone-900/50' : 'bg-white'} border-2 border-amber-700/50 p-6 rounded-[3rem] animate-in fade-in zoom-in duration-300 max-h-[70vh] overflow-y-auto no-scrollbar`}>
                                 {onlineLobbyStatus === 'WAITING' && (
                                 <div className="flex flex-col items-center gap-6">
                                     <h3 className="text-xl font-cinzel text-amber-500 mb-2">
                                         {T.lobby.roomLobbyTitle.en} <span className="font-serif ml-2">{T.lobby.roomLobbyTitle.bo}</span>
                                     </h3>
                                     <div className="flex flex-col gap-6 w-full">
-                                        <div className="bg-black/40 p-5 rounded-2xl border border-stone-800 flex flex-col items-center">
+                                        <div className={`p-5 rounded-2xl border ${isDarkMode ? 'bg-black/40 border-stone-800' : 'bg-stone-50 border-stone-200'} flex flex-col items-center`}>
                                             <div className="text-center mb-4">
-                                                <h4 className="text-amber-200 font-cinzel text-sm uppercase tracking-widest font-bold">
+                                                <h4 className="text-amber-600 font-cinzel text-sm uppercase tracking-widest font-bold">
                                                     {T.lobby.hostHeader.en} <span className="font-serif ml-1">{T.lobby.hostHeader.bo}</span>
                                                 </h4>
                                                 <div className="flex flex-col gap-1 mt-2">
@@ -901,26 +912,6 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
                                             <button className="w-full py-4 bg-amber-600 text-white rounded-xl font-bold uppercase tracking-widest hover:bg-amber-500 transition-colors shadow-lg text-sm" onClick={() => { triggerHaptic(20); if(!myPeerId) startOnlineHost(); else navigator.clipboard.writeText(myPeerId); }}>
                                                 {myPeerId ? `ROOM CODE: ${myPeerId} 📋` : T.lobby.hostHeader.en}
                                             </button>
-                                        </div>
-                                        <div className="relative flex items-center py-2">
-                                            <div className="flex-grow border-t border-stone-800"></div>
-                                            <span className="flex-shrink mx-4 text-stone-700 text-[10px] uppercase font-bold tracking-widest">OR</span>
-                                            <div className="flex-grow border-t border-stone-800"></div>
-                                        </div>
-                                        <div className="bg-black/40 p-5 rounded-2xl border border-stone-800 flex flex-col items-center">
-                                            <div className="text-center mb-4">
-                                                <h4 className="text-amber-200 font-cinzel text-sm uppercase tracking-widest font-bold">
-                                                    {T.lobby.joinHeader.en} <span className="font-serif ml-1">{T.lobby.joinHeader.bo}</span>
-                                                </h4>
-                                                <div className="flex flex-col gap-1 mt-2">
-                                                    <p className="text-[10px] text-stone-400 uppercase tracking-tight leading-tight">{T.lobby.joinInstruction.en}</p>
-                                                    <p className="text-[11px] text-stone-500 font-serif leading-tight">{T.lobby.joinInstruction.bo}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex flex-col gap-2 w-full">
-                                                <input type="text" placeholder="ENTER ROOM CODE" value={targetPeerId} onChange={(e) => setTargetPeerId(e.target.value.toUpperCase())} className="bg-black/40 border border-stone-800 p-4 rounded-xl text-center font-cinzel text-lg outline-none focus:border-amber-600 w-full" />
-                                                <button className={`py-4 rounded-xl font-bold uppercase tracking-widest transition-all ${targetPeerId.length >= 4 ? 'bg-amber-600 text-white shadow-lg' : 'bg-stone-800 text-stone-500'}`} disabled={targetPeerId.length < 4 || isPeerConnecting} onClick={() => joinOnlineGame(targetPeerId)}> {isPeerConnecting ? '...' : 'Play'} </button>
-                                            </div>
                                         </div>
                                     </div>
                                     <button className="text-stone-500 hover:text-white uppercase text-[10px] tracking-widest font-bold mt-4" onClick={() => { triggerHaptic(10); if(peer) peer.destroy(); setOnlineLobbyStatus('IDLE'); }}>Cancel ཕྱིར་ལོག།</button>
@@ -961,9 +952,9 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
                     onClose={handleTutorialClose} 
                   />
                 )}
-                <div className="w-full md:w-1/4 flex flex-col border-b md:border-b-0 md:border-r border-stone-800 bg-stone-950 z-20 shadow-2xl h-[45dvh] md:h-full order-1 overflow-hidden flex-shrink-0 mobile-landscape-sidebar">
-                    <div className="p-1.5 md:p-4 flex flex-col gap-0 md:gap-3 flex-shrink-0 bg-stone-950 mobile-landscape-compact-stats">
-                        <header className="flex justify-between items-center border-b border-stone-800 pb-1 md:pb-4">
+                <div className={`w-full md:w-1/4 flex flex-col border-b md:border-b-0 md:border-r ${isDarkMode ? 'border-stone-800 bg-stone-950' : 'border-stone-200 bg-white'} z-20 shadow-2xl h-[45dvh] md:h-full order-1 overflow-hidden flex-shrink-0 mobile-landscape-sidebar transition-colors duration-500`}>
+                    <div className={`p-1.5 md:p-4 flex flex-col gap-0 md:gap-3 flex-shrink-0 ${isDarkMode ? 'bg-stone-950' : 'bg-white'} mobile-landscape-compact-stats`}>
+                        <header className={`flex justify-between items-center border-b ${isDarkMode ? 'border-stone-800' : 'border-stone-200'} pb-1 md:pb-4`}>
                             <div className="flex items-center gap-2 cursor-pointer" onClick={() => { triggerHaptic(10); if (peer) peer.destroy(); setGameMode(null); setOnlineLobbyStatus('IDLE'); setTutorialStep(0); }}>
                                 <h1 className="text-amber-500 font-cinzel text-[10px] md:text-sm">Sho</h1>
                             </div>
@@ -971,7 +962,7 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
                                 {(gameMode === GameMode.ONLINE_HOST || gameMode === GameMode.ONLINE_GUEST) && (
                                     <button 
                                         onClick={toggleMic}
-                                        className={`w-7 h-7 md:w-9 md:h-9 rounded-full flex items-center justify-center transition-all ${isMicActive ? 'bg-red-600 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'bg-stone-800 text-stone-500 hover:text-white border border-stone-700'}`}
+                                        className={`w-7 h-7 md:w-9 md:h-9 rounded-full flex items-center justify-center transition-all ${isMicActive ? 'bg-red-600 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)]' : (isDarkMode ? 'bg-stone-800 text-stone-500 border-stone-700' : 'bg-stone-100 text-stone-400 border-stone-200')} border`}
                                         title={isMicActive ? "Mute Microphone" : "Enable Microphone"}
                                     >
                                         <span className={`text-sm md:text-base ${isMicActive ? 'animate-mic-active' : ''}`}>
@@ -979,19 +970,20 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
                                         </span>
                                     </button>
                                 )}
-                                <button onClick={() => { triggerHaptic(10); setShowRules(true); }} className="w-5 h-5 md:w-8 md:h-8 rounded-full border border-stone-600 text-stone-400 flex items-center justify-center text-[10px] md:text-xs">?</button>
+                                <button onClick={() => { triggerHaptic(10); setShowMenu(true); }} className={`w-5 h-5 md:w-8 md:h-8 rounded-full border flex items-center justify-center text-[10px] md:text-xs ${isDarkMode ? 'border-stone-600 text-stone-400' : 'border-stone-300 text-stone-500'}`}>☰</button>
+                                <button onClick={() => { triggerHaptic(10); setShowRules(true); }} className={`w-5 h-5 md:w-8 md:h-8 rounded-full border flex items-center justify-center text-[10px] md:text-xs ${isDarkMode ? 'border-stone-600 text-stone-400' : 'border-stone-300 text-stone-500'}`}>?</button>
                             </div>
                         </header>
                         <div className="grid grid-cols-2 gap-1 md:gap-2 mt-4 md:mt-8 relative px-1">
                             {players.map((p, i) => {
                                 const isActive = turnIndex === i;
                                 return (
-                                    <div key={p.id} className={`relative p-1.5 md:p-3 rounded-xl border transition-all duration-300 ${isActive ? 'bg-stone-800 border-amber-500/50 scale-[1.05] z-10 animate-active-pulse shadow-xl' : 'border-stone-800 opacity-50'}`}>
+                                    <div key={p.id} className={`relative p-1.5 md:p-3 rounded-xl border transition-all duration-300 ${isActive ? (isDarkMode ? 'bg-stone-800 border-amber-500/50' : 'bg-amber-50 border-amber-200') + ' scale-[1.05] z-10 animate-active-pulse shadow-xl' : (isDarkMode ? 'border-stone-800 opacity-50' : 'border-stone-100 opacity-60')}`}>
                                         <div className="flex items-center gap-1.5 mb-1.5">
                                             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.colorHex }}></div>
                                             <h3 className="font-bold truncate text-[9px] md:text-[11px] font-serif" style={{ color: p.colorHex }}>{p.name}</h3>
                                         </div>
-                                        <div className="flex justify-between text-[11px] md:text-[14px] text-stone-100 font-bold font-cinzel">
+                                        <div className={`flex justify-between text-[11px] md:text-[14px] font-bold font-cinzel ${isDarkMode ? 'text-stone-100' : 'text-stone-900'}`}>
                                             <div className="flex flex-col">
                                                 <span className="text-[7px] text-stone-500 uppercase">{T.game.inHand.en} <span className="font-serif">{T.game.inHand.bo}</span></span>
                                                 <span>{p.coinsInHand}</span>
@@ -1006,9 +998,9 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
                             })}
                         </div>
                     </div>
-                    <div className="px-2 md:px-4 pb-1 flex flex-col gap-1 flex-shrink-0 bg-stone-950">
+                    <div className={`px-2 md:px-4 pb-1 flex flex-col gap-1 flex-shrink-0 ${isDarkMode ? 'bg-stone-950' : 'bg-white'}`}>
                         {phase === GamePhase.GAME_OVER ? ( 
-                            <div className="text-center p-2 bg-stone-800 rounded-xl border border-amber-500 animate-pulse">
+                            <div className={`text-center p-2 rounded-xl border animate-pulse ${isDarkMode ? 'bg-stone-800 border-amber-500' : 'bg-amber-50 border-amber-200'}`}>
                                 <h2 className="text-base text-amber-400 font-cinzel">{T.game.victory.en}</h2>
                                 <h3 className="text-lg text-amber-500 font-serif leading-none mb-2">{T.game.victory.bo}</h3>
                                 <button onClick={() => { triggerHaptic(20); if(peer) peer.destroy(); setGameMode(null); setOnlineLobbyStatus('IDLE'); setTutorialStep(0); }} className="bg-amber-600 text-white px-4 py-1.5 rounded-full font-bold uppercase text-[9px] transition-all hover:bg-amber-500">
@@ -1019,7 +1011,7 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
                             <div className="flex flex-col gap-1">
                                 <DiceArea currentRoll={lastRoll} onRoll={() => { if (tutorialStep === 2) handleTutorialNext(); performRoll(); }} canRoll={(phase === GamePhase.ROLLING) && !isRolling && isLocalTurn} pendingValues={pendingMoveValues} waitingForPaRa={paRaCount > 0} paRaCount={paRaCount} extraRolls={extraRolls} flexiblePool={null} />
                                 <div className="flex gap-1">
-                                    <div onClick={handleFromHandClick} className={`flex-1 p-2 md:p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center justify-center ${handShake ? 'animate-hand-blocked' : selectedSourceIndex === 0 ? 'border-amber-500 bg-amber-900/40' : (shouldHighlightHand && isLocalTurn) ? 'border-amber-500/80 bg-amber-900/10 animate-pulse' : 'border-stone-800 bg-stone-900/50'}`}>
+                                    <div onClick={handleFromHandClick} className={`flex-1 p-2 md:p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center justify-center ${handShake ? 'animate-hand-blocked' : selectedSourceIndex === 0 ? 'border-amber-500 bg-amber-900/40' : (shouldHighlightHand && isLocalTurn) ? 'border-amber-500/80 bg-amber-900/10 animate-pulse' : (isDarkMode ? 'border-stone-800 bg-stone-900/50' : 'border-stone-200 bg-stone-50')}`}>
                                         <span className={`font-bold uppercase font-cinzel text-[11px] md:text-sm`}>{T.game.fromHand.en}</span>
                                         <span className="text-[11px] md:text-sm text-amber-500 font-serif font-bold">{T.game.fromHand.bo}</span>
                                         <span className="text-[11px] text-stone-200 font-cinzel mt-1 font-bold">({players[turnIndex].coinsInHand})</span>
@@ -1035,7 +1027,7 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
                         )}
                     </div>
                 </div>
-                <div className="flex-grow relative bg-[#1a1715] flex items-center justify-center overflow-hidden order-2 h-[55dvh] md:h-full mobile-landscape-board" ref={boardContainerRef}>
+                <div className={`flex-grow relative ${isDarkMode ? 'bg-[#1a1715]' : 'bg-[#fcfaf9]'} flex items-center justify-center overflow-hidden order-2 h-[55dvh] md:h-full mobile-landscape-board transition-colors duration-500`} ref={boardContainerRef}>
                     <div style={{ transform: `scale(${boardScale})`, width: 800, height: 800 }} className="transition-transform duration-300">
                         <Board 
                             boardState={board} players={players} validMoves={visualizedMoves} onSelectMove={(m) => { if (isLocalTurn) performMove(m.sourceIndex, m.targetIndex); }} 

@@ -77,7 +77,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, isNiner
           </section>
 
           <section className="space-y-4">
-            <h3 className="text-xl font-cinzel text-amber-400 font-bold border-b border-amber-600/30 pb-2">Possible Outcomes of a Move མཐའ་མའི་འབྲས་བུ།</h3>
+            <h3 className="text-xl font-cinzel text-amber-400 font-bold border-b border-amber-600/30 pb-2">Possible Outcomes of a Move མཐའ་མའི་འཇུག་འབྲས།</h3>
             <p>After selecting a target position, one of four things can happen:</p>
             <ol className="list-decimal list-inside space-y-4 ml-2">
               <li>
@@ -136,7 +136,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, isNiner
           </section>
 
           <section className="space-y-4">
-            <h3 className="text-xl font-cinzel text-amber-400 font-bold border-b border-amber-600/30 pb-2">Pa Ra Example པ་རའི་དཔེར་བརྗོད།</h3>
+            <h3 className="text-xl font-cinzel text-amber-400 font-bold border-b border-amber-600/30 pb-2">Pa Ra Example པ་རའི་དཔེ་མཚོན།</h3>
             <div className="space-y-3 bg-stone-800/30 p-6 rounded-2xl border border-stone-700">
               <p><strong>1.</strong> The player rolls (1,1), then rolls again and gets (5,6). <br/><span className="text-amber-500">Possible moves: 2, 11, or 13.</span></p>
               <p><strong>2.</strong> The player chooses to move 2, which results in a <strong>kill</strong>. They roll again and obtain (3,4) = 7.</p>
