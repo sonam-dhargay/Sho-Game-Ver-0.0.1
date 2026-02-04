@@ -767,19 +767,19 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
         )}
 
         {!gameMode && (
-          <div className={`fixed inset-0 z-50 ${isDarkMode ? 'bg-stone-950 text-amber-500' : 'bg-stone-50 text-amber-700'} overflow-y-auto flex flex-col items-center justify-between p-6 py-6 md:py-10 transition-colors duration-500`}>
+          <div className={`fixed inset-0 z-50 ${isDarkMode ? 'bg-stone-950 text-amber-500' : 'bg-stone-50 text-amber-800'} overflow-y-auto flex flex-col items-center justify-between p-6 py-6 md:py-10 transition-colors duration-500`}>
                {isSplashVisible && !isLoggedIn ? (
                  <>
                    <div className="flex-grow flex flex-col items-center justify-center w-full max-w-md gap-6 animate-in fade-in duration-700">
                       <div className="flex flex-col items-center text-center">
-                          <h1 className="flex items-center gap-6 mb-2 font-cinzel">
-                              <span className="text-5xl md:text-7xl drop-shadow-[0_0_30px_rgba(245,158,11,0.6)]">{T.lobby.title.bo}</span>
-                              <span className="text-3xl md:text-5xl tracking-widest drop-shadow-lg">{T.lobby.title.en}</span>
+                          <h1 className={`flex items-center gap-6 mb-2 font-cinzel ${isDarkMode ? 'text-amber-500' : 'text-amber-900'}`}>
+                              <span className="text-5xl md:text-7xl drop-shadow-[0_0_30px_rgba(245,158,11,0.4)]">{T.lobby.title.bo}</span>
+                              <span className="text-3xl md:text-5xl tracking-widest drop-shadow-md">{T.lobby.title.en}</span>
                           </h1>
-                          <div className="h-px w-32 bg-amber-900/40 mb-3" />
+                          <div className={`h-px w-32 ${isDarkMode ? 'bg-amber-900/40' : 'bg-amber-700/20'} mb-3`} />
                           <div className="flex flex-col gap-1 mb-6">
-                              <p className="text-stone-400 tracking-[0.3em] uppercase text-xs md:text-sm font-bold">{T.lobby.subtitle.en}</p>
-                              <p className="text-stone-500 font-serif text-2xl md:text-3xl leading-tight text-center">{T.lobby.subtitle.bo}</p>
+                              <p className={`${isDarkMode ? 'text-stone-400' : 'text-stone-500'} tracking-[0.3em] uppercase text-xs md:text-sm font-bold`}>{T.lobby.subtitle.en}</p>
+                              <p className={`${isDarkMode ? 'text-stone-500' : 'text-stone-600'} font-serif text-2xl md:text-3xl leading-tight text-center`}>{T.lobby.subtitle.bo}</p>
                           </div>
                       </div>
                       <div className="w-full flex flex-col gap-4 mt-2 px-4">
@@ -788,12 +788,12 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
                               <span className="font-serif text-sm leading-tight mt-0.5">{T.lobby.guestContinue.bo}</span>
                           </button>
                           <div className="relative flex items-center py-2">
-                              <div className="flex-grow border-t border-stone-800/30"></div>
+                              <div className={`flex-grow border-t ${isDarkMode ? 'border-stone-800/30' : 'border-stone-200'}`}></div>
                               <div className="flex flex-col items-center mx-4 gap-0.5">
                                   <span className="text-stone-600 text-[10px] uppercase font-bold tracking-widest">{T.common.or.en}</span>
                                   <span className="text-stone-700 font-serif text-[11px] leading-none">{T.common.or.bo}</span>
                               </div>
-                              <div className="flex-grow border-t border-stone-800/30"></div>
+                              <div className={`flex-grow border-t ${isDarkMode ? 'border-stone-800/30' : 'border-stone-200'}`}></div>
                           </div>
                           <div className="grid grid-cols-2 gap-4">
                               <button onClick={() => { triggerHaptic(10); setAuthMode('LOGIN'); setIsAuthModalOpen(true); }} className={`py-3 ${isDarkMode ? 'bg-stone-900 border-stone-800 text-stone-300' : 'bg-white border-stone-300 text-stone-700'} border hover:border-amber-600 font-bold rounded-2xl transition-all flex flex-col items-center justify-center`}>
@@ -813,7 +813,7 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
                     <div className={`fixed top-0 left-0 right-0 p-4 flex justify-between items-center z-[60] ${isDarkMode ? 'bg-gradient-to-b from-stone-950 via-stone-950/80 to-transparent' : 'bg-stone-50/90'}`}>
                         <div className="flex items-center gap-2">
                             <span className="text-amber-600/60 text-[10px] font-cinzel font-bold tracking-[0.3em] hidden sm:block uppercase">EST. 2024</span>
-                            {isPro && <span className="ml-4 bg-amber-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full tracking-widest shadow-[0_0_10px_rgba(217,119,6,0.5)]">PRO MEMBER</span>}
+                            {isPro && <span className="ml-4 bg-amber-600 text-white text-[8px] font-bold transparency-0 px-2 py-0.5 rounded-full tracking-widest shadow-[0_0_10px_rgba(217,119,6,0.5)]">PRO MEMBER</span>}
                         </div>
                         <div className="flex items-center gap-4 sm:gap-6">
                             {isLoggedIn && (
@@ -829,14 +829,14 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
                         </div>
                     </div>
                     <div className="flex flex-col items-center flex-shrink-0 w-full max-w-sm md:max-w-4xl mt-4 sm:mt-2">
-                        <h1 className="flex items-center gap-6 mb-1 font-cinzel">
-                            <span className="text-3xl md:text-5xl drop-shadow-[0_0_20px_rgba(245,158,11,0.5)]">{T.lobby.title.bo}</span>
-                            <span className="text-lg md:text-2xl tracking-widest drop-shadow-lg">{T.lobby.title.en}</span>
+                        <h1 className={`flex items-center gap-6 mb-1 font-cinzel ${isDarkMode ? 'text-amber-500' : 'text-amber-900'}`}>
+                            <span className="text-3xl md:text-5xl drop-shadow-[0_0_20px_rgba(245,158,11,0.4)]">{T.lobby.title.bo}</span>
+                            <span className="text-lg md:text-2xl tracking-widest drop-shadow-md">{T.lobby.title.en}</span>
                         </h1>
-                        <div className="h-px w-32 bg-amber-900/40 mb-2" />
+                        <div className={`h-px w-32 ${isDarkMode ? 'bg-amber-900/40' : 'bg-amber-700/30'} mb-2`} />
                         <div className="flex flex-col items-center">
-                            <p className="text-stone-400 tracking-[0.3em] uppercase text-[10px] md:text-xs text-center font-bold leading-none">{T.lobby.subtitle.en}</p>
-                            <p className="text-stone-500 font-serif text-2xl md:text-3xl mt-1 leading-tight text-center">{T.lobby.subtitle.bo}</p>
+                            <p className={`${isDarkMode ? 'text-stone-400' : 'text-stone-500'} tracking-[0.3em] uppercase text-[10px] md:text-xs text-center font-bold leading-none`}>{T.lobby.subtitle.en}</p>
+                            <p className={`${isDarkMode ? 'text-stone-500' : 'text-stone-600'} font-serif text-2xl md:text-3xl mt-1 leading-tight text-center`}>{T.lobby.subtitle.bo}</p>
                         </div>
                     </div>
                     <div className="flex-grow flex flex-col items-center justify-center w-full max-w-md gap-4 md:gap-8 my-2 md:my-4">
@@ -882,7 +882,7 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
                                     className={`border-2 ${isDarkMode ? 'bg-amber-900/20 border-amber-800/40' : 'bg-amber-50 border-amber-200'} p-4 md:p-6 rounded-[2rem] hover:border-amber-500/80 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 md:gap-2 relative overflow-hidden`} 
                                     onClick={handleOnlineClick}
                                 >
-                                    {!isPro && <span className="absolute top-2 right-2 text-[8px] bg-amber-600 text-white px-1.5 py-0.5 rounded-full font-bold">PRO</span>}
+                                    {!isPro && <span className="absolute top-2 right-2 text-[8px] transparency-0 bg-amber-600 text-white px-1.5 py-0.5 rounded-full font-bold">PRO</span>}
                                     <span className="text-xl md:text-2xl">🌐</span>
                                     <h3 className={`text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest leading-none ${isDarkMode ? 'text-amber-100' : 'text-amber-800'}`}>{T.lobby.modeMulti.en}</h3>
                                     <div className="flex flex-col items-center gap-0.5">
@@ -956,7 +956,7 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
                     <div className={`p-1.5 md:p-4 flex flex-col gap-0 md:gap-3 flex-shrink-0 ${isDarkMode ? 'bg-stone-950' : 'bg-white'} mobile-landscape-compact-stats`}>
                         <header className={`flex justify-between items-center border-b ${isDarkMode ? 'border-stone-800' : 'border-stone-200'} pb-1 md:pb-4`}>
                             <div className="flex items-center gap-2 cursor-pointer" onClick={() => { triggerHaptic(10); if (peer) peer.destroy(); setGameMode(null); setOnlineLobbyStatus('IDLE'); setTutorialStep(0); }}>
-                                <h1 className="text-amber-500 font-cinzel text-[10px] md:text-sm">Sho</h1>
+                                <h1 className={`font-cinzel text-[10px] md:text-sm ${isDarkMode ? 'text-amber-500' : 'text-amber-900'}`}>Sho</h1>
                             </div>
                             <div className="flex items-center gap-2 md:gap-4">
                                 {(gameMode === GameMode.ONLINE_HOST || gameMode === GameMode.ONLINE_GUEST) && (
@@ -981,7 +981,7 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
                                     <div key={p.id} className={`relative p-1.5 md:p-3 rounded-xl border transition-all duration-300 ${isActive ? (isDarkMode ? 'bg-stone-800 border-amber-500/50' : 'bg-amber-50 border-amber-200') + ' scale-[1.05] z-10 animate-active-pulse shadow-xl' : (isDarkMode ? 'border-stone-800 opacity-50' : 'border-stone-100 opacity-60')}`}>
                                         <div className="flex items-center gap-1.5 mb-1.5">
                                             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.colorHex }}></div>
-                                            <h3 className="font-bold truncate text-[9px] md:text-[11px] font-serif" style={{ color: p.colorHex }}>{p.name}</h3>
+                                            <h3 className="font-bold transparency-0 truncate text-[9px] md:text-[11px] font-serif" style={{ color: p.colorHex }}>{p.name}</h3>
                                         </div>
                                         <div className={`flex justify-between text-[11px] md:text-[14px] font-bold font-cinzel ${isDarkMode ? 'text-stone-100' : 'text-stone-900'}`}>
                                             <div className="flex flex-col">
@@ -1013,8 +1013,8 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
                                 <div className="flex gap-1">
                                     <div onClick={handleFromHandClick} className={`flex-1 p-2 md:p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center justify-center ${handShake ? 'animate-hand-blocked' : selectedSourceIndex === 0 ? 'border-amber-500 bg-amber-900/40' : (shouldHighlightHand && isLocalTurn) ? 'border-amber-500/80 bg-amber-900/10 animate-pulse' : (isDarkMode ? 'border-stone-800 bg-stone-900/50' : 'border-stone-200 bg-stone-50')}`}>
                                         <span className={`font-bold uppercase font-cinzel text-[11px] md:text-sm`}>{T.game.fromHand.en}</span>
-                                        <span className="text-[11px] md:text-sm text-amber-500 font-serif font-bold">{T.game.fromHand.bo}</span>
-                                        <span className="text-[11px] text-stone-200 font-cinzel mt-1 font-bold">({players[turnIndex].coinsInHand})</span>
+                                        <span className={`text-[11px] md:text-sm font-serif font-bold ${isDarkMode ? 'text-amber-500' : 'text-amber-900'}`}>{T.game.fromHand.bo}</span>
+                                        <span className={`text-[11px] font-cinzel mt-1 font-bold ${isDarkMode ? 'text-stone-200' : 'text-stone-700'}`}>({players[turnIndex].coinsInHand})</span>
                                     </div>
                                     {currentValidMovesList.length === 0 && phase === GamePhase.MOVING && !isRolling && paRaCount === 0 && isLocalTurn && ( 
                                         <button onClick={() => { triggerHaptic(10); handleSkipTurn(); }} className="flex-1 bg-amber-800/50 hover:bg-amber-700 text-amber-200 border border-amber-600/50 p-1 rounded-xl font-bold flex flex-col items-center justify-center">
