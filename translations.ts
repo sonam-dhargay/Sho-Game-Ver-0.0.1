@@ -10,13 +10,13 @@ export const T = {
   menu: {
     about: { en: "About", bo: "འདི་གའི་སྐོར།" },
     settings: { en: "Settings", bo: "བཀོད་སྒྲིག" },
-    developedBy: { en: "Developed by Lungta Labs.", bo: "རླུང་རྟ་བཟོ་སྐྲུན་ཁང་གིས་གསར་བཟོ་བྱས།" },
-    copyright: { en: "© 2026 Lungta Studios. All rights reserved.", bo: "© ༢༠༢༦ རླུང་རྟ་བཟོ་སྐྲུན་ཁང་། བདག་དབང་ཆ་ཚང་ཡོད།" },
+    developedBy: { en: "Developed by Lungta Labs.", bo: "རླུང་རྟ་བརྟག་དཔྱད་ཁང་གིས་གསར་བཟོ་བྱས།" },
+    copyright: { en: "© 2026 Lungta Labs. All rights reserved.", bo: "© ༢༠༢༦ རླུང་རྟ་བརྟག་དཔྱད་ཁང་། བདག་དབང་ཆ་ཚང་ཡོད།" },
     version: { en: "Version 1.0.0", bo: "ཐོན་རིམ་ ༡.༠.༠" },
     released: { en: "Released 2026", bo: "༢༠༢༦ ལོར་འགྲེམས་སྤེལ་བྱས།" },
     thanks: { 
       en: "With thanks to community elders and players who preserve the living tradition of Sho.", 
-      bo: "ཤོ་རྩེད་ཀྱི་སྲོལ་རྒྱུན་མི་ཉམས་རྒྱུན་འཛིན་གནང་མཁན་གྱི་རྒན་རབས་པ་ Andromeda དང་ཤོ་བ་རྣམས་ལ་ཐུགས་རྗེ་ཆེ་ཞུ།" 
+      bo: "ཤོ་རྩེད་ཀྱི་སྲོལ་རྒྱུན་མི་ཉམས་རྒྱུན་འཛིན་གནང་མཁན་གྱི་རྒན་རབས་པ་དང་ཤོ་བ་རྣམས་ལ་ཐུགས་རྗེ་ཆེ་ཞུ།" 
     },
     themes: { en: "Themes", bo: "བརྗོད་གཞི།" },
     lightMode: { en: "Light Mode", bo: "འོད་གསལ་བ།" },
