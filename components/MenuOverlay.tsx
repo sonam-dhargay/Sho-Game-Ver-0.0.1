@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { T } from '../translations';
 
@@ -30,26 +29,47 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
       case 'ABOUT':
         return (
           <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-            <header className="flex items-center gap-4 mb-8">
+            <header className="flex items-center gap-4 mb-6">
               <button onClick={() => { setActivePage('MAIN'); }} className="text-amber-500 text-2xl">←</button>
-              <h2 className={`text-2xl font-cinzel ${isDarkMode ? 'text-amber-500' : 'text-amber-700'} font-bold`}>{T.menu.about.en} <span className="font-serif ml-2">{T.menu.about.bo}</span></h2>
+              <h2 className={`text-2xl font-cinzel ${isDarkMode ? 'text-amber-500' : 'text-amber-700'} font-bold`}>{T.menu.about.en}</h2>
             </header>
+            
             <div className="flex flex-col items-center gap-6 text-center">
-              <div className={`w-24 h-24 ${isDarkMode ? 'bg-amber-600/20 border-amber-600/50' : 'bg-amber-100 border-amber-300'} rounded-full flex items-center justify-center border-2 shadow-[0_0_30px_rgba(217,119,6,0.3)]`}>
-                <span className="text-4xl">🏔️</span>
-              </div>
-              <div className="space-y-2">
-                <h3 className={`text-xl font-cinzel ${isDarkMode ? 'text-white' : 'text-stone-900'} font-bold`}>{T.menu.developedBy.en}</h3>
-                <p className="text-stone-500 font-serif">{T.menu.developedBy.bo}</p>
-              </div>
               <div className="space-y-1">
-                <p className="text-stone-400 text-sm font-medium">{T.menu.copyright.en}</p>
-                <p className="text-stone-500 text-xs font-serif">{T.menu.copyright.bo}</p>
+                <h3 className={`text-xl font-cinzel ${isDarkMode ? 'text-white' : 'text-stone-900'} font-bold leading-tight`}>
+                  {T.lobby.title.en} — {T.lobby.subtitle.en}
+                </h3>
+                <p className="text-stone-500 font-serif text-sm">
+                  {T.lobby.title.bo} — {T.lobby.subtitle.bo}
+                </p>
+              </div>
+
+              <div className="space-y-1">
+                <p className={`${isDarkMode ? 'text-stone-300' : 'text-stone-700'} text-sm font-medium`}>{T.menu.developedBy.en}</p>
+                <p className="text-stone-500 text-xs font-serif">{T.menu.developedBy.bo}</p>
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-stone-400 text-xs">{T.menu.copyright.en}</p>
+                <p className="text-stone-500 text-[10px] font-serif">{T.menu.copyright.bo}</p>
+              </div>
+
+              <div className="space-y-1 mt-2">
+                <p className={`${isDarkMode ? 'text-stone-400' : 'text-stone-600'} text-xs font-bold uppercase tracking-widest`}>
+                  {T.menu.version.en}
+                </p>
+                <p className={`${isDarkMode ? 'text-stone-400' : 'text-stone-600'} text-xs font-bold uppercase tracking-widest`}>
+                  {T.menu.released.en}
+                </p>
               </div>
               
-              <div className={`mt-4 pt-6 border-t ${isDarkMode ? 'border-stone-800' : 'border-stone-200'} w-full`}>
-                <p className="text-stone-400 text-xs italic leading-relaxed px-4">"{T.menu.thanks.en}"</p>
-                <p className="text-stone-500 text-[11px] font-serif mt-2 leading-relaxed px-4">{T.menu.thanks.bo}</p>
+              <div className={`mt-6 pt-6 border-t ${isDarkMode ? 'border-stone-800' : 'border-stone-200'} w-full`}>
+                <p className={`${isDarkMode ? 'text-stone-300' : 'text-stone-600'} text-sm leading-relaxed px-4 italic`}>
+                  {T.menu.thanks.en}
+                </p>
+                <p className="text-stone-500 text-[12px] font-serif mt-3 leading-relaxed px-4">
+                  {T.menu.thanks.bo}
+                </p>
               </div>
             </div>
           </div>
@@ -106,7 +126,9 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
                 </div>
               </section>
 
-              <div className={`text-center ${isDarkMode ? 'text-stone-700' : 'text-stone-400'} text-[10px] uppercase font-bold tracking-[0.2em] mt-8`}>Version 1.0.6-LUNGTA</div>
+              <div className={`text-center ${isDarkMode ? 'text-stone-700' : 'text-stone-400'} text-[10px] uppercase font-bold tracking-[0.2em] mt-8`}>
+                {T.menu.version.en} — LUNGTA LABS
+              </div>
             </div>
           </div>
         );
