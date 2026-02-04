@@ -517,6 +517,7 @@ const App: React.FC = () => {
                 {authMode === 'SIGNUP' && (
                   <div className="flex flex-col gap-1">
                     <input required type="password" value={authForm.confirmPassword} onChange={(e) => setAuthForm({ ...authForm, confirmPassword: e.target.value })} className={`${isDarkMode ? 'bg-black/40 border-stone-800 text-stone-100' : 'bg-white border-stone-300 text-stone-900'} border p-4 rounded-xl outline-none focus:border-amber-600 transition-colors text-sm`} placeholder={T.auth.confirmPassword.en} />
+                    {/* Fixed typo: T.confirmPassword.bo -> T.auth.confirmPassword.bo */}
                     <span className="text-[9px] text-stone-600 font-serif ml-2">{T.auth.confirmPassword.bo}</span>
                   </div>
                 )}
@@ -537,7 +538,7 @@ const App: React.FC = () => {
 
         {isLoginGateOpen && (
           <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-in fade-in zoom-in duration-300">
-            <div className={`${isDarkMode ? 'bg-stone-900 border-amber-600/30' : 'bg-white border-stone-300'} border-2 p-8 rounded-[3rem] w-full max-w-sm shadow-[0_0_80px_rgba(0,0,0,0.9)] text-center relative overflow-hidden`}>
+            <div className={`${isDarkMode ? 'bg-stone-900 border-amber-600/30' : 'bg-white border-stone-300'} border-2 p-8 rounded-[3rem] w-full max-sm shadow-[0_0_80px_rgba(0,0,0,0.9)] text-center relative overflow-hidden`}>
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent opacity-50"></div>
               <h2 className="text-3xl font-cinzel text-amber-500 mb-2 font-bold tracking-widest">{T.auth.gateTitle.en}</h2>
               <div className="text-lg font-serif text-amber-600 mb-6">{T.auth.gateTitle.bo}</div>
@@ -646,6 +647,15 @@ const App: React.FC = () => {
                                   <span className="font-serif text-[12px] leading-tight mt-0.5">{T.lobby.signupSplash.bo}</span>
                               </button>
                           </div>
+                          {/* Login requirement instruction restored below */}
+                          <div className="mt-6 flex flex-col gap-2 text-center max-w-[280px] mx-auto">
+                              <p className={`${isDarkMode ? 'text-stone-500' : 'text-stone-400'} text-[10px] font-medium leading-relaxed`}>
+                                  {T.auth.gateDesc.en}
+                              </p>
+                              <p className={`${isDarkMode ? 'text-stone-600' : 'text-stone-500'} text-[11px] font-serif leading-tight`}>
+                                  {T.auth.gateDesc.bo}
+                              </p>
+                          </div>
                       </div>
                    </div>
                  </>
@@ -669,7 +679,7 @@ const App: React.FC = () => {
                             </button>
                         </div>
                     </div>
-                    <div className="flex flex-col items-center flex-shrink-0 w-full max-w-sm md:max-w-4xl mt-4 sm:mt-2">
+                    <div className="flex flex-col items-center flex-shrink-0 w-full max-sm:px-4 mt-16 sm:mt-12">
                         <h1 className={`flex items-center gap-6 mb-1 font-cinzel ${isDarkMode ? 'text-amber-500' : 'text-amber-900'}`}>
                             <span className="text-3xl md:text-5xl drop-shadow-[0_0_20px_rgba(245,158,11,0.4)]">{T.lobby.title.bo}</span>
                             <span className="text-lg md:text-2xl tracking-widest drop-shadow-md">{T.lobby.title.en}</span>
