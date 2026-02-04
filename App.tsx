@@ -462,14 +462,15 @@ const App: React.FC = () => {
       .filter(([_, shell]) => shell.stackSize > 0)
       .map(([idx, shell]) => `Pos ${idx}: ${shell.stackSize} coins of ${shell.owner}`);
     
-    const prompt = `You are a Grandmaster Sho Bot (འཆམ་པོ་ཤོ་མཁན།).
+    const prompt = `You are an elite Grandmaster Sho AI (འཆམ་པོ་ཤོ་མཁན།).
 Objective: Move all 9 coins past the 64th shell.
 
-STRATEGIC DIRECTIVES:
-1. UNIT EFFICIENCY: Moving a stack of 3 coins forward 5 spaces is 3x more efficient than moving 1 coin. Building and moving stacks is your TOP priority.
-2. STACK BUILDING: Use small dice values (like those from a Pa Ra bonus) to build stacks early. A large stack is harder to kill and moves faster in the long run.
-3. KILLING FOR MOMENTUM: Killing resets opponent progress AND earns you a bonus roll. Prioritize kills of large opponent units.
-4. BLOCKING: Position your largest stacks to block the opponent's path.
+ADVANCED STRATEGIC DIRECTIVES:
+1. UNIT EFFICIENCY (CRITICAL): The mathematical core of Sho is moving coins as a unit. Moving a stack of 3 coins forward 5 spaces is 3x more efficient than moving 1 coin. Always favor moving your largest stack to maximize total progress.
+2. AGGRESSIVE CAPTURE (KILL): Capturing an opponent stack (KILL) resets their hard-earned progress and gives you a Bonus Roll. Prioritize kills of stacks size 2 or greater.
+3. DEFENSIVE STACKING: Use small movement values (like the '2's from a Pa Ra) to consolidate single coins into stacks. A stack of 2 is much safer and more efficient than two stacks of 1.
+4. BLOCKING: Position your largest stacks (size 3+) to block the opponent. They cannot land on or pass through a stack larger than their own mover.
+5. FINISHING: When near the end (Position 55+), bank your large stacks to secure the win.
 
 Board state: ${boardBrief.join(', ')}
 My status: ${s.players[s.turnIndex].coinsInHand} in hand, ${s.players[s.turnIndex].coinsFinished} finished.
@@ -477,9 +478,10 @@ Opponent status: ${s.players[(s.turnIndex+1)%2].coinsInHand} in hand, ${s.player
 Available dice pool: [${s.pendingMoveValues.join(', ')}]
 
 Available options:
-${aiMoves.map((m, i) => `Option ${i}: from ${m.sourceIndex === 0 ? 'Hand' : m.sourceIndex} to ${m.targetIndex} (Type: ${m.type}, Distance: ${m.targetIndex - m.sourceIndex})`).join('\n')}
+${aiMoves.map((m, i) => `Option ${i}: from ${m.sourceIndex === 0 ? 'Hand' : m.sourceIndex} to ${m.targetIndex} (Type: ${m.type}, Mover Size: ${m.sourceIndex === 0 ? (s.isOpeningPaRa ? 3 : 2) : (s.board.get(m.sourceIndex)?.stackSize || 1)})`).join('\n')}
 
-Task: Select the move that maximizes "Unit Efficiency" (Stack Size * Distance) while looking for STACK/KILL opportunities.
+Task: Return the index of the move that maximizes Unit Efficiency and Tactical Advantage.
+Provide a short strategic commentary in English and Tibetan.
 Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
 
     try {
@@ -524,25 +526,37 @@ Response must be JSON with "moveIndex", "commentaryEn", and "commentaryBo".`;
               setAiCommentary(`${geminiDecision.commentaryEn} (${geminiDecision.commentaryBo})`);
               setTimeout(() => setAiCommentary(null), 5000);
             } else {
-              // Refined Fallback Heuristic favoring Unit Efficiency (Token-Spaces per move)
+              // Sophisticated Fallback Heuristic
               const scores = aiMoves.map(m => {
                   const moverStack = m.sourceIndex === 0 ? (s.isOpeningPaRa ? 3 : 2) : (s.board.get(m.sourceIndex)?.stackSize || 1);
                   const distance = m.type === MoveResultType.FINISH ? (TOTAL_SHELLS + 1 - m.sourceIndex) : (m.targetIndex - m.sourceIndex);
                   
-                  // Primary Score: Unit Efficiency (how many token-steps are we gaining?)
-                  let score = moverStack * distance * 10;
+                  // Unit Efficiency (Total token-steps)
+                  let score = moverStack * distance * 15;
                   
-                  if (m.type === MoveResultType.FINISH) score += 20000;
+                  // Strategic bonuses
+                  if (m.type === MoveResultType.FINISH) {
+                      score += 25000 + (moverStack * 2000); // Massive priority to finishing
+                  }
+                  
                   if (m.type === MoveResultType.KILL) {
                       const killed = s.board.get(m.targetIndex);
-                      score += 10000 + (killed?.stackSize || 0) * 1500;
+                      const killedSize = killed?.stackSize || 1;
+                      score += 12000 + (killedSize * 2500); // High priority to kills, especially large stacks
                   }
+                  
                   if (m.type === MoveResultType.STACK) {
                       const target = s.board.get(m.targetIndex);
-                      // Incentivize building larger units
-                      score += 5000 + (target?.stackSize || 0) * 2000;
+                      const existingSize = target?.stackSize || 0;
+                      // Grouping is good, especially creating stacks of 3+ (defensive units)
+                      score += 6000 + (existingSize * 1500); 
                   }
-                  if (m.sourceIndex === 0) score += 3000; // Prefer establishing presence
+
+                  // Moving out of hand is good for establishing presence
+                  if (m.sourceIndex === 0) score += 4000;
+
+                  // Progress penalty (avoid leaving small pieces behind in the "death zone")
+                  if (moverStack === 1 && m.targetIndex < 30) score -= 2000;
 
                   return { move: m, score };
               }).sort((a, b) => b.score - a.score);

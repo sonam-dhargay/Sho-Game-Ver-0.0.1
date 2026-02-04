@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 interface RulesModalProps {
@@ -23,34 +24,83 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, isNiner
           <button onClick={onClose} className="text-stone-400 hover:text-white text-3xl font-bold transition-colors">×</button>
         </div>
 
-        <div className="p-6 md:p-8 space-y-10 font-sans text-stone-300 leading-relaxed">
-          {/* Basic Gameplay Section */}
-          <section className="bg-amber-900/10 p-6 rounded-2xl border border-amber-600/20">
-            <h3 className="text-xl font-cinzel text-amber-400 mb-4 font-bold border-b border-amber-600/30 pb-2">Basic Gameplay གཞི་རྩའི་རྩེད་སྟངས།</h3>
-            <div className="space-y-4 text-sm md:text-base">
-              <p>The first player to move all <span className="text-amber-500 font-bold">nine coins</span> from the beginning of the board to the end is the winner.</p>
-              <p>The shells are formed into a <span className="italic">clockwise spiral shape</span> around the dice pad. The spaces between the shells are the playing positions which can be occupied by the coins. Each playing position can be occupied by a coin or stack of coins from only one player.</p>
-              <p>A stack of coins is moved as one unit. A stack can be increased but never reduced; a stack is destroyed when it is kicked out and all its coins are sent back to the start.</p>
-              <p>The players take turns to throw the dice.</p>
-              
-              <div className="bg-amber-600/5 border-l-4 border-amber-500 p-4 my-4">
-                <p className="mb-2">The player chooses which coin or stack to move from its current position to a new target position determined by moving it forward the number of positions (inter-shell spaces) corresponding to the throw of the dice - the total of the dice is taken so there is no difference between, say, the rolls (4,2), (5,1) or (3,3) - all are moved as 6.</p>
-                <p className="text-stone-400 text-sm font-serif leading-tight">རྩེད་མོ་བས་རང་གི་ཤོ་མིག་དང་བསྟུན་ནས་ལག་ཁྱི་གང་ཞིག་གཏོང་མིན་འདེམས་དགོས། ཤོ་མིག་གཉིས་ཀྱི་བསྡོམས་འབོར་དེ་རྩིས་རྒྱག་གི་རེད། དཔེར་ན། ཤོ་མིག་ ༤ དང་ ༢ བབས་པའམ་ ༥ དང་ ༡ བབས་པ། ཡང་ན་ ༣ དང་ ༣ བབས་ཀྱང་ཁྱད་པར་མེད་པར་ཚང་མ་ ༦ ལ་བརྩིས་ནས་གཏོང་ཆོག</p>
-              </div>
+        <div className="p-6 md:p-8 space-y-10 font-sans text-stone-300 leading-relaxed text-sm md:text-base">
+          
+          <section className="space-y-4">
+            <h3 className="text-2xl font-cinzel text-amber-500 font-bold">Sho — Traditional Tibetan Dice Game</h3>
+            <p>
+              Sho (Tibetan: <span className="font-serif">ཤོ</span>) is a traditional Tibetan race game that remains widely played today. Its name simply means “dice” in Tibetan.
+            </p>
+            <p>
+              Sho is traditionally played for money and has historically been associated with male players, although in contemporary settings anyone may participate. The game is played by two (gnyis ‘dzing) to four players (cha gzing), with three players (gsum gdzing) being the most common arrangement.
+            </p>
+            <p>
+              When four players take part, a frequent variant is to play in two teams of two, with partners seated opposite each other.
+            </p>
+          </section>
 
-              <p>Depending on whether and how this new target playing position is occupied, there are four possibilities:</p>
-              <ul className="list-disc list-inside space-y-2 ml-2">
-                <li><span className="text-amber-200 font-bold">Vacant:</span> Place your coin/stack in the new position.</li>
-                <li><span className="text-amber-400 font-bold">Friendly Occupation:</span> Stack your coins onto your existing ones to create a larger stack.</li>
-                <li><span className="text-red-400 font-bold">Opponent Kill:</span> If your stack is equal or larger, you kill the opponent stack, sending them to the start.</li>
-                <li><span className="text-stone-500 font-bold">Blocked:</span> If the opposing stack is larger than yours, you cannot move there.</li>
-              </ul>
-              
-              <p>If the player cannot move or if they simply place their coin/stack in a new space, play passes to the next player clockwise.</p>
-              
-              <p className="bg-amber-600/10 p-3 rounded-lg border border-amber-600/30 italic text-stone-200">
-                Bonus: If you <span className="font-bold">stack</span> or <span className="font-bold">kill</span>, you roll and move again immediately!
-              </p>
+          <hr className="border-amber-900/30" />
+
+          <section className="space-y-4">
+            <h3 className="text-xl font-cinzel text-amber-400 font-bold border-b border-amber-600/30 pb-2">Equipment མཁོ་ཆས།</h3>
+            <p>
+              The Sho board is formed by a circular spiral of shells (rde’u), typically sixty-four in number.
+            </p>
+            <p>
+              Each player—or team—has nine identical playing pieces (lag kyi), traditionally old coins. These pieces must be stackable, as stacking is a central part of the game.
+            </p>
+            <p>
+              Two six-sided dice are used. They are placed inside a small wooden dice cup, which is shaken and then slammed down onto a dice pad.
+            </p>
+            <p>
+              The pad—called the shodden (sho gdan)—is traditionally made of yak leather and stuffed with yak wool. It forms the center of the board, surrounded by the circle of shells.
+            </p>
+          </section>
+
+          <section className="bg-amber-900/10 p-6 rounded-2xl border border-amber-600/20 space-y-4">
+            <h3 className="text-xl font-cinzel text-amber-400 font-bold border-b border-amber-600/30 pb-2">Basic Gameplay གཞི་རྩའི་རྩེད་སྟངས།</h3>
+            <p>The first player to move all nine coins from the beginning of the board to the end wins the game.</p>
+            <p>The shells are arranged in a clockwise spiral around the dice pad.</p>
+            <p>The spaces between the shells form the playing positions, which may be occupied by coins or stacks of coins.</p>
+            <p>As stacks move around the board, the shells are rearranged to expand or contract the spiral and its spaces. This makes the game highly tactile and physically dynamic.</p>
+            <p>Each playing position may be occupied by coins or stacks from only one player.</p>
+            <p>A stack of coins always moves as one unit. Stacks may be increased but never reduced.</p>
+            <p className="font-bold text-red-400">A stack is destroyed when it is kicked out, and all of its coins are sent back to the start.</p>
+          </section>
+
+          <section className="space-y-4">
+            <h3 className="text-xl font-cinzel text-amber-400 font-bold border-b border-amber-600/30 pb-2">Moving Coins ལག་ཁྱི་གཏོང་སྟངས།</h3>
+            <p>Players take turns throwing the dice.</p>
+            <p>On a turn, the player chooses one coin or stack to move forward from its current position by a number of spaces equal to the total shown on the two dice.</p>
+            <p>For example, the rolls <strong>(4,2), (5,1), or (3,3)</strong> are all treated as <strong>6</strong>.</p>
+            <p className="italic text-stone-500">(Unlike backgammon, doubles have no special meaning here.)</p>
+          </section>
+
+          <section className="space-y-4">
+            <h3 className="text-xl font-cinzel text-amber-400 font-bold border-b border-amber-600/30 pb-2">Possible Outcomes of a Move མཐའ་མའི་འབྲས་བུ།</h3>
+            <p>After selecting a target position, one of four things can happen:</p>
+            <ol className="list-decimal list-inside space-y-4 ml-2">
+              <li>
+                <span className="text-amber-200 font-bold">Vacant space:</span> 
+                <p className="ml-6">The player places their coin or stack in the new position.</p>
+              </li>
+              <li>
+                <span className="text-amber-400 font-bold">Occupied by the same player:</span>
+                <p className="ml-6">The player stacks their coins together, forming a larger stack.</p>
+              </li>
+              <li>
+                <span className="text-red-400 font-bold">Occupied by an opponent with equal or fewer coins:</span>
+                <p className="ml-6">The player kills the opposing stack, occupies that space, and sends the opponent’s coins back to the start.</p>
+              </li>
+              <li>
+                <span className="text-stone-500 font-bold">Occupied by an opponent with more coins:</span>
+                <p className="ml-6">The player may not move that coin or stack.</p>
+              </li>
+            </ol>
+            <div className="bg-amber-600/10 p-4 rounded-xl border border-amber-500/30">
+              <p>If the player cannot move, or if they only place a coin or stack in a vacant space, their turn ends and play passes clockwise to the next player.</p>
+              <p className="mt-2 font-bold text-amber-400">However, if the player stacks or kills, they roll again and take another move.</p>
+              <p className="mt-2 italic">This continues until they can only place or cannot move. With favorable dice rolls, long and game-changing sequences of moves are possible.</p>
             </div>
           </section>
 
@@ -64,20 +114,37 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, isNiner
               </button>
           </section>
 
-          <section>
-            <h3 className="text-xl font-cinzel text-amber-200 mb-3 font-bold">The 'Sho-mo' ཤོ་མོ།</h3>
-            <p className="text-sm">On the very first roll of the opening round, players can place two coins. This initial stack is called the 'Sho-mo'. If an opponent lands on and kills your 'Sho-mo', they can place three coins in its place immediately.</p>
+          <section className="bg-amber-950/20 p-6 rounded-2xl border border-amber-900/30 space-y-4">
+            <h3 className="text-xl font-cinzel text-amber-400 font-bold border-b border-amber-600/30 pb-2">Pa Ra (Snake Eyes) པ་རའི་སྒྲིག་གཞི།</h3>
+            <p>The only dice roll with special significance in the basic game is <strong>(1,1)</strong>, which is called <em>pa ra</em> in Tibetan.</p>
+            <p>When pa ra is rolled:</p>
+            <ul className="list-disc list-inside space-y-2 ml-4">
+              <li>The player rolls the dice again <strong>before moving</strong>.</li>
+              <li>The player may then choose from several possible move values.</li>
+            </ul>
+            <div className="bg-black/20 p-4 rounded-lg">
+              <p className="text-sm italic">Example: If the player rolls <strong>(1,1) = 2</strong> followed by <strong>(5,3) = 8</strong>, they may choose to move: <strong>2</strong>, <strong>8</strong>, or <strong>10 (2 + 8)</strong>.</p>
+            </div>
+
+            <h4 className="font-cinzel text-amber-300 font-bold mt-6">Carrying Forward Unused Values</h4>
+            <p>
+              If the player chooses one of the two values (not the combined total) and that move results in a kill or stack, the unused value is carried forward to the next roll.
+            </p>
+            <p>
+              This can continue across multiple rolls. As a result, moves larger than the usual maximum of (6,6) = 12 can occur.
+            </p>
           </section>
 
-          <section className="bg-amber-950/20 p-6 rounded-2xl border border-amber-900/30">
-            <h3 className="text-xl font-cinzel text-amber-400 mb-3 font-bold">The Pa Ra Rule པ་རའི་སྒྲིག་གཞི།</h3>
-            <p className="text-sm mb-3 font-bold">Rolling a 1 and 1 is called 'Pa Ra'.</p>
-            <ul className="list-disc list-inside text-sm space-y-2">
-              <li><strong>Bonus Roll:</strong> You roll again immediately.</li>
-              <li><strong>Opening Pa Ra:</strong> On the first turn, you place 3 coins instead of 2.</li>
-              <li><strong>Move Stacking:</strong> The bonus values (2) are added to your movement pool.</li>
-              <li><strong>Triple Pa Ra:</strong> Rolling it three times in a row results in an <span className="text-amber-500 font-bold">Instant Victory</span>.</li>
-            </ul>
+          <section className="space-y-4">
+            <h3 className="text-xl font-cinzel text-amber-400 font-bold border-b border-amber-600/30 pb-2">Pa Ra Example པ་རའི་དཔེར་བརྗོད།</h3>
+            <div className="space-y-3 bg-stone-800/30 p-6 rounded-2xl border border-stone-700">
+              <p><strong>1.</strong> The player rolls (1,1), then rolls again and gets (5,6). <br/><span className="text-amber-500">Possible moves: 2, 11, or 13.</span></p>
+              <p><strong>2.</strong> The player chooses to move 2, which results in a <strong>kill</strong>. They roll again and obtain (3,4) = 7.</p>
+              <p><strong>3.</strong> The unused value of 11 is carried forward. <br/><span className="text-amber-500">Possible moves now: 11, 7, or 18.</span></p>
+              <p><strong>4.</strong> The player chooses 11, which results in <strong>stacking</strong>. They roll again and obtain (2,3) = 5.</p>
+              <p><strong>5.</strong> The unused value of 7 is carried forward. <br/><span className="text-amber-500">Possible moves: 7, 5, or 12.</span></p>
+              <p><strong>6.</strong> The player chooses 12 to move a stack into a vacant space. Their turn now ends, and play passes to the next player.</p>
+            </div>
           </section>
 
           <section className="pt-6 border-t border-stone-800">
