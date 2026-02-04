@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Peer, { DataConnection } from 'peerjs';
 import { 
@@ -517,7 +516,6 @@ const App: React.FC = () => {
                 {authMode === 'SIGNUP' && (
                   <div className="flex flex-col gap-1">
                     <input required type="password" value={authForm.confirmPassword} onChange={(e) => setAuthForm({ ...authForm, confirmPassword: e.target.value })} className={`${isDarkMode ? 'bg-black/40 border-stone-800 text-stone-100' : 'bg-white border-stone-300 text-stone-900'} border p-4 rounded-xl outline-none focus:border-amber-600 transition-colors text-sm`} placeholder={T.auth.confirmPassword.en} />
-                    {/* Fixed typo: T.confirmPassword.bo -> T.auth.confirmPassword.bo */}
                     <span className="text-[9px] text-stone-600 font-serif ml-2">{T.auth.confirmPassword.bo}</span>
                   </div>
                 )}
@@ -675,7 +673,8 @@ const App: React.FC = () => {
                             )}
                             <button onClick={() => { triggerHaptic(10); setShowMenu(true); }} className={`border p-2 rounded-xl transition-all shadow-lg flex flex-col items-center ${isDarkMode ? 'bg-stone-800 hover:bg-stone-700 border-stone-600' : 'bg-white border-stone-300'}`}>
                               <span className="text-lg">☰</span>
-                              <span className="text-[8px] font-cinzel font-bold uppercase tracking-tighter">{T.common.menu.en}</span>
+                              <span className="text-[8px] font-cinzel font-bold uppercase tracking-tighter leading-none">{T.common.menu.en}</span>
+                              <span className="text-[9px] font-serif mt-0.5 leading-none">{T.common.menu.bo}</span>
                             </button>
                         </div>
                     </div>
@@ -723,7 +722,10 @@ const App: React.FC = () => {
                                     onClick={() => { triggerHaptic(20); setGameMode(GameMode.LOCAL); initializeGame({name: getSafePlayerName(), color: selectedColor}, {name: 'Player 2', color: '#999'}); }}
                                 >
                                     <span className="text-xl md:text-2xl">👤</span>
-                                    <h3 className={`text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest leading-none ${isDarkMode ? 'text-amber-100' : 'text-amber-800'}`}>{T.lobby.modeLocal.en}</h3>
+                                    <div className="flex flex-col items-center">
+                                        <h3 className={`text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest leading-none ${isDarkMode ? 'text-amber-100' : 'text-amber-800'}`}>{T.lobby.modeLocal.en}</h3>
+                                        <span className="text-[10px] font-serif mt-0.5">{T.lobby.modeLocal.bo}</span>
+                                    </div>
                                     <div className="flex flex-col items-center gap-0.5">
                                       <span className="text-[10px] text-stone-400 font-bold uppercase tracking-widest leading-none">{T.lobby.modeLocalSub.en}</span>
                                       <span className="text-[9px] text-stone-500 font-serif">{T.lobby.modeLocalSub.bo}</span>
@@ -735,7 +737,10 @@ const App: React.FC = () => {
                                 >
                                     {!isPro && <span className="absolute top-2 right-2 text-[8px] bg-amber-600 text-white px-1.5 py-0.5 rounded-full font-bold">PRO</span>}
                                     <span className="text-xl md:text-2xl">🌐</span>
-                                    <h3 className={`text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest leading-none ${isDarkMode ? 'text-amber-100' : 'text-amber-800'}`}>{T.lobby.modeMulti.en}</h3>
+                                    <div className="flex flex-col items-center">
+                                        <h3 className={`text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest leading-none ${isDarkMode ? 'text-amber-100' : 'text-amber-800'}`}>{T.lobby.modeMulti.en}</h3>
+                                        <span className="text-[10px] font-serif mt-0.5">{T.lobby.modeMulti.bo}</span>
+                                    </div>
                                     <div className="flex flex-col items-center gap-0.5">
                                       <span className="text-[10px] text-stone-400 font-bold uppercase tracking-widest leading-none text-center px-1">{T.lobby.modeMultiSub.en}</span>
                                       <span className="text-[9px] text-stone-500 font-serif">{T.lobby.modeMultiSub.bo}</span>
@@ -822,8 +827,12 @@ const App: React.FC = () => {
                                         </span>
                                     </button>
                                 )}
-                                <button onClick={() => { triggerHaptic(10); setShowMenu(true); }} className={`w-5 h-5 md:w-8 md:h-8 rounded-full border flex items-center justify-center text-[10px] md:text-xs ${isDarkMode ? 'border-stone-600 text-stone-400' : 'border-stone-300 text-stone-500'}`}>☰</button>
-                                <button onClick={() => { triggerHaptic(10); setShowRules(true); }} className={`w-5 h-5 md:w-8 md:h-8 rounded-full border flex items-center justify-center text-[10px] md:text-xs ${isDarkMode ? 'border-stone-600 text-stone-400' : 'border-stone-300 text-stone-500'}`}>?</button>
+                                <button onClick={() => { triggerHaptic(10); setShowMenu(true); }} className={`border p-1 md:p-2 rounded-xl transition-all shadow-lg flex flex-col items-center ${isDarkMode ? 'bg-stone-800 hover:bg-stone-700 border-stone-600' : 'bg-white border-stone-300'}`}>
+                                  <span className="text-sm md:text-lg">☰</span>
+                                  <span className="text-[6px] md:text-[8px] font-cinzel font-bold uppercase tracking-tighter leading-none">{T.common.menu.en}</span>
+                                  <span className="text-[7px] md:text-[9px] font-serif mt-0.5 leading-none">{T.common.menu.bo}</span>
+                                </button>
+                                <button onClick={() => { triggerHaptic(10); setShowRules(true); }} className={`w-6 h-6 md:w-8 md:h-8 rounded-full border flex items-center justify-center text-[10px] md:text-xs ${isDarkMode ? 'border-stone-600 text-stone-400' : 'border-stone-300 text-stone-500'}`}>?</button>
                             </div>
                         </header>
                         <div className="grid grid-cols-2 gap-1 md:gap-2 mt-4 md:mt-8 relative px-1">

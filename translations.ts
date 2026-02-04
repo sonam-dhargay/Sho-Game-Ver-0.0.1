@@ -5,7 +5,7 @@ export const T = {
     cancel: { en: "Cancel", bo: "རྩིས་མེད་གཏོང་།" },
     ok: { en: "OK", bo: "ལགས་སོ།" },
     or: { en: "or", bo: "ཡང་ན།" },
-    menu: { en: "Menu", bo: "དཀར་ཆག" }
+    menu: { en: "Menu", bo: "འདེམས་བྱང་།" }
   },
   menu: {
     about: { en: "About", bo: "འདི་གའི་སྐོར།" },
@@ -16,7 +16,7 @@ export const T = {
     released: { en: "Released 2026", bo: "༢༠༢༦ ལོར་འགྲེམས་སྤེལ་བྱས།" },
     thanks: { 
       en: "With thanks to community elders and players who preserve the living tradition of Sho.", 
-      bo: "ཤོ་རྩེད་ཀྱི་སྲོལ་རྒྱུན་མི་ཉམས་རྒྱུན་འཛིན་གནང་མཁན་གྱི་རྒན་རབས་པ་དང་ཤོ་བ་རྣམས་ལ་ཐུགས་རྗེ་ཆེ་ཞུ།" 
+      bo: "ཤོ་རྩེད་ཀྱི་སྲོལ་རྒྱུན་མི་ཉམས་རྒྱུན་འཛིན་གནང་མཁན་གྱི་རྒན་རབས་པ་ Andromeda དང་ཤོ་བ་རྣམས་ལ་ཐུགས་རྗེ་ཆེ་ཞུ།" 
     },
     themes: { en: "Themes", bo: "བརྗོད་གཞི།" },
     lightMode: { en: "Light Mode", bo: "འོད་གསལ་བ།" },
