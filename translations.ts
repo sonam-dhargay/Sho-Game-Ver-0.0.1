@@ -1,3 +1,4 @@
+
 export const T = {
   common: {
     back: { en: "Back", bo: "ཕྱིར་ལོག།" },
@@ -104,7 +105,7 @@ export const T = {
     paraTitle: { en: "The Pa Ra Rule", bo: "པ་རའི་སྒྲིག་གཞི།" },
     paraDesc: { en: "Rolling a 1 and 1 is called 'Pa Ra':", bo: "ཤོ་མིག་ ༡ དང་ ༡ བབས་ན་'པ་ར་'ཟེར།" },
     paraRule1: { en: "You get to roll again immediately.", bo: "དེ་མ་ཐག་ཤོ་བསྐྱར་དུ་རྒྱག་ཆོག" },
-    paraRule2: { en: "The move values of both rolls are added to your available moves.", bo: "ཤོ་རྒྱག་ཐེངས་གཉིས་ཀྱི་མིག་བསྡོམས་ནས་རྡེའུ་གཏོང་ཆོག" },
+    paraRule2: { en: "Each Pa Ra adds a '2' to your move pool and grants a bonus roll.", bo: "པ་ར་རེ་རེས་ཤོ་མིག་ ༢ རེ་སྦྱིན་ཞིང་བསྐྱར་དུ་རྒྱག་པའི་གོ་སྐབས་ཐོབ།" },
     instantWinTitle: { en: "Instant Win", bo: "དེ་མ་ཐག་པའི་རྒྱལ་ཁ།" },
     instantWinDesc: { en: "In very rare circumstances, a player may win instantly:", bo: "ཆེས་དཀོན་པའི་གནས་སྟངས་འོག་དེ་མ་ཐག་རྒྱལ་ཁ་ཐོབ་སྲིད།" },
     triplePara: { en: "Triple Pa Ra: If a player rolls a Pa Ra (1,1) three times in a row, they are declared the winner immediately.", bo: "པ་ར་གསུམ་བརྩེགས། གལ་ཏེ་པ་ར་ཐེངས་གསུམ་བསྟུད་མར་བབས་ན་དེ་མ་ཐག་རྒྱལ་ཁ་ཐོབ་སྲིད།" },

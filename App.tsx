@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Peer, { DataConnection } from 'peerjs';
 import { 
@@ -256,7 +257,8 @@ const App: React.FC = () => {
     } else { 
         const isOpening = players[s.turnIndex].coinsInHand === COINS_PER_PLAYER;
         if (s.paRaCount > 0 && isOpening) { setIsOpeningPaRa(true); addLog(`OPENING PA RA! You can place 3 coins!`, 'alert'); }
-        const movePool = [...Array(s.paRaCount * 2).fill(2), total];
+        // Each Pa Ra contributes exactly one '2' to the movement pool as a bonus roll value.
+        const movePool = [...Array(s.paRaCount).fill(2), total];
         setPendingMoveValues(movePool); setPaRaCount(0); setPhase(GamePhase.MOVING); 
     }
     if (s.gameMode === GameMode.TUTORIAL && s.tutorialStep === 2) setTutorialStep(3);
@@ -645,7 +647,6 @@ const App: React.FC = () => {
                                   <span className="font-serif text-[12px] leading-tight mt-0.5">{T.lobby.signupSplash.bo}</span>
                               </button>
                           </div>
-                          {/* Login requirement instruction restored below */}
                           <div className="mt-6 flex flex-col gap-2 text-center max-w-[280px] mx-auto">
                               <p className={`${isDarkMode ? 'text-stone-500' : 'text-stone-400'} text-[10px] font-medium leading-relaxed`}>
                                   {T.auth.gateDesc.en}
@@ -830,7 +831,7 @@ const App: React.FC = () => {
                                 <button onClick={() => { triggerHaptic(10); setShowMenu(true); }} className={`border p-1 md:p-2 rounded-xl transition-all shadow-lg flex flex-col items-center ${isDarkMode ? 'bg-stone-800 hover:bg-stone-700 border-stone-600' : 'bg-white border-stone-300'}`}>
                                   <span className="text-sm md:text-lg">☰</span>
                                   <span className="text-[6px] md:text-[8px] font-cinzel font-bold uppercase tracking-tighter leading-none">{T.common.menu.en}</span>
-                                  <span className="text-[7px] md:text-[9px] font-serif mt-0.5 leading-none">{T.common.menu.bo}</span>
+                                  <span className="text-[9px] font-serif mt-0.5 leading-none">{T.common.menu.bo}</span>
                                 </button>
                                 <button onClick={() => { triggerHaptic(10); setShowRules(true); }} className={`w-6 h-6 md:w-8 md:h-8 rounded-full border flex items-center justify-center text-[10px] md:text-xs ${isDarkMode ? 'border-stone-600 text-stone-400' : 'border-stone-300 text-stone-500'}`}>?</button>
                             </div>

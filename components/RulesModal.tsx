@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 interface RulesModalProps {
@@ -82,27 +83,25 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, isNiner
 
           <section className={`${isDarkMode ? 'bg-amber-950/20 border-amber-900/30' : 'bg-amber-50 border-amber-200'} p-6 rounded-2xl border space-y-4`}>
             <h3 className={`text-xl font-cinzel ${isDarkMode ? 'text-amber-400' : 'text-amber-800'} font-bold border-b ${isDarkMode ? 'border-amber-600/30' : 'border-amber-700/20'} pb-2`}>Pa Ra (Snake Eyes) པ་རའི་སྒྲིག་གཞི།</h3>
-            <p>The only dice roll with special significance in the basic game is <strong>(1,1)</strong>, which is called <em>pa ra</em> in Tibetan.</p>
+            <p>The only dice roll with special significance is <strong>(1,1)</strong>, called <em>pa ra</em>.</p>
             <ul className="list-disc list-inside space-y-2 ml-2">
-              <li>The player rolls the dice again before moving.</li>
-              <li>The player may then choose from several possible move values (e.g., if you roll (1,1) then (5,3), you can move <strong>2</strong>, <strong>8</strong>, or <strong>10</strong>).</li>
+              <li>Rolling a Pa Ra gives you a <strong>bonus roll</strong>.</li>
+              <li>The '2' from the Pa Ra is added to your movement pool, and you roll again immediately.</li>
+              <li>Multiple Pa Ras in a row stack: each one adds exactly <strong>one</strong> '2' to the pool.</li>
             </ul>
             
             <div className={`mt-4 pt-4 border-t ${isDarkMode ? 'border-amber-900/40' : 'border-amber-700/20'}`}>
-              <h4 className="font-bold text-amber-600 mb-2 uppercase text-xs tracking-widest">Carrying Forward Unused Values</h4>
-              <p className="text-sm">If the player chooses one of the two values (not the combined total) and that move results in a <strong>kill</strong> or <strong>stack</strong>, the unused value is <strong>carried forward</strong> to the next roll.</p>
-              <p className="text-sm mt-2">This can continue across multiple rolls, allowing for moves much larger than the usual maximum of 12.</p>
+              <h4 className="font-bold text-amber-600 mb-2 uppercase text-xs tracking-widest">Correct Pa Ra Sequence</h4>
+              <p className="text-sm">When the chain ends, your total pool consists of one '2' for every Pa Ra rolled, plus the value of the final non-Pa Ra roll.</p>
+              <p className="text-sm mt-2 italic">Standard: 'Pa Ra' + Bonus Roll = [2, Bonus Value].</p>
             </div>
 
             <div className={`mt-4 p-4 rounded-xl ${isDarkMode ? 'bg-black/40' : 'bg-white/60'} text-xs md:text-sm space-y-3`}>
               <h4 className="font-bold text-amber-500 uppercase tracking-tighter">Pa Ra Example པ་རའི་དཔེར་ན།</h4>
               <div className="space-y-2 font-mono">
-                <p>1. Roll (1,1), then roll again and get (5,6). <br/><span className="text-amber-600">Possible moves: 2, 11, or 13.</span></p>
-                <p>2. Choose to move 2 (Kill!). Roll again and get (3,4) = 7.</p>
-                <p>3. Unused 11 is carried forward. <br/><span className="text-amber-600">Possible moves: 11, 7, or 18.</span></p>
-                <p>4. Choose 11 (Stack!). Roll again and get (2,3) = 5.</p>
-                <p>5. Unused 7 is carried forward. <br/><span className="text-amber-600">Possible moves: 7, 5, or 12.</span></p>
-                <p>6. Choose 12 to move a stack into a vacant space. Turn ends.</p>
+                <p>1. Roll (1,1). Bonus roll granted! <br/><span className="text-amber-600 font-bold">Pool: [2]</span></p>
+                <p>2. Roll (4,3) = 7. Sequence ends. <br/><span className="text-amber-600 font-bold">Final Pool: [2, 7]</span></p>
+                <p className="text-stone-500 italic mt-2">Note: You now have two separate movement values to use (2 and 7). You can move one piece 9 spaces, or two pieces separately.</p>
               </div>
             </div>
           </section>
