@@ -672,10 +672,8 @@ const App: React.FC = () => {
                                     <button onClick={handleLogout} className={`border ${isDarkMode ? 'bg-stone-900/80 border-stone-700 text-stone-400' : 'bg-white border-stone-300 text-stone-500'} px-4 py-2 rounded-full text-[10px] uppercase font-bold hover:text-white hover:border-amber-600 transition-all`}>Logout</button>
                                 </div>
                             )}
-                            <button onClick={() => { triggerHaptic(10); setShowMenu(true); }} className={`border p-2 rounded-xl transition-all shadow-lg flex flex-col items-center ${isDarkMode ? 'bg-stone-800 hover:bg-stone-700 border-stone-600' : 'bg-white border-stone-300'}`}>
-                              <span className="text-lg">☰</span>
-                              <span className="text-[8px] font-cinzel font-bold uppercase tracking-tighter leading-none">{T.common.menu.en}</span>
-                              <span className="text-[9px] font-serif mt-0.5 leading-none">{T.common.menu.bo}</span>
+                            <button onClick={() => { triggerHaptic(10); setShowMenu(true); }} className={`border p-2 rounded-xl transition-all shadow-lg flex items-center justify-center ${isDarkMode ? 'bg-stone-800 hover:bg-stone-700 border-stone-600 text-stone-100' : 'bg-white border-stone-300 text-stone-900'}`}>
+                              <span className="text-xl">☰</span>
                             </button>
                         </div>
                     </div>
@@ -699,7 +697,7 @@ const App: React.FC = () => {
                                 <input 
                                     type="text" 
                                     value={firstName} 
-                                    placeholder="..." 
+                                    placeholder="PLAYER" 
                                     onChange={(e) => setFirstName(e.target.value)} 
                                     className={`w-full bg-transparent border-b-2 ${firstName.trim() ? 'border-amber-600' : 'border-stone-800/30'} focus:border-amber-500 p-3 outline-none text-center text-xl font-cinzel tracking-widest transition-all ${isDarkMode ? 'text-stone-100' : 'text-stone-900'}`} 
                                     maxLength={20} 
@@ -828,10 +826,8 @@ const App: React.FC = () => {
                                         </span>
                                     </button>
                                 )}
-                                <button onClick={() => { triggerHaptic(10); setShowMenu(true); }} className={`border p-1 md:p-2 rounded-xl transition-all shadow-lg flex flex-col items-center ${isDarkMode ? 'bg-stone-800 hover:bg-stone-700 border-stone-600' : 'bg-white border-stone-300'}`}>
-                                  <span className="text-sm md:text-lg">☰</span>
-                                  <span className="text-[6px] md:text-[8px] font-cinzel font-bold uppercase tracking-tighter leading-none">{T.common.menu.en}</span>
-                                  <span className="text-[9px] font-serif mt-0.5 leading-none">{T.common.menu.bo}</span>
+                                <button onClick={() => { triggerHaptic(10); setShowMenu(true); }} className={`border p-1 md:p-2 rounded-xl transition-all shadow-lg flex items-center justify-center ${isDarkMode ? 'bg-stone-800 hover:bg-stone-700 border-stone-600 text-stone-100' : 'bg-white border-stone-300 text-stone-900'}`}>
+                                  <span className="text-sm md:text-xl">☰</span>
                                 </button>
                                 <button onClick={() => { triggerHaptic(10); setShowRules(true); }} className={`w-6 h-6 md:w-8 md:h-8 rounded-full border flex items-center justify-center text-[10px] md:text-xs ${isDarkMode ? 'border-stone-600 text-stone-400' : 'border-stone-300 text-stone-500'}`}>?</button>
                             </div>
