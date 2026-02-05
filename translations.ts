@@ -13,6 +13,10 @@ export const T = {
     settings: { en: "Settings", bo: "བཀོད་སྒྲིག" },
     developedBy: { en: "Developed by Lungta Labs.", bo: "རླུང་རྟ་ཚོད་ལྟ་ཁང་གིས་གསར་བཟོ་བྱས།" },
     copyright: { en: "© 2026 Lungta Labs. All rights reserved.", bo: "© ༢༠༢༦ རླུང་རྟ་ཚོད་ལྟ་ཁང་། བདག་དབང་ཆ་ཚང་ཡོད།" },
+    contact: { 
+      en: "Send questions and comments about this app to: lungta.labs@gmail.com", 
+      bo: "འདི་གའི་སྐོར་གྱི་དྲི་བ་དང་བསམ་འཆར་རྣམས་ lungta.labs@gmail.com ལ་བསྐུར་གནང་།" 
+    },
     version: { en: "Version 1.0.0", bo: "ཐོན་རིམ་ ༡.༠.༠" },
     released: { en: "Released 2026", bo: "༢༠༢༦ ལོར་འགྲེམས་སྤེལ་བྱས།" },
     thanks: { 
