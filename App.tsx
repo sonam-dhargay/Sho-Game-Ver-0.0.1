@@ -209,6 +209,16 @@ const App: React.FC = () => {
     addLog("New game started!", 'info');
   }, [addLog]);
 
+  const resetToLobby = useCallback(() => {
+    triggerHaptic(20);
+    if (peer) peer.destroy();
+    setGameMode(null);
+    setOnlineLobbyStatus('IDLE');
+    setTutorialStep(0);
+    setPhase(GamePhase.ROLLING);
+    setWinner(null);
+  }, [peer]);
+
   useEffect(() => {
     const handleResize = () => { if (boardContainerRef.current) { const { width, height } = boardContainerRef.current.getBoundingClientRect(); setBoardScale(Math.max(Math.min((width - 20) / 800, (height - 20) / 800, 1), 0.3)); } };
     window.addEventListener('resize', handleResize); handleResize(); return () => window.removeEventListener('resize', handleResize);
@@ -504,7 +514,7 @@ const App: React.FC = () => {
           <VictoryOverlay 
             winner={winner} 
             isDarkMode={isDarkMode} 
-            onRestart={() => { triggerHaptic(20); if(peer) peer.destroy(); setGameMode(null); setOnlineLobbyStatus('IDLE'); setTutorialStep(0); }} 
+            onRestart={resetToLobby} 
           />
         )}
         {isAuthModalOpen && (
@@ -830,7 +840,7 @@ const App: React.FC = () => {
                 <div className={`w-full md:w-1/4 flex flex-col border-b md:border-b-0 md:border-r ${isDarkMode ? 'border-stone-800 bg-stone-950' : 'border-stone-200 bg-white'} z-20 shadow-2xl h-[45dvh] md:h-full order-1 overflow-hidden flex-shrink-0 mobile-landscape-sidebar transition-colors duration-500`}>
                     <div className={`p-1.5 md:p-4 flex flex-col gap-0 md:gap-3 flex-shrink-0 ${isDarkMode ? 'bg-stone-950' : 'bg-white'} mobile-landscape-compact-stats`}>
                         <header className={`flex justify-between items-center border-b ${isDarkMode ? 'border-stone-800' : 'border-stone-200'} pb-1 md:pb-4`}>
-                            <div className="flex items-center gap-2 cursor-pointer" onClick={() => { triggerHaptic(10); if (peer) peer.destroy(); setGameMode(null); setOnlineLobbyStatus('IDLE'); setTutorialStep(0); }}>
+                            <div className="flex items-center gap-2 cursor-pointer" onClick={resetToLobby}>
                                 <h1 className={`font-cinzel text-[10px] md:text-sm ${isDarkMode ? 'text-amber-500' : 'text-amber-900'}`}>Sho</h1>
                             </div>
                             <div className="flex items-center gap-2 md:gap-4">
@@ -880,7 +890,7 @@ const App: React.FC = () => {
                             <div className={`text-center p-2 rounded-xl border animate-pulse ${isDarkMode ? 'bg-stone-800 border-amber-500' : 'bg-amber-50 border-amber-200'}`}>
                                 <h2 className="text-base text-amber-400 font-cinzel">{T.game.victory.en}</h2>
                                 <h3 className="text-lg text-amber-500 font-serif leading-none mb-2">{T.game.victory.bo}</h3>
-                                <button onClick={() => { triggerHaptic(20); if(peer) peer.destroy(); setGameMode(null); setOnlineLobbyStatus('IDLE'); setTutorialStep(0); }} className="bg-amber-600 text-white px-4 py-1.5 rounded-full font-bold uppercase text-[9px] transition-all hover:bg-amber-500">
+                                <button onClick={resetToLobby} className="bg-amber-600 text-white px-4 py-1.5 rounded-full font-bold uppercase text-[9px] transition-all hover:bg-amber-500">
                                     {T.common.back.en} <span className="font-serif ml-1">{T.common.back.bo}</span>
                                 </button>
                             </div> 
