@@ -11,8 +11,8 @@ export const T = {
   menu: {
     about: { en: "About", bo: "འདི་གའི་སྐོར།" },
     settings: { en: "Settings", bo: "བཀོད་སྒྲིག" },
-    developedBy: { en: "Developed by Lungta Labs.", bo: "རླུང་རྟ་བརྟག་དཔྱད་ཁང་གིས་གསར་བཟོ་བྱས།" },
-    copyright: { en: "© 2026 Lungta Labs. All rights reserved.", bo: "© ༢༠༢༦ རླུང་རྟ་བརྟག་དཔྱད་ཁང་། བདག་དབང་ཆ་ཚང་ཡོད།" },
+    developedBy: { en: "Developed by Lungta Labs.", bo: "རླུང་རྟ་ཚོད་ལྟ་ཁང་གིས་གསར་བཟོ་བྱས།" },
+    copyright: { en: "© 2026 Lungta Labs. All rights reserved.", bo: "© ༢༠༢༦ རླུང་རྟ་ཚོད་ལྟ་ཁང་། བདག་དབང་ཆ་ཚང་ཡོད།" },
     version: { en: "Version 1.0.0", bo: "ཐོན་རིམ་ ༡.༠.༠" },
     released: { en: "Released 2026", bo: "༢༠༢༦ ལོར་འགྲེམས་སྤེལ་བྱས།" },
     thanks: { 
@@ -72,7 +72,7 @@ export const T = {
     feat3: { en: "Cloud Progress Sync", bo: "སྤྲིན་ཚོགས་རྩེད་གྲངས་ཉར་ཚགས།" },
     feat4: { en: "Exclusive Gold Piece Skins", bo: "དམིགས་བསལ་གསེར་གྱི་ལག་ཁྱི།" },
     feat5: { en: "Ad-Free Experience", bo: "ཁྱབ་བསྒབྲགས་མེད་པའི་ཁོར་ཡུག" },
-    upgrade: { en: "Upgrade Now ($4.99)", bo: "ད་ལྟ་རིམ་པ་སྤོར། ($4.99)" },
+    upgrade: { en: "Upgrade Now ($2.99)", bo: "ད་ལྟ་རིམ་པ་སྤོར། ($2.99)" },
     notNow: { en: "Not Now", bo: "ད་ལྟ་མིན།" }
   },
   game: {
