@@ -11,6 +11,7 @@ import { DiceArea } from './components/DiceArea';
 import { RulesModal } from './components/RulesModal';
 import { TutorialOverlay } from './components/TutorialOverlay';
 import { MenuOverlay } from './components/MenuOverlay';
+import { VictoryOverlay } from './components/VictoryOverlay';
 import { T } from './translations';
 
 const generatePlayers = (
@@ -139,6 +140,7 @@ const App: React.FC = () => {
   const [gameMode, setGameMode] = useState<GameMode | null>(null);
   const [tutorialStep, setTutorialStep] = useState(0);
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [winner, setWinner] = useState<Player | null>(null);
   
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -179,11 +181,11 @@ const App: React.FC = () => {
     connectionsRef.current = activeConnections;
   }, [activeConnections]);
 
-  const gameStateRef = useRef({ board, players, turnIndex, phase, pendingMoveValues, paRaCount, extraRolls, isRolling, isNinerMode, gameMode, tutorialStep, isOpeningPaRa, lastRoll });
+  const gameStateRef = useRef({ board, players, turnIndex, phase, pendingMoveValues, paRaCount, extraRolls, isRolling, isNinerMode, gameMode, tutorialStep, isOpeningPaRa, lastRoll, winner });
   
   useEffect(() => { 
-    gameStateRef.current = { board, players, turnIndex, phase, pendingMoveValues, paRaCount, extraRolls, isRolling, isNinerMode, gameMode, tutorialStep, isOpeningPaRa, lastRoll }; 
-  }, [board, players, turnIndex, phase, pendingMoveValues, paRaCount, extraRolls, isRolling, isNinerMode, gameMode, tutorialStep, isOpeningPaRa, lastRoll]);
+    gameStateRef.current = { board, players, turnIndex, phase, pendingMoveValues, paRaCount, extraRolls, isRolling, isNinerMode, gameMode, tutorialStep, isOpeningPaRa, lastRoll, winner }; 
+  }, [board, players, turnIndex, phase, pendingMoveValues, paRaCount, extraRolls, isRolling, isNinerMode, gameMode, tutorialStep, isOpeningPaRa, lastRoll, winner]);
 
   const addLog = useCallback((msg: string, type: GameLog['type'] = 'info') => { setLogs(prev => [{ id: Date.now().toString() + Math.random(), message: msg, type }, ...prev].slice(50)); }, []);
 
@@ -203,7 +205,7 @@ const App: React.FC = () => {
     const newBoard = new Map<number, BoardShell>(); for (let i = 1; i <= TOTAL_SHELLS; i++) newBoard.set(i, { index: i, stackSize: 0, owner: null, isShoMo: false });
     setBoard(newBoard);
     const initialPlayers = generatePlayers(p1Config, p2Config);
-    setPlayers(initialPlayers); setTurnIndex(0); setPhase(GamePhase.ROLLING); setLastRoll(null); setIsRolling(false); setPendingMoveValues([]); setPaRaCount(0); setExtraRolls(0); setIsOpeningPaRa(false); setLastMove(null); setTutorialStep(isTutorial ? 1 : 0); setSelectedSourceIndex(null);
+    setPlayers(initialPlayers); setTurnIndex(0); setPhase(GamePhase.ROLLING); setLastRoll(null); setIsRolling(false); setPendingMoveValues([]); setPaRaCount(0); setExtraRolls(0); setIsOpeningPaRa(false); setLastMove(null); setTutorialStep(isTutorial ? 1 : 0); setSelectedSourceIndex(null); setWinner(null);
     addLog("New game started!", 'info');
   }, [addLog]);
 
@@ -251,7 +253,12 @@ const App: React.FC = () => {
     setLastRoll(newRoll); setIsRolling(false); SFX.playLand();
     if (isPaRa) { 
         SFX.playPaRa(); const newCount = s.paRaCount + 1;
-        if (newCount === 3) { addLog(`TRIPLE PA RA! ${players[turnIndex].name} wins instantly!`, 'alert'); setPhase(GamePhase.GAME_OVER); return; }
+        if (newCount === 3) { 
+            addLog(`TRIPLE PA RA! ${players[turnIndex].name} wins instantly!`, 'alert'); 
+            setWinner(players[turnIndex]);
+            setPhase(GamePhase.GAME_OVER); 
+            return; 
+        }
         setPaRaCount(newCount); addLog(`PA RA (1,1)! Stacked bonuses: ${newCount}. Roll again.`, 'alert'); 
         triggerHaptic([50, 50, 50]);
     } else { 
@@ -308,7 +315,11 @@ const App: React.FC = () => {
     setPlayers(newPlayers); setBoard(nb); setSelectedSourceIndex(null); setLastMove({ ...move, id: Date.now() });
     let nextMoves = [...s.pendingMoveValues]; 
     move.consumedValues.forEach(val => { const idx = nextMoves.indexOf(val); if (idx > -1) nextMoves.splice(idx, 1); });
-    if (newPlayers[s.turnIndex].coinsFinished >= COINS_PER_PLAYER) { setPhase(GamePhase.GAME_OVER); return; }
+    if (newPlayers[s.turnIndex].coinsFinished >= COINS_PER_PLAYER) { 
+        setWinner(newPlayers[s.turnIndex]);
+        setPhase(GamePhase.GAME_OVER); 
+        return; 
+    }
     const movesLeft = getAvailableMoves(s.turnIndex, nb, newPlayers, nextMoves, s.isNinerMode, s.isOpeningPaRa);
     if (localExtraRollInc > 0) setExtraRolls(prev => prev + localExtraRollInc);
     if (nextMoves.length === 0 || movesLeft.length === 0) {
@@ -336,6 +347,7 @@ const App: React.FC = () => {
         if (packet.payload.players) setPlayers(packet.payload.players);
         if (packet.payload.turnIndex !== undefined) setTurnIndex(packet.payload.turnIndex);
         if (packet.payload.phase) setPhase(packet.payload.phase);
+        if (packet.payload.winner) setWinner(packet.payload.winner);
         break;
     }
   }, [performRoll, performMove, handleSkipTurn]);
@@ -488,6 +500,13 @@ const App: React.FC = () => {
           isDarkMode={isDarkMode}
           onToggleTheme={() => { triggerHaptic(15); setIsDarkMode(prev => !prev); }}
         />
+        {phase === GamePhase.GAME_OVER && winner && (
+          <VictoryOverlay 
+            winner={winner} 
+            isDarkMode={isDarkMode} 
+            onRestart={() => { triggerHaptic(20); if(peer) peer.destroy(); setGameMode(null); setOnlineLobbyStatus('IDLE'); setTutorialStep(0); }} 
+          />
+        )}
         {isAuthModalOpen && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
             <div className={`${isDarkMode ? 'bg-stone-900 border-amber-600/50' : 'bg-stone-50 border-amber-800/20'} border-2 p-8 rounded-[3rem] w-full max-w-sm shadow-[0_0_50px_rgba(0,0,0,0.8)] relative`}>
