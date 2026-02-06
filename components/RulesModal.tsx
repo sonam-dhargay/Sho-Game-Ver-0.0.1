@@ -38,8 +38,8 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, isNiner
 
           <section className="space-y-4">
             <h3 className={`text-xl font-cinzel ${isDarkMode ? 'text-amber-400' : 'text-amber-800'} font-bold border-b ${isDarkMode ? 'border-amber-600/30' : 'border-amber-700/20'} pb-2`}>Basic Gameplay གཞི་རྩའི་རྩེད་སྟངས།</h3>
-            <p>The first player to move all nine coins from the beginning of the board (hand) to the end (goal) wins the game.</p>
-            <p>The shells are arranged in a clockwise spiral around the central dice pad.</p>
+            <p>The first player to move all nine coins from the beginning of the board to the end wins the game.</p>
+            <p>The shells are arranged in a clockwise spiral around the dice pad.</p>
             <p className="font-bold text-red-600 italic">Movement values from dice must be used strategically. Only specific actions grant extra turns or allow you to keep moving.</p>
           </section>
 
@@ -47,13 +47,12 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, isNiner
             <h3 className={`text-xl font-cinzel ${isDarkMode ? 'text-amber-400' : 'text-amber-800'} font-bold border-b ${isDarkMode ? 'border-amber-600/30' : 'border-amber-700/20'} pb-2`}>Being Blocked & Skipping བཀག་པ་དང་སྐོར་ཐེངས་སྐྱུར་བ།</h3>
             <div className={`${isDarkMode ? 'bg-red-950/20' : 'bg-red-50'} p-5 rounded-2xl border border-red-900/30 space-y-3`}>
                 <p className="font-bold text-red-600 uppercase text-xs">The Block Rule</p>
-                <p>You are <span className="font-bold text-red-500">blocked</span> if an opponent's stack in your path is <span className="underline italic">strictly larger</span> than the stack you are moving.</p>
-                <p>A "Skip Turn" happens <span className="underline decoration-red-500 font-bold">only</span> when a player is completely unable to make any valid move. This occurs when:</p>
-                <ul className="list-disc list-inside space-y-2 ml-2 italic">
-                    <li>No pieces can be placed from your hand (starting area).</li>
-                    <li>Every possible destination for your board stacks is blocked by a larger opponent stack.</li>
+                <p>You are <span className="font-bold text-red-500">blocked</span> if an opponent's stack in your path is larger than the stack you are moving.</p>
+                <p>A "Skip Turn" happens <span className="underline decoration-red-500">only</span> when a player is unable to make any valid move. This occurs when:</p>
+                <ul className="list-disc list-inside space-y-1 ml-2 italic">
+                    <li>No pieces can be placed from the hand.</li>
+                    <li>Every possible destination on the board is blocked by a larger opponent stack.</li>
                 </ul>
-                <p className="text-xs opacity-70 mt-2">If you have any valid move at all, you must take it; you cannot skip by choice.</p>
             </div>
           </section>
 
@@ -63,7 +62,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, isNiner
                 <div className={`${isDarkMode ? 'bg-red-950/10' : 'bg-stone-100'} p-4 rounded-xl border border-stone-300`}>
                     <p className="font-bold text-stone-500 uppercase text-xs mb-1">Ends Turn immediately</p>
                     <ul className="list-disc list-inside space-y-2">
-                        <li><span className={`${isDarkMode ? 'text-stone-200' : 'text-stone-800'} font-bold`}>Vacant space (Place):</span> Occupy an empty shell. <span className="text-red-500 italic">Ends turn immediately. Any remaining movement points are lost.</span></li>
+                        <li><span className={`${isDarkMode ? 'text-stone-200' : 'text-stone-800'} font-bold`}>Vacant space (Place):</span> Occupy an empty shell. <span className="text-red-500 italic">No bonus roll. Your turn ends immediately, and any remaining movement points are lost.</span></li>
                         <li><span className={`${isDarkMode ? 'text-stone-200' : 'text-stone-800'} font-bold`}>Goal (Finish):</span> Exiting a piece from the board. <span className="text-red-500 italic">Ends turn immediately.</span></li>
                     </ul>
                 </div>
@@ -80,10 +79,10 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, isNiner
 
           <section className={`${isDarkMode ? 'bg-amber-950/20 border-amber-900/30' : 'bg-amber-50 border-amber-200'} p-6 rounded-2xl border space-y-4`}>
             <h3 className={`text-xl font-cinzel ${isDarkMode ? 'text-amber-400' : 'text-amber-800'} font-bold border-b ${isDarkMode ? 'border-amber-600/30' : 'border-amber-700/20'} pb-2`}>Pa Ra (Snake Eyes) པ་རའི་སྒྲིག་གཞི།</h3>
-            <p>Rolling a <strong>(1,1)</strong> is called <em>pa ra</em>. This special roll grants a bonus roll <em>before</em> moving.</p>
+            <p>Rolling a <strong>(1,1)</strong> is called <em>pa ra</em>. This is the only dice roll that grants a bonus roll <em>before</em> moving.</p>
             <ul className="list-disc list-inside space-y-2 ml-2">
-              <li>Each Pa Ra adds a movement value of <strong>2</strong> to your pool.</li>
-              <li>You get to roll again immediately for every Pa Ra rolled.</li>
+              <li>Rolling a Pa Ra gives you a <strong>bonus roll</strong> immediately.</li>
+              <li>The movement value '2' is added to your pool, and you shake the cup again.</li>
             </ul>
           </section>
 

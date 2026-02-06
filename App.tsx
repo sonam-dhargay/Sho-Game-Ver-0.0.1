@@ -84,62 +84,35 @@ const getRandomDicePos = () => { const r = 35 + Math.random() * 45; const theta 
 
 const calculatePotentialMoves = (sourceIdx: number, moveVals: number[], currentBoard: BoardState, player: Player, isNinerMode: boolean, isOpeningPaRa: boolean): MoveOption[] => {
   const options: Map<number, MoveOption> = new Map();
-  
   const evaluateTarget = (dist: number, consumed: number[]): MoveOption | null => {
     const targetIdx = sourceIdx + dist;
-    // Goal exit
     if (targetIdx > TOTAL_SHELLS) return { sourceIndex: sourceIdx, targetIndex: targetIdx, consumedValues: consumed, type: MoveResultType.FINISH }; 
-    
-    // Ensure shell exists
-    const targetShell = currentBoard.get(targetIdx); 
-    if (!targetShell) return null;
-    
+    const targetShell = currentBoard.get(targetIdx); if (!targetShell) return null;
     let movingStackSize = 0;
     if (sourceIdx === 0) {
-        // From hand: Opening turns use 2-3 coins, subsequent turns use 1.
-        if (player.coinsInHand === COINS_PER_PLAYER) {
-            movingStackSize = isOpeningPaRa ? 3 : 2;
-        } else {
-            movingStackSize = 1;
-        }
-        // Ensure we actually have enough coins in hand
-        if (player.coinsInHand < movingStackSize) return null;
+        if (player.coinsInHand === COINS_PER_PLAYER) movingStackSize = isOpeningPaRa ? 3 : 2;
+        else movingStackSize = 1;
     } else {
-        // Moving an existing stack from the board
         movingStackSize = currentBoard.get(sourceIdx)?.stackSize || 0;
     }
-
-    // Rule: Own stack stacking
     if (targetShell.owner === player.id) { 
       const rs = targetShell.stackSize + movingStackSize; 
       if (!isNinerMode && rs === 9) return null; 
       return { sourceIndex: sourceIdx, targetIndex: targetIdx, consumedValues: consumed, type: MoveResultType.STACK }; 
     }
-    
-    // Rule: Opponent interaction (Kill or Blocked)
     if (targetShell.owner && targetShell.owner !== player.id) { 
-      // KILL: If moving stack is equal or larger
       if (movingStackSize >= targetShell.stackSize) return { sourceIndex: sourceIdx, targetIndex: targetIdx, consumedValues: consumed, type: MoveResultType.KILL }; 
-      // BLOCKED: Opponent stack is strictly larger
       return null; 
     }
-    
-    // Rule: Empty shell landing
     return { sourceIndex: sourceIdx, targetIndex: targetIdx, consumedValues: consumed, type: MoveResultType.PLACE };
   };
-
-  // Sho allows using dice values individually or summed.
-  // Subset sums account for all possible combinations of currently available dice.
   const generateSubsetSums = (index: number, currentSum: number, currentConsumed: number[]) => {
     if (index === moveVals.length) {
       if (currentSum > 0) {
         const result = evaluateTarget(currentSum, [...currentConsumed]);
         if (result) {
           const existing = options.get(result.targetIndex);
-          // Prefer moves that consume fewer dice to reach a target (save dice for potential cascades)
-          if (!existing || result.consumedValues.length < existing.consumedValues.length) {
-            options.set(result.targetIndex, result);
-          }
+          if (!existing || result.consumedValues.length < existing.consumedValues.length) options.set(result.targetIndex, result);
         }
       }
       return;
@@ -147,28 +120,14 @@ const calculatePotentialMoves = (sourceIdx: number, moveVals: number[], currentB
     generateSubsetSums(index + 1, currentSum + moveVals[index], [...currentConsumed, moveVals[index]]);
     generateSubsetSums(index + 1, currentSum, currentConsumed);
   };
-
   generateSubsetSums(0, 0, []);
   return Array.from(options.values());
 };
 
 const getAvailableMoves = (pIndex: number, pBoard: BoardState, pPlayers: Player[], pVals: number[], isNinerMode: boolean, isOpeningPaRa: boolean) => {
-  let moves: MoveOption[] = []; 
-  const player = pPlayers[pIndex]; 
-  if (!player || pVals.length === 0) return moves;
-
-  // Check from hand
-  if (player.coinsInHand > 0) {
-    moves = [...moves, ...calculatePotentialMoves(0, pVals, pBoard, player, isNinerMode, isOpeningPaRa)];
-  }
-  
-  // Check from all shells owned by player
-  pBoard.forEach((shell) => { 
-    if (shell.owner === player.id && shell.stackSize > 0) {
-      moves = [...moves, ...calculatePotentialMoves(shell.index, pVals, pBoard, player, isNinerMode, isOpeningPaRa)];
-    }
-  });
-
+  let moves: MoveOption[] = []; const player = pPlayers[pIndex]; if (!player) return moves;
+  if (player.coinsInHand > 0) moves = [...moves, ...calculatePotentialMoves(0, pVals, pBoard, player, isNinerMode, isOpeningPaRa)];
+  pBoard.forEach((shell) => { if (shell.owner === player.id && shell.stackSize > 0) moves = [...moves, ...calculatePotentialMoves(shell.index, pVals, pBoard, player, isNinerMode, isOpeningPaRa)]; });
   return moves;
 };
 
@@ -648,9 +607,7 @@ const App: React.FC = () => {
       setTimeout(() => setHandShake(false), 400); 
       return; 
     }
-    // Perform the furthest possible move from hand by default on click
-    const bestMove = [...handMoves].sort((a, b) => b.targetIndex - a.targetIndex)[0];
-    performMove(0, bestMove.targetIndex);
+    performMove(0, [...handMoves].sort((a, b) => b.targetIndex - a.targetIndex)[0].targetIndex);
   };
 
   return (
@@ -689,7 +646,7 @@ const App: React.FC = () => {
         )}
         {isAuthModalOpen && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
-            <div className={`${isDarkMode ? 'bg-stone-900 border-amber-600/50' : 'bg-stone-50 border-amber-800/20'} border-2 p-8 rounded-[3rem] w-full max-sm shadow-[0_0_50px_rgba(0,0,0,0.8)] relative`}>
+            <div className={`${isDarkMode ? 'bg-stone-900 border-amber-600/50' : 'bg-stone-50 border-amber-800/20'} border-2 p-8 rounded-[3rem] w-full max-w-sm shadow-[0_0_50px_rgba(0,0,0,0.8)] relative`}>
               <button onClick={() => { triggerHaptic(10); setIsAuthModalOpen(false); }} className="absolute top-6 right-6 text-stone-500 hover:text-amber-600 text-xl">×</button>
               <h2 className="text-3xl font-cinzel text-amber-500 text-center mb-8 font-bold tracking-widest">
                 {authMode === 'LOGIN' ? T.auth.loginBtn.en : T.auth.signupBtn.en}
@@ -1107,7 +1064,7 @@ const App: React.FC = () => {
                                         <span className={`text-[11px] md:text-sm font-serif font-bold ${isDarkMode ? 'text-amber-500' : 'text-amber-900'}`}>{T.game.fromHand.bo}</span>
                                         <span className={`text-[11px] font-cinzel mt-1 font-bold ${isDarkMode ? 'text-stone-200' : 'text-stone-700'}`}>({players[turnIndex].coinsInHand})</span>
                                     </div>
-                                    {currentValidMovesList.length === 0 && phase === GamePhase.MOVING && !isRolling && paRaCount === 0 && isLocalTurn && pendingMoveValues.length > 0 && ( 
+                                    {currentValidMovesList.length === 0 && phase === GamePhase.MOVING && !isRolling && paRaCount === 0 && isLocalTurn && ( 
                                         <button onClick={() => { triggerHaptic(10); handleSkipTurn(); }} className="flex-1 bg-amber-800/50 hover:bg-amber-700 text-amber-200 border border-amber-600/50 p-1 rounded-xl font-bold flex flex-col items-center justify-center">
                                             <span className="text-[9px] uppercase font-cinzel">{T.game.skipTurn.en}</span>
                                             <span className="text-[10px] text-amber-500 font-serif leading-none">{T.game.skipTurn.bo}</span>
