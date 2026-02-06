@@ -267,10 +267,7 @@ const App: React.FC = () => {
     let d1, d2;
     if (forcedRoll) { d1 = forcedRoll.die1; d2 = forcedRoll.die2; }
     else { d1 = Math.floor(Math.random() * 6) + 1; d2 = Math.floor(Math.random() * 6) + 1; }
-    
-    // FORCED TUTORIAL ROLL
-    if (s.gameMode === GameMode.TUTORIAL && s.tutorialStep === 2) { d1 = 3; d2 = 4; }
-    
+    if (s.gameMode === GameMode.TUTORIAL && s.tutorialStep === 2) { d1 = 2; d2 = 6; }
     const pos1 = forcedRoll?.visuals ? { x: forcedRoll.visuals.d1x, y: forcedRoll.visuals.d1y, r: forcedRoll.visuals.d1r } : getRandomDicePos();
     let pos2 = forcedRoll?.visuals ? { x: forcedRoll.visuals.d2x, y: forcedRoll.visuals.d2y, r: forcedRoll.visuals.d2r } : getRandomDicePos();
     if (!forcedRoll) {
@@ -299,8 +296,6 @@ const App: React.FC = () => {
         const movePool = [...Array(s.paRaCount).fill(2), total];
         setPendingMoveValues(movePool); setPaRaCount(0); setPhase(GamePhase.MOVING); 
     }
-    
-    // TUTORIAL STEP TRANSITION
     if (s.gameMode === GameMode.TUTORIAL && s.tutorialStep === 2) setTutorialStep(3);
   }, [players, turnIndex, addLog, broadcastPacket]);
 
@@ -344,6 +339,7 @@ const App: React.FC = () => {
         } else {
             SFX.playCoinClick(); triggerHaptic(15);
             nb.set(move.targetIndex, { ...target, stackSize: movingStackSize, owner: player.id, isShoMo: (move.sourceIndex === 0 && movingStackSize >= 2) });
+            // For PLACE moves, turn is over immediately per rules.
         }
     }
     
@@ -352,6 +348,7 @@ const App: React.FC = () => {
     let nextMoves = [...s.pendingMoveValues]; 
     move.consumedValues.forEach(val => { const idx = nextMoves.indexOf(val); if (idx > -1) nextMoves.splice(idx, 1); });
     
+    // TRADITIONAL RULE: A "PLACE" or "FINISH" move ends the turn immediately, even if dice values remain.
     if (move.type === MoveResultType.PLACE || move.type === MoveResultType.FINISH) {
         nextMoves = [];
     }
@@ -380,8 +377,7 @@ const App: React.FC = () => {
         setPendingMoveValues(nextMoves);
     }
     
-    // TUTORIAL STEP TRANSITION
-    if (s.gameMode === GameMode.TUTORIAL && s.tutorialStep === 4) setTutorialStep(5);
+    if (s.gameMode === GameMode.TUTORIAL && s.tutorialStep === 3) setTutorialStep(4);
   }, [players, addLog, broadcastPacket]);
 
   const handleNetworkPacket = useCallback((packet: NetworkPacket) => {
@@ -599,8 +595,6 @@ const App: React.FC = () => {
           .animate-gold-pulse { animation: goldPulse 2s ease-in-out infinite; }
           @keyframes micPulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.2); } }
           .animate-mic-active { animation: micPulse 1.5s ease-in-out infinite; }
-          @keyframes tutorialHighlight { 0%, 100% { outline: 2px solid #fbbf24; outline-offset: 2px; } 50% { outline: 6px solid #fbbf24; outline-offset: 8px; } }
-          .tutorial-highlight { animation: tutorialHighlight 1.5s ease-in-out infinite; position: relative; z-index: 60; }
         `}} />
         {phase === GamePhase.SETUP && gameMode !== null && <div className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center p-4 text-amber-500 font-cinzel text-xl animate-pulse">Initializing འགོ་འཛུགས་བཞིན་པ...</div>}
         <RulesModal isOpen={showRules} onClose={() => { triggerHaptic(10); setShowRules(false); }} isNinerMode={isNinerMode} onToggleNinerMode={() => { triggerHaptic(15); setIsNinerMode(prev => !prev); }} isDarkMode={isDarkMode} />
@@ -1030,11 +1024,9 @@ const App: React.FC = () => {
                             </div> 
                         ) : ( 
                             <div className="flex flex-col gap-1">
-                                <div className={gameMode === GameMode.TUTORIAL && tutorialStep === 2 ? "tutorial-highlight" : ""}>
-                                    <DiceArea currentRoll={lastRoll} onRoll={() => { if (tutorialStep === 2) handleTutorialNext(); performRoll(); }} canRoll={(phase === GamePhase.ROLLING) && !isRolling && isLocalTurn} pendingValues={pendingMoveValues} waitingForPaRa={paRaCount > 0} paRaCount={paRaCount} extraRolls={extraRolls} flexiblePool={null} />
-                                </div>
+                                <DiceArea currentRoll={lastRoll} onRoll={() => { if (tutorialStep === 2) handleTutorialNext(); performRoll(); }} canRoll={(phase === GamePhase.ROLLING) && !isRolling && isLocalTurn} pendingValues={pendingMoveValues} waitingForPaRa={paRaCount > 0} paRaCount={paRaCount} extraRolls={extraRolls} flexiblePool={null} />
                                 <div className="flex gap-1">
-                                    <div onClick={handleFromHandClick} className={`flex-1 p-2 md:p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center justify-center ${handShake ? 'animate-hand-blocked' : selectedSourceIndex === 0 ? 'border-amber-500 bg-amber-900/40' : (shouldHighlightHand && isLocalTurn) ? 'border-amber-500/80 bg-amber-900/10 animate-pulse' : (isDarkMode ? 'border-stone-800 bg-stone-900/50' : 'border-stone-200 bg-stone-50')} ${gameMode === GameMode.TUTORIAL && tutorialStep === 4 ? "tutorial-highlight" : ""}`}>
+                                    <div onClick={handleFromHandClick} className={`flex-1 p-2 md:p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center justify-center ${handShake ? 'animate-hand-blocked' : selectedSourceIndex === 0 ? 'border-amber-500 bg-amber-900/40' : (shouldHighlightHand && isLocalTurn) ? 'border-amber-500/80 bg-amber-900/10 animate-pulse' : (isDarkMode ? 'border-stone-800 bg-stone-900/50' : 'border-stone-200 bg-stone-50')}`}>
                                         <span className={`font-bold uppercase font-cinzel text-[11px] md:text-sm`}>{T.game.fromHand.en}</span>
                                         <span className={`text-[11px] md:text-sm font-serif font-bold ${isDarkMode ? 'text-amber-500' : 'text-amber-900'}`}>{T.game.fromHand.bo}</span>
                                         <span className={`text-[11px] font-cinzel mt-1 font-bold ${isDarkMode ? 'text-stone-200' : 'text-stone-700'}`}>({players[turnIndex].coinsInHand})</span>
