@@ -111,14 +111,9 @@ const AncientCoin: React.FC<{ color: string; isSelected: boolean; opacity?: numb
         opacity: opacity 
       }}
     >
-      {/* Intricate Metal Wear and Texture */}
       <div className="absolute inset-0 rounded-full opacity-25 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] mix-blend-overlay"></div>
-      
-      {/* Specular Rim Highlight */}
       <div className="absolute inset-[1px] rounded-full border-t border-white/30 pointer-events-none"></div>
       <div className="absolute inset-[1px] rounded-full border-b border-black/40 pointer-events-none"></div>
-
-      {/* Decorative Engraving Group */}
       <div className="absolute inset-1.5 rounded-full border-[1.5px] border-white/5 opacity-40 flex items-center justify-center">
         <svg viewBox="0 0 100 100" className="w-full h-full p-2 opacity-30 drop-shadow-[0_1px_1px_rgba(255,255,255,0.2)]">
            <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray="2 4" />
@@ -126,29 +121,21 @@ const AncientCoin: React.FC<{ color: string; isSelected: boolean; opacity?: numb
            <circle cx="50" cy="50" r="10" fill="none" stroke="currentColor" strokeWidth="1" />
         </svg>
       </div>
-
-      {/* Central Square Hole (Traditional Style) with improved depth */}
       <div className="absolute w-5 h-5 bg-[#0a0a0a] border border-white/10 shadow-[inset_3px_3px_5px_rgba(0,0,0,0.9),0_0_2px_rgba(255,255,255,0.1)] transform rotate-45 flex items-center justify-center overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-black to-stone-900 pointer-events-none"></div>
           <div className="w-2.5 h-2.5 bg-[#050505] rounded-[1px] opacity-60"></div>
       </div>
-
-      {/* Specular Highlights */}
       <div className="absolute top-2 left-3 w-7 h-4 bg-white/15 rounded-full blur-[3px] pointer-events-none transform -rotate-15"></div>
       <div className="absolute bottom-3 right-4 w-4 h-2 bg-white/5 rounded-full blur-[1px] pointer-events-none opacity-40"></div>
-      
-      {/* Stamped Character Engraving */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
         <span className="font-serif text-[18px] opacity-15 text-white/50 mb-0.5 ml-0.5 mix-blend-screen transform -rotate-45">ཤོ</span>
       </div>
-
-      {/* Aging Layer */}
       <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-black/20 via-transparent to-transparent pointer-events-none"></div>
     </div>
   );
 };
 
-const BoardDie: React.FC<{ value: number; x: number; y: number; rotation: number; isRolling: boolean }> = ({ value, x, y, rotation, isRolling }) => {
+const BoardDie: React.FC<{ value: number; x: number; y: number; rotation: number; isRolling: boolean; isPaRa: boolean }> = ({ value, x, y, rotation, isRolling, isPaRa }) => {
     const [animState, setAnimState] = useState<'initial' | 'settled'>('initial');
     const [displayValue, setDisplayValue] = useState(value);
     const randomSpinOffset = useRef(Math.random() * 720 - 360).current;
@@ -173,11 +160,22 @@ const BoardDie: React.FC<{ value: number; x: number; y: number; rotation: number
 
     let style: React.CSSProperties = isRolling 
         ? { left: '50%', top: '50%', transform: `translate(-50%, -50%) scale(1.1) rotate(${Date.now() % 360}deg)`, filter: 'blur(1px)' } 
-        : { left: '50%', top: '50%', transform: `translate(calc(-50% + ${animState === 'settled' ? x : 0}px), calc(-50% + ${animState === 'settled' ? y : 0}px)) rotate(${animState === 'settled' ? rotation : (rotation + randomSpinOffset)}deg) scale(${animState === 'settled' ? 1 : 1.4})`, transition: 'transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)' };
+        : { 
+            left: '50%', 
+            top: '50%', 
+            transform: `translate(calc(-50% + ${animState === 'settled' ? x : 0}px), calc(-50% + ${animState === 'settled' ? y : 0}px)) rotate(${animState === 'settled' ? rotation : (rotation + randomSpinOffset)}deg) scale(${animState === 'settled' ? (isPaRa ? 1.25 : 1) : 1.4})`, 
+            transition: 'transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)' 
+        };
 
     return (
-        <div className={`absolute w-10 h-10 bg-amber-50 rounded-md shadow-[4px_6px_10px_rgba(0,0,0,0.5)] border border-stone-300 flex overflow-hidden ${isRolling ? 'animate-pulse' : ''}`} style={style}>
+        <div 
+            className={`absolute w-10 h-10 bg-amber-50 rounded-md shadow-[4px_6px_10px_rgba(0,0,0,0.5)] border border-stone-300 flex overflow-hidden 
+                ${isRolling ? 'animate-pulse' : ''} 
+                ${isPaRa && !isRolling ? 'ring-4 ring-amber-400 ring-offset-2 ring-offset-[#291d1a] border-white' : ''}`} 
+            style={style}
+        >
              <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-black/5 pointer-events-none" />
+             {isPaRa && !isRolling && <div className="absolute inset-0 bg-amber-400/20 animate-pulse pointer-events-none" />}
              {dots.map(([r, c], i) => {
                  const isAce = displayValue === 1; 
                  return ( <div key={i} className={`absolute ${isAce ? 'bg-red-600' : 'bg-stone-900'} rounded-full ${isAce ? 'w-3.5 h-3.5' : 'w-2 h-2'} shadow-inner`} style={{ top: `${r * 33 + 17}%`, left: `${c * 33 + 17}%`, transform: 'translate(-50%, -50%)' }} /> );
@@ -282,32 +280,43 @@ export const Board: React.FC<BoardProps> = ({ boardState, players, validMoves, o
   };
 
   const hasFinishMove = validMoves.some(m => m.type === MoveResultType.FINISH);
+  const isPaRa = currentRoll?.isPaRa;
 
   return (
     <div className="relative mx-auto select-none rounded-[4rem] overflow-hidden" style={{ width: 800, height: 800, touchAction: 'none' }} ref={boardRef}>
-        {/* Visual Background Textures */}
         <div className="absolute inset-0 bg-[#292524] opacity-90"></div>
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/felt.png")' }}></div>
         
         <style dangerouslySetInnerHTML={{__html: `
           @keyframes shake { 0%, 100% { transform: translate(-50%, -50%) rotate(0deg); } 15% { transform: translate(-65%, -50%) rotate(-12deg); } 30% { transform: translate(-35%, -50%) rotate(12deg); } 45% { transform: translate(-65%, -50%) rotate(-12deg); } 60% { transform: translate(-35%, -50%) rotate(12deg); } 75% { transform: translate(-55%, -50%) rotate(-6deg); } } 
           @keyframes blockedFadeUp { 0% { opacity: 0; transform: translate(-50%, 0); } 15% { opacity: 1; transform: translate(-50%, -45px); } 85% { opacity: 1; transform: translate(-50%, -55px); } 100% { opacity: 0; transform: translate(-50%, -70px); } } 
-          @keyframes xMarkFlash { 0%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } 30% { opacity: 1; transform: translate(-50%, -50%) scale(1.6); } 70% { opacity: 1; transform: translate(-50%, -50%) scale(1.3); } } 
-          @keyframes blockedOutlinePulse { 0% { box-shadow: 0 0 0 0px rgba(239, 68, 68, 1); } 50% { box-shadow: 0 0 0 25px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0px rgba(239, 68, 68, 0); } } 
-          @keyframes redBorderPulse { 0%, 100% { border-color: rgba(239, 68, 68, 0.5); } 50% { border-color: rgba(239, 68, 68, 1); border-width: 6px; } }
-          @keyframes targetGlowHalo { 0%, 100% { box-shadow: 0 0 10px 2px rgba(245, 158, 11, 0.4); border-color: rgba(245, 158, 11, 0.4); } 50% { box-shadow: 0 0 30px 10px rgba(245, 158, 11, 0.7); border-color: rgba(245, 158, 11, 1); } }
-          @keyframes ambientFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+          @keyframes goldFlare { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; } 20% { transform: translate(-50%, -50%) scale(1.5); opacity: 0.8; } 100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; } }
+          @keyframes paraTextRise { 0% { transform: translate(-50%, -20px); opacity: 0; filter: blur(5px); } 20% { transform: translate(-50%, -80px); opacity: 1; filter: blur(0px); } 80% { transform: translate(-50%, -100px); opacity: 1; } 100% { transform: translate(-50%, -140px); opacity: 0; } }
+          @keyframes padImpact { 0% { transform: translate(-50%, -50%) scale(1); } 5% { transform: translate(-50%, -49%) scale(1.02); } 100% { transform: translate(-50%, -50%) scale(1); } }
+          .animate-para-flare { animation: goldFlare 1s ease-out forwards; }
+          .animate-para-text { animation: paraTextRise 2s ease-out forwards; }
+          .animate-pad-impact { animation: padImpact 0.3s ease-out; }
           .animate-shake-target { animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; } 
           .animate-blocked-label { animation: blockedFadeUp 1.8s cubic-bezier(0.25, 1, 0.5, 1) forwards; } 
-          .animate-x-mark { animation: xMarkFlash 0.5s ease-out forwards; } 
-          .animate-blocked-outline { animation: blockedOutlinePulse 0.5s ease-out, redBorderPulse 0.5s ease-in-out; }
           .animate-target-glow { animation: targetGlowHalo 1.5s ease-in-out infinite; }
-          .animate-float-subtle { animation: ambientFloat 3s ease-in-out infinite; }
+          @keyframes targetGlowHalo { 0%, 100% { box-shadow: 0 0 10px 2px rgba(245, 158, 11, 0.4); border-color: rgba(245, 158, 11, 0.4); } 50% { box-shadow: 0 0 30px 10px rgba(245, 158, 11, 0.7); border-color: rgba(245, 158, 11, 1); } }
         ` }} />
 
-        {/* Central Dice Pad - Leather Texture */}
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
+        {/* Central Dice Pad */}
+        <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none ${isPaRa && !isRolling ? 'animate-pad-impact' : ''}`}>
             <div className="w-[18rem] h-[18rem] bg-[#1a110e] rounded-full blur-2xl opacity-60 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
+            
+            {/* Special Pa Ra Flare */}
+            {isPaRa && !isRolling && (
+                <>
+                    <div className="absolute left-1/2 top-1/2 w-64 h-64 bg-amber-400 rounded-full blur-3xl animate-para-flare z-0"></div>
+                    <div className="absolute left-1/2 top-1/2 whitespace-nowrap z-50 pointer-events-none animate-para-text">
+                        <span className="text-white font-cinzel text-5xl font-bold tracking-widest drop-shadow-[0_0_20px_#fbbf24]">PA RA!</span>
+                        <div className="text-amber-300 font-serif text-6xl text-center mt-2 drop-shadow-[0_0_15px_#d97706]">པ་ར།</div>
+                    </div>
+                </>
+            )}
+
             <div className="relative w-64 h-64 rounded-full shadow-[0_15px_50px_rgba(0,0,0,0.9),inset_0_2px_10px_rgba(255,255,255,0.1)] border-8 border-[#3d2b24] overflow-hidden flex items-center justify-center bg-[#291d1a]">
                 <div className="absolute inset-0 opacity-40 bg-[url('https://www.transparenttextures.com/patterns/black-linen-2.png')] mix-blend-overlay"></div>
                 <div className="flex flex-col items-center opacity-20 mix-blend-screen pointer-events-none">
@@ -318,14 +327,14 @@ export const Board: React.FC<BoardProps> = ({ boardState, players, validMoves, o
                     <div className="absolute inset-0 z-20">
                         {isRolling ? ( 
                             <>
-                                <div className="absolute left-1/2 top-1/2 -ml-[15px] -mt-[35px]"><BoardDie value={1} x={0} y={0} rotation={0} isRolling={true} /></div>
-                                <div className="absolute left-1/2 top-1/2 ml-[15px] mt-[15px]"><BoardDie value={6} x={0} y={0} rotation={0} isRolling={true} /></div>
+                                <div className="absolute left-1/2 top-1/2 -ml-[15px] -mt-[35px]"><BoardDie value={1} x={0} y={0} rotation={0} isRolling={true} isPaRa={false} /></div>
+                                <div className="absolute left-1/2 top-1/2 ml-[15px] mt-[15px]"><BoardDie value={6} x={0} y={0} rotation={0} isRolling={true} isPaRa={false} /></div>
                             </> 
                         ) : ( 
                             currentRoll && currentRoll.visuals && ( 
                                 <>
-                                    <BoardDie value={currentRoll.die1} x={currentRoll.visuals.d1x} y={currentRoll.visuals.d1y} rotation={currentRoll.visuals.d1r} isRolling={false} />
-                                    <BoardDie value={currentRoll.die2} x={currentRoll.visuals.d2x} y={currentRoll.visuals.d2y} rotation={currentRoll.visuals.d2r} isRolling={false} />
+                                    <BoardDie value={currentRoll.die1} x={currentRoll.visuals.d1x} y={currentRoll.visuals.d1y} rotation={currentRoll.visuals.d1r} isRolling={false} isPaRa={!!isPaRa} />
+                                    <BoardDie value={currentRoll.die2} x={currentRoll.visuals.d2x} y={currentRoll.visuals.d2y} rotation={currentRoll.visuals.d2r} isRolling={false} isPaRa={!!isPaRa} />
                                 </> 
                             ) 
                         )}
@@ -334,15 +343,12 @@ export const Board: React.FC<BoardProps> = ({ boardState, players, validMoves, o
             </div>
         </div>
 
-        {/* Enhanced Spiral Path Graphics */}
         <svg width="100%" height="100%" className="absolute inset-0 z-0 pointer-events-none">
-            {/* Ambient Shadow Path */}
             <path 
                 d={d3.line().curve(d3.curveCatmullRom.alpha(0.6))(shells.map(s => [s.x, s.y])) || ""} 
                 fill="none" stroke="#000" strokeWidth="24" strokeLinecap="round" 
                 className="opacity-20 blur-md transition-all duration-500" 
             />
-            {/* Visual Guide Path */}
             <path 
                 d={d3.line().curve(d3.curveCatmullRom.alpha(0.6))(shells.map(s => [s.x, s.y])) || ""} 
                 fill="none" stroke="#44403c" strokeWidth="10" strokeLinecap="round" 
@@ -364,7 +370,7 @@ export const Board: React.FC<BoardProps> = ({ boardState, players, validMoves, o
             const stackOffY = Math.sin(shell.angle) * 30 + Math.sin(shell.angle + Math.PI / 2) * -12;
             
             return (
-                <div key={shell.id} data-shell-id={shell.id} className={`absolute flex items-center justify-center transition-all duration-300 ease-in-out ${isTarget ? 'z-40 cursor-pointer rounded-full animate-target-glow border-2' : 'z-20'} ${isShaking ? 'animate-blocked-outline rounded-full border-4 border-red-600' : ''}`} style={{ left: shell.x, top: shell.y, width: 48, height: 48, transform: 'translate(-50%, -50%)', touchAction: 'none' }}
+                <div key={shell.id} className={`absolute flex items-center justify-center transition-all duration-300 ease-in-out ${isTarget ? 'z-40 cursor-pointer rounded-full animate-target-glow border-2' : 'z-20'} ${isShaking ? 'animate-blocked-outline rounded-full border-4 border-red-600' : ''}`} style={{ left: shell.x, top: shell.y, width: 48, height: 48, transform: 'translate(-50%, -50%)', touchAction: 'none' }}
                     onClick={(e) => { 
                         e.stopPropagation(); 
                         if (isTarget && moveTarget) onSelectMove(moveTarget); 
@@ -376,17 +382,16 @@ export const Board: React.FC<BoardProps> = ({ boardState, players, validMoves, o
                         } else onShellClick?.(shell.id);
                     }}
                 >
-                    <div style={{ transform: `translate(${shellOffX}px, ${shellOffY}px)` }} className={isTarget ? 'animate-float-subtle' : ''}>
+                    <div style={{ transform: `translate(${shellOffX}px, ${shellOffY}px)` }}>
                         <CowrieShell angle={shell.angle} isTarget={isTarget} isHovered={isTarget} isBlocked={isShaking} />
                     </div>
-                    
                     {isTarget && <div className={`absolute w-20 h-20 rounded-full border-2 border-amber-500/40 animate-ping pointer-events-none`}></div>}
                     {isSource && <div className="absolute w-20 h-20 rounded-full border-4 border-amber-500 shadow-[0_0_30px_rgba(245,158,11,0.6)] pointer-events-none animate-pulse"></div>}
                     
                     {isShaking && ( 
                         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] pointer-events-none">
                             <div className="w-24 h-24 rounded-full border-4 border-red-600/60 animate-shake-target flex items-center justify-center">
-                                <svg viewBox="0 0 24 24" className="w-16 h-16 text-red-600 animate-x-mark" fill="none" stroke="currentColor" strokeWidth="4"><path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                                <svg viewBox="0 0 24 24" className="w-16 h-16 text-red-600" fill="none" stroke="currentColor" strokeWidth="4"><path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" /></svg>
                             </div>
                         </div> 
                     )}
@@ -400,7 +405,6 @@ export const Board: React.FC<BoardProps> = ({ boardState, players, validMoves, o
                     {stackSize > 0 && owner && (
                         <div className={`absolute z-30 transition-transform ${owner === currentPlayer && turnPhase === GamePhase.MOVING ? 'scale-105' : ''}`} style={{ transform: `translate(${stackOffX}px, ${stackOffY}px)`, touchAction: 'none' }}>
                            <div className="absolute left-1/2 -translate-x-1/2 top-0 w-14 h-14 bg-black/40 rounded-full blur-md -z-10 transform scale-y-50 translate-y-4"></div>
-                           
                            {Array.from({ length: Math.min(stackSize, 9) }).map((_, i) => ( 
                                <div key={i} className="absolute left-1/2 -translate-x-1/2 transition-all duration-500" style={{ top: `${-(i * 7)}px`, left: `${Math.sin(i * 0.8) * 4}px`, zIndex: i, transform: `translate(-50%, -50%) rotate(${Math.sin(i * 1.5 + shell.id) * 15}deg)` }}>
                                    <AncientCoin color={getPlayerColor(owner)} isSelected={isSource} />
