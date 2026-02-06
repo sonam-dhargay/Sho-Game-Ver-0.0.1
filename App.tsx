@@ -35,7 +35,7 @@ const triggerHaptic = (pattern: number | number[]) => {
 };
 
 const generateRoomCode = () => {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Exclude ambiguous 0, O, 1, I
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; 
   let result = '';
   for (let i = 0; i < 6; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -287,7 +287,6 @@ const App: React.FC = () => {
     } else { 
         const isOpening = players[s.turnIndex].coinsInHand === COINS_PER_PLAYER;
         if (s.paRaCount > 0 && isOpening) { setIsOpeningPaRa(true); addLog(`OPENING PA RA! You can place 3 coins!`, 'alert'); }
-        // Each Pa Ra contributes exactly one '2' to the movement pool as a bonus roll value.
         const movePool = [...Array(s.paRaCount).fill(2), total];
         setPendingMoveValues(movePool); setPaRaCount(0); setPhase(GamePhase.MOVING); 
     }
@@ -363,26 +362,23 @@ const App: React.FC = () => {
           const hostName = getSafePlayerName();
           const hostColor = selectedColor;
           
-          setPlayers(prev => {
-              const updatedPlayers = [
-                  { ...prev[0], name: hostName, colorHex: hostColor },
-                  { ...prev[1], name: guestInfo.name, colorHex: guestInfo.color }
-              ];
-              
-              // Immediate broadcast of full sync with final player details
-              setTimeout(() => {
-                  broadcastPacket({ 
-                      type: 'FULL_SYNC', 
-                      payload: { 
-                          ...gameStateRef.current, 
-                          players: updatedPlayers 
-                      } 
-                  });
-              }, 100);
-              
-              return updatedPlayers;
+          // CRITICAL: Construct updated player array explicitly to avoid stale closures
+          const updatedPlayers = [
+              { id: PlayerColor.Red, name: hostName, colorHex: hostColor, coinsInHand: COINS_PER_PLAYER, coinsFinished: 0 },
+              { id: PlayerColor.Blue, name: guestInfo.name, colorHex: guestInfo.color, coinsInHand: COINS_PER_PLAYER, coinsFinished: 0 }
+          ];
+          
+          setPlayers(updatedPlayers);
+          addLog(`${guestInfo.name} has joined!`, 'alert');
+          
+          // Immediate broadcast of full state including corrected names
+          broadcastPacket({ 
+              type: 'FULL_SYNC', 
+              payload: { 
+                  ...gameStateRef.current, 
+                  players: updatedPlayers 
+              } 
           });
-          addLog(`${guestInfo.name} joined the match.`, 'alert');
         }
         break;
       case 'ROLL_REQ':
@@ -395,7 +391,12 @@ const App: React.FC = () => {
         handleSkipTurn(true);
         break;
       case 'FULL_SYNC':
-        if (packet.payload.board) setBoard(new Map(Object.entries(packet.payload.board).map(([k, v]) => [Number(k), v as any])));
+        // Guest receives full state from host
+        if (packet.payload.board) {
+            const boardObj = packet.payload.board;
+            const entries = boardObj instanceof Map ? Array.from(boardObj.entries()) : Object.entries(boardObj);
+            setBoard(new Map(entries.map(([k, v]) => [Number(k), v as any])));
+        }
         if (packet.payload.players) setPlayers(packet.payload.players);
         if (packet.payload.turnIndex !== undefined) setTurnIndex(packet.payload.turnIndex);
         if (packet.payload.phase) setPhase(packet.payload.phase);
@@ -455,9 +456,8 @@ const App: React.FC = () => {
         setActiveConnections(prev => [...prev, conn]);
         setOnlineLobbyStatus('CONNECTED');
         setGameMode(GameMode.ONLINE_HOST);
-        // Host initializes with their own known identity
+        // Initial setup - Guest's name will be filled by JOIN_INFO packet shortly
         initializeGame({ name: getSafePlayerName(), color: selectedColor }, { name: 'Joining...', color: '#666' });
-        addLog("Opponent connecting...", 'info');
       });
       conn.on('data', (data: any) => packetHandlerRef.current(data));
     });
@@ -484,12 +484,12 @@ const App: React.FC = () => {
             setActiveConnections(prev => [...prev, conn]);
             setOnlineLobbyStatus('CONNECTED');
             setGameMode(GameMode.ONLINE_GUEST);
-            // Shake hands immediately with identity details
+            // Shake hands immediately with Guest's local identity
             conn.send({ 
                 type: 'JOIN_INFO', 
                 payload: { name: getSafePlayerName(), color: selectedColor } 
             });
-            addLog("Connected! Syncing identities...", 'info');
+            addLog("Connected! Waiting for host to sync...", 'info');
             setIsPeerConnecting(false);
         });
         conn.on('data', (data: any) => packetHandlerRef.current(data));
