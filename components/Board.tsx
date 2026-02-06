@@ -112,7 +112,7 @@ const AncientCoin: React.FC<{ color: string; isSelected: boolean; opacity?: numb
       }}
     >
       {/* Intricate Metal Wear and Texture */}
-      <div className="absolute inset-0 rounded-full opacity-20 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] mix-blend-overlay"></div>
+      <div className="absolute inset-0 rounded-full opacity-25 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] mix-blend-overlay"></div>
       
       {/* Specular Rim Highlight */}
       <div className="absolute inset-[1px] rounded-full border-t border-white/30 pointer-events-none"></div>
@@ -122,7 +122,6 @@ const AncientCoin: React.FC<{ color: string; isSelected: boolean; opacity?: numb
       <div className="absolute inset-1.5 rounded-full border-[1.5px] border-white/5 opacity-40 flex items-center justify-center">
         <svg viewBox="0 0 100 100" className="w-full h-full p-2 opacity-30 drop-shadow-[0_1px_1px_rgba(255,255,255,0.2)]">
            <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray="2 4" />
-           {/* Endless Knot / Tibetan Style Patterns */}
            <path d="M50 15 L85 50 L50 85 L15 50 Z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
            <circle cx="50" cy="50" r="10" fill="none" stroke="currentColor" strokeWidth="1" />
         </svg>
@@ -130,23 +129,20 @@ const AncientCoin: React.FC<{ color: string; isSelected: boolean; opacity?: numb
 
       {/* Central Square Hole (Traditional Style) with improved depth */}
       <div className="absolute w-5 h-5 bg-[#0a0a0a] border border-white/10 shadow-[inset_3px_3px_5px_rgba(0,0,0,0.9),0_0_2px_rgba(255,255,255,0.1)] transform rotate-45 flex items-center justify-center overflow-hidden">
-          {/* Inner walls of the hole */}
           <div className="absolute inset-0 bg-gradient-to-br from-black to-stone-900 pointer-events-none"></div>
           <div className="w-2.5 h-2.5 bg-[#050505] rounded-[1px] opacity-60"></div>
       </div>
 
-      {/* Specular Main Highlight */}
+      {/* Specular Highlights */}
       <div className="absolute top-2 left-3 w-7 h-4 bg-white/15 rounded-full blur-[3px] pointer-events-none transform -rotate-15"></div>
-      
-      {/* Secondary Reflection */}
       <div className="absolute bottom-3 right-4 w-4 h-2 bg-white/5 rounded-full blur-[1px] pointer-events-none opacity-40"></div>
       
-      {/* Tibetan Script Engraving (ཤོ) - Highly subtle, feels stamped into metal */}
+      {/* Stamped Character Engraving */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
         <span className="font-serif text-[18px] opacity-15 text-white/50 mb-0.5 ml-0.5 mix-blend-screen transform -rotate-45">ཤོ</span>
       </div>
 
-      {/* Grime/Aging Layer */}
+      {/* Aging Layer */}
       <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-black/20 via-transparent to-transparent pointer-events-none"></div>
     </div>
   );
@@ -289,7 +285,7 @@ export const Board: React.FC<BoardProps> = ({ boardState, players, validMoves, o
 
   return (
     <div className="relative mx-auto select-none rounded-[4rem] overflow-hidden" style={{ width: 800, height: 800, touchAction: 'none' }} ref={boardRef}>
-        {/* Subtle Felt Background Texture */}
+        {/* Visual Background Textures */}
         <div className="absolute inset-0 bg-[#292524] opacity-90"></div>
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/felt.png")' }}></div>
         
@@ -362,7 +358,6 @@ export const Board: React.FC<BoardProps> = ({ boardState, players, validMoves, o
             const isSource = selectedSource === shell.id;
             const isShaking = shakeShellId === shell.id; const hasBlockedMsg = blockedFeedback?.shellId === shell.id;
             
-            // Refined offsets for 3D appearance
             const shellOffX = Math.cos(shell.angle) * -14 + Math.cos(shell.angle + Math.PI / 2) * -8; 
             const shellOffY = Math.sin(shell.angle) * -14 + Math.sin(shell.angle + Math.PI / 2) * -8;
             const stackOffX = Math.cos(shell.angle) * 30 + Math.cos(shell.angle + Math.PI / 2) * -12; 
@@ -404,7 +399,6 @@ export const Board: React.FC<BoardProps> = ({ boardState, players, validMoves, o
                     
                     {stackSize > 0 && owner && (
                         <div className={`absolute z-30 transition-transform ${owner === currentPlayer && turnPhase === GamePhase.MOVING ? 'scale-105' : ''}`} style={{ transform: `translate(${stackOffX}px, ${stackOffY}px)`, touchAction: 'none' }}>
-                           {/* Ambient Occlusion Shadow for the whole stack */}
                            <div className="absolute left-1/2 -translate-x-1/2 top-0 w-14 h-14 bg-black/40 rounded-full blur-md -z-10 transform scale-y-50 translate-y-4"></div>
                            
                            {Array.from({ length: Math.min(stackSize, 9) }).map((_, i) => ( 
@@ -435,7 +429,6 @@ export const Board: React.FC<BoardProps> = ({ boardState, players, validMoves, o
             </div> 
         ))}
 
-        {/* Improved END target */}
         <div className={`absolute transition-all duration-700 transform -translate-x-1/2 -translate-y-1/2 ${hasFinishMove ? 'opacity-100 cursor-pointer scale-110 z-50' : 'opacity-30 pointer-events-none z-10'}`} style={{ left: endBtnPos.x, top: endBtnPos.y }} onClick={() => { if (hasFinishMove) { const fm = validMoves.find(m => m.type === MoveResultType.FINISH); if (fm) onSelectMove(fm); } }}>
             <div className={`w-28 h-28 border-4 rounded-full flex flex-col items-center justify-center border-dashed transition-all duration-500 ${hasFinishMove ? 'border-amber-500 bg-amber-950/40 animate-target-glow shadow-[0_0_40px_rgba(245,158,11,0.3)]' : 'border-stone-800 bg-stone-900/20'}`}>
                 <span className={`font-cinzel font-bold text-lg leading-tight ${hasFinishMove ? 'text-amber-400' : 'text-stone-700'}`}>GOAL</span>

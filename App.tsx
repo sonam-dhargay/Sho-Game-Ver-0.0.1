@@ -201,7 +201,14 @@ const App: React.FC = () => {
 
   const broadcastPacket = useCallback((packet: NetworkPacket) => {
     connectionsRef.current.forEach(conn => {
-        if (conn.open) conn.send(packet);
+        if (conn.open) {
+            // Explicitly handle Map serialization before sending
+            const sanitizedPacket = { ...packet };
+            if (packet.type === 'FULL_SYNC' && packet.payload?.board instanceof Map) {
+                sanitizedPacket.payload = { ...packet.payload, board: Object.fromEntries(packet.payload.board) };
+            }
+            conn.send(sanitizedPacket);
+        }
     });
   }, []);
 
@@ -362,21 +369,21 @@ const App: React.FC = () => {
           const hostName = getSafePlayerName();
           const hostColor = selectedColor;
           
-          // CRITICAL: Construct updated player array explicitly to avoid stale closures
-          const updatedPlayers = [
+          // Construct the unified verified identity list
+          const verifiedPlayers = [
               { id: PlayerColor.Red, name: hostName, colorHex: hostColor, coinsInHand: COINS_PER_PLAYER, coinsFinished: 0 },
               { id: PlayerColor.Blue, name: guestInfo.name, colorHex: guestInfo.color, coinsInHand: COINS_PER_PLAYER, coinsFinished: 0 }
           ];
           
-          setPlayers(updatedPlayers);
-          addLog(`${guestInfo.name} has joined!`, 'alert');
+          setPlayers(verifiedPlayers);
+          addLog(`${guestInfo.name} joined! Synchronizing...`, 'alert');
           
-          // Immediate broadcast of full state including corrected names
+          // Host pushes the definitive state back to Guest
           broadcastPacket({ 
               type: 'FULL_SYNC', 
               payload: { 
                   ...gameStateRef.current, 
-                  players: updatedPlayers 
+                  players: verifiedPlayers 
               } 
           });
         }
@@ -391,10 +398,10 @@ const App: React.FC = () => {
         handleSkipTurn(true);
         break;
       case 'FULL_SYNC':
-        // Guest receives full state from host
+        // Explicitly reconstruct the board Map from incoming object
         if (packet.payload.board) {
             const boardObj = packet.payload.board;
-            const entries = boardObj instanceof Map ? Array.from(boardObj.entries()) : Object.entries(boardObj);
+            const entries = Object.entries(boardObj);
             setBoard(new Map(entries.map(([k, v]) => [Number(k), v as any])));
         }
         if (packet.payload.players) setPlayers(packet.payload.players);
@@ -403,11 +410,11 @@ const App: React.FC = () => {
         if (packet.payload.winner) setWinner(packet.payload.winner);
         if (packet.payload.pendingMoveValues) setPendingMoveValues(packet.payload.pendingMoveValues);
         if (packet.payload.isOpeningPaRa !== undefined) setIsOpeningPaRa(packet.payload.isOpeningPaRa);
+        addLog("Game synced with host.", "info");
         break;
     }
   }, [performRoll, performMove, handleSkipTurn, broadcastPacket, addLog, getSafePlayerName, selectedColor]);
 
-  // Use a Ref to provide the latest handleNetworkPacket to connection listeners
   const packetHandlerRef = useRef(handleNetworkPacket);
   useEffect(() => { packetHandlerRef.current = handleNetworkPacket; }, [handleNetworkPacket]);
 
@@ -456,7 +463,7 @@ const App: React.FC = () => {
         setActiveConnections(prev => [...prev, conn]);
         setOnlineLobbyStatus('CONNECTED');
         setGameMode(GameMode.ONLINE_HOST);
-        // Initial setup - Guest's name will be filled by JOIN_INFO packet shortly
+        // Initialize with default Guest slot; Guest will push their real info via JOIN_INFO
         initializeGame({ name: getSafePlayerName(), color: selectedColor }, { name: 'Joining...', color: '#666' });
       });
       conn.on('data', (data: any) => packetHandlerRef.current(data));
@@ -484,12 +491,12 @@ const App: React.FC = () => {
             setActiveConnections(prev => [...prev, conn]);
             setOnlineLobbyStatus('CONNECTED');
             setGameMode(GameMode.ONLINE_GUEST);
-            // Shake hands immediately with Guest's local identity
+            // Push identity immediately
             conn.send({ 
                 type: 'JOIN_INFO', 
                 payload: { name: getSafePlayerName(), color: selectedColor } 
             });
-            addLog("Connected! Waiting for host to sync...", 'info');
+            addLog("Connected! Syncing with host...", 'info');
             setIsPeerConnecting(false);
         });
         conn.on('data', (data: any) => packetHandlerRef.current(data));
