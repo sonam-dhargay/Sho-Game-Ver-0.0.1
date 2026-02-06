@@ -127,35 +127,35 @@ export const T = {
     steps: [
       {
         title: { en: "Welcome to Sho!", bo: "ཤོ་རྩེད་ལ་རོལ་བར་ཕེབས་ཤོག།" },
-        text: { en: "Sho is a traditional Tibetan race game. Your goal is to move all 9 of your coins from your Hand to the End of the spiral.", bo: "ཤོ་ནི་བོད་ཀྱི་སྲོལ་རྒྱུན་གྱི་རྩེད་མོ་ཞིག་རེད། ཁྱེད་ཀྱི་དམིགས་ཡུལ་ནི་ལག་ཁྱི་ ༩ ཆར་ལ་རྒྱབ་པ་བྱེད་རྒྱུ་དེ་རེད།" },
-        action: { en: "Next", bo: "མུ་མཐུད" }
+        text: { en: "Sho is a traditional Tibetan race game. Your goal is simple: move all 9 of your coins (lag kyi) from your Hand to the End of the spiral path.", bo: "ཤོ་ནི་བོད་ཀྱི་སྲོལ་རྒྱུན་གྱི་རྩེད་མོ་ཞིག་རེད། ཁྱེད་ཀྱི་དམིགས་ཡུལ་ནི་ལག་ཁྱི་ ༩ ཆར་མཇུག་བར་དུ་སྐྱོད་རྒྱུ་དེ་རེད།" },
+        action: { en: "Start Learning", bo: "སློབ་འགོ་འཛུགས།" }
       },
       {
         title: { en: "Rolling the Dice", bo: "ཤོ་རྒྱག་སྟངས།" },
-        text: { en: "The game is played with two dice. Let's start the game! Click the 'ROLL DICE' button.", bo: "རྩེད་མོ་འདི་ཤོ་གཉིས་ཀྱིས་རྩེ་དགོས། ད་འགོ་འཛུགས་དོ། 'ROLL DICE' ལ་ནོན།" },
-      },
-      {
-        title: { en: "Smart Placement", bo: "ལག་ཁྱི་འཇོག་སྟངས།" },
-        text: { en: "Clicking 'From Hand' now automatically places your coins at the furthest valid position to give you a head start!", bo: "ལག་ཁྱི་བཙུགས་པ་དང་དེ་མ་ཐག་འགྲོ་ས་ཡག་ཤོས་དེར་རང་བཞིན་གྱིས་སླེབས་ཀྱི་རེད།" },
+        text: { en: "Movement begins with the dice. Click the 'ROLL DICE' button to start your turn. (The cup must be slammed onto the pad!)", bo: "འགྲུལ་བཞུད་འགོ་འཛུགས་པར་ཤོ་རྒྱག་དགོས། 'ROLL DICE' ལ་མནན་ནས་ཤོ་རྒྱོབ།" },
       },
       {
         title: { en: "The Movement Pool", bo: "ཤོ་མིག་གི་མཐུན་རྐྱེན།" },
-        text: { en: "Dice results are stored as tiles in the sidebar. You can use them one by one or combine them for massive tactical jumps!", bo: "ཤོ་མིག་རྣམས་རེ་རེ་བྱས་ནས་གཏོང་ཆོག་ལ་བསྡོམས་ནས་ཐག་རིང་པོར་མཆོང་ནའང་ཆོག" },
+        text: { en: "Your dice results are added to your movement pool. You can use these values individually or combine them to make longer jumps across the shells.", bo: "ཤོ་མིག་རྣམས་འདི་རུ་ཉར་ཚགས་བྱས་ཡོད། ཁྱེད་ཀྱྱིས་ཤོ་མིག་རྣམས་རེ་རེ་བྱས་ནས་གཏོང་ཆོག་ལ་བསྡོམས་ནས་ཐག་རིང་པོར་མཆོང་ནའང་ཆོག" },
         action: { en: "Next", bo: "མུ་མཐུད" }
       },
       {
-        title: { en: "Tactical Combat", bo: "འཐབ་ཇུས།" },
-        text: { en: "Stacking: Land on your own pieces to move together and gain bonus rolls. Killing: Land on equal or smaller opponent stacks to send them back!", bo: "བརྩེགས་སྟངས། རང་གི་ལག་ཁྱིའི་ཐོག་བབས་ན་བརྩེགས་ནས་ཤོ་ཐེངས་གཅིག་ཐོབ། གསོད་སྟངས། ཁ་གཏད་ལག་ཁྱིའི་ཐོག་བབས་ན་བསད་ནས་ལག་པར་སློག་ཆོག" },
-        action: { en: "Next", bo: "མུ་མཐུད་པ།" }
+        title: { en: "Entering the Board", bo: "ལག་ཁྱི་འཇོག་སྟངས།" },
+        text: { en: "To start moving, you must place coins from your Hand. Click 'From Hand' to use your dice values and enter the spiral path.", bo: "ཐོག་མར་ལག་ཁྱི་རྣམས་ལག་པ་ནས་བཏོན་ཏེ་འཇོག་དགོས། 'From Hand' ལ་མནན་ནས་ལག་ཁྱི་བཙུགས།" },
       },
       {
-        title: { en: "Blocked Paths", bo: "བགྲོད་ལམ་བཀག་པ།" },
-        text: { en: "You cannot land on a larger opponent's stack. Attempting to do so will trigger a 'TOO LARGE' warning and a red pulse.", bo: "རང་ལས་མང་བའི་ལག་ཁྱིའི་ཐོག་ཏུ་བབས་མི་ཆོག གལ་ཏེ་འགྲོ་ཐབས་བྱས་ན་'བཀག་'ཅེས་པའི་བརྡ་དམར་པོ་ཞིག་སྟོན་གྱི་རེད།" },
-        action: { en: "Next", bo: "མུ་མཐུད་པ།" }
+        title: { en: "Stacking & Killing", bo: "བརྩེགས་སྟངས་དང་བསད་སྟངས།" },
+        text: { en: "Stacking (merging with your own pieces) and Killing (landing on equal/smaller opponent stacks) are the keys to victory. Both actions grant you a Bonus Roll!", bo: "རང་གི་ལག་ཁྱིའི་ཐོག་བབས་ན་'བརྩེགས་'པ་དང་། ཁ་གཏད་ལག་ཁྱིའི་ཐོག་བབས་ན་'བསད་'པ་ཡིན། འདི་གཉིས་ཀྱིས་ཁྱེད་ལ་ཤོ་ཐེངས་གཅིག་བསྐྱར་དུ་རྒྱག་རྒྱུའི་གོ་སྐབས་སྦྱིན།" },
+        action: { en: "Next", bo: "མུ་མཐུད" }
       },
       {
         title: { en: "The Pa Ra Rule", bo: "པ་རའི་སྒྲིག་གཞི།" },
-        text: { en: "If you roll a 1 and 1, it's called 'Pa Ra'. You get a bonus roll immediately!", bo: "གལ་ཏེ་ཤོ་མིག་ ༡ དང་ ༡ བབས་ན་'པ་ར་'ཟེར། ཁྱེད་ལ་ཤོ་ཐེངས་གཅིག་བསྐྱར་དུ་རྒྱག་རྒྱུའི་གོ་སྐབས་ཐོབ།" },
+        text: { en: "Rolling a 1 and 1 is called 'Pa Ra'. This special roll grants you an immediate bonus roll, and adds a move of 2 to your pool!", bo: "གལ་ཏེ་ཤོ་མིག་ ༡ དང་ ༡ བབས་ན་'པ་ར་'ཟེར། ཁྱེད་ལ་ཤོ་ཐེངས་གཅིག་བསྐྱར་དུ་རྒྱག་རྒྱུའི་གོ་སྐབས་དང་ཤོ་མིག་ ༢ ཐོབ།" },
+        action: { en: "Next", bo: "མུ་མཐུད" }
+      },
+      {
+        title: { en: "Final Tip", bo: "མཐའ་མའི་བསླབ་བྱ།" },
+        text: { en: "Landing on an empty shell (Placing) ends your turn immediately, even if you have dice values left. Be aggressive to keep your turn alive!", bo: "ཤོ་རྡོག་མེད་སར་བབས་ན་ཁྱེད་ཀྱི་སྐོར་ཐེངས་དེ་མ་ཐག་མཇུག་རྫོགས་ཀྱི་རེད། དེར་བརྟེན་རྟག་ཏུ་བརྩེགས་པ་དང་གསོད་པའི་ཐབས་ཇུས་བེད་སྤྱོད་གཏོང་དགོས།" },
         action: { en: "Finish Tutorial", bo: "མྱུར་ཁྲིད་མཇུག་བསྡུ་བའོ།" }
       }
     ]
