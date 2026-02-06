@@ -199,12 +199,20 @@ const App: React.FC = () => {
 
   const addLog = useCallback((msg: string, type: GameLog['type'] = 'info') => { setLogs(prev => [{ id: Date.now().toString() + Math.random(), message: msg, type }, ...prev].slice(50)); }, []);
 
+  const sanitizeSyncPayload = (payload: any) => {
+    const p = { ...payload };
+    if (p.board instanceof Map) {
+      p.board = Object.fromEntries(p.board);
+    }
+    return p;
+  };
+
   const broadcastPacket = useCallback((packet: NetworkPacket) => {
     connectionsRef.current.forEach(conn => {
         if (conn.open) {
             const sanitizedPacket = { ...packet };
-            if (packet.type === 'FULL_SYNC' && packet.payload?.board instanceof Map) {
-                sanitizedPacket.payload = { ...packet.payload, board: Object.fromEntries(packet.payload.board) };
+            if (packet.type === 'FULL_SYNC' && packet.payload) {
+                sanitizedPacket.payload = sanitizeSyncPayload(packet.payload);
             }
             conn.send(sanitizedPacket);
         }
@@ -384,11 +392,12 @@ const App: React.FC = () => {
     if (s.gameMode === GameMode.TUTORIAL && s.tutorialStep === 4) setTutorialStep(5);
   }, [players, addLog, broadcastPacket]);
 
-  const handleNetworkPacket = useCallback((packet: NetworkPacket) => {
+  const handleNetworkPacket = useCallback((packet: NetworkPacket, senderConn?: DataConnection) => {
     const s = gameStateRef.current;
     switch (packet.type) {
       case 'JOIN_INFO':
-        if (s.gameMode === GameMode.ONLINE_HOST) {
+        // Handle guest join request - relax gameMode check to handle async state updates
+        if (s.gameMode === GameMode.ONLINE_HOST || s.gameMode === null || peer) {
           const guestInfo = packet.payload;
           const hostName = getSafePlayerName();
           const hostColor = selectedColor;
@@ -398,7 +407,21 @@ const App: React.FC = () => {
           ];
           setPlayers(verifiedPlayers);
           addLog(`${guestInfo.name} joined! Synchronizing...`, 'alert');
-          broadcastPacket({ type: 'FULL_SYNC', payload: { ...gameStateRef.current, players: verifiedPlayers } });
+          
+          // Prepare robust full sync payload
+          const syncPayload = sanitizeSyncPayload({
+            ...s,
+            players: verifiedPlayers,
+            gameMode: GameMode.ONLINE_HOST
+          });
+
+          // 1. Direct reply to joined peer to ensure synchronization
+          if (senderConn && senderConn.open) {
+            senderConn.send({ type: 'FULL_SYNC', payload: syncPayload });
+          }
+          
+          // 2. Broadcast for parity across all possible connections
+          broadcastPacket({ type: 'FULL_SYNC', payload: syncPayload });
         }
         break;
       case 'ROLL_REQ':
@@ -422,10 +445,11 @@ const App: React.FC = () => {
         if (packet.payload.winner) setWinner(packet.payload.winner);
         if (packet.payload.pendingMoveValues) setPendingMoveValues(packet.payload.pendingMoveValues);
         if (packet.payload.isOpeningPaRa !== undefined) setIsOpeningPaRa(packet.payload.isOpeningPaRa);
-        addLog("Game synced with host.", "info");
+        if (packet.payload.gameMode) setGameMode(packet.payload.gameMode);
+        addLog("Game synced.", "info");
         break;
     }
-  }, [performRoll, performMove, handleSkipTurn, broadcastPacket, addLog, getSafePlayerName, selectedColor]);
+  }, [performRoll, performMove, handleSkipTurn, broadcastPacket, addLog, getSafePlayerName, selectedColor, peer]);
 
   const packetHandlerRef = useRef(handleNetworkPacket);
   useEffect(() => { packetHandlerRef.current = handleNetworkPacket; }, [handleNetworkPacket]);
@@ -471,13 +495,14 @@ const App: React.FC = () => {
       addLog(`Room ID: ${id}. Waiting for opponent...`, 'info');
     });
     newPeer.on('connection', (conn) => {
+      // Register data handler immediately
+      conn.on('data', (data: any) => packetHandlerRef.current(data, conn));
       conn.on('open', () => {
         setActiveConnections(prev => [...prev, conn]);
         setOnlineLobbyStatus('CONNECTED');
         setGameMode(GameMode.ONLINE_HOST);
         initializeGame({ name: getSafePlayerName(), color: selectedColor }, { name: 'Joining...', color: '#666' });
       });
-      conn.on('data', (data: any) => packetHandlerRef.current(data));
     });
     newPeer.on('error', (err) => {
       console.error(err);
@@ -498,6 +523,7 @@ const App: React.FC = () => {
     setPeer(newPeer);
     newPeer.on('open', () => {
         const conn = newPeer.connect(id.trim().toUpperCase());
+        conn.on('data', (data: any) => packetHandlerRef.current(data, conn));
         conn.on('open', () => {
             setActiveConnections(prev => [...prev, conn]);
             setOnlineLobbyStatus('CONNECTED');
@@ -509,7 +535,6 @@ const App: React.FC = () => {
             addLog("Connected! Syncing with host...", 'info');
             setIsPeerConnecting(false);
         });
-        conn.on('data', (data: any) => packetHandlerRef.current(data));
         conn.on('error', (err) => {
             console.error(err);
             addLog("Connection failed.", "alert");
