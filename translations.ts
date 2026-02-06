@@ -99,13 +99,13 @@ export const T = {
     variant: { en: "Game Variant", bo: "རྩེད་མོ་འདམ་ག།" },
     ninerMode: { en: "Niner Mode", bo: "དགུ་མ།" },
     noNinerMode: { en: "No-Niner Mode", bo: "དགུ་མ་མིན་པ།" },
-    ninerDesc: { en: "In Niner mode, players are allowed to build a stack of nine coins and charge forward.", bo: "དགུ་མའི་ནང་དུ་ཤོ་རྡོག་དགུ་བརྩེགས་ནས་མདུན་དུ་བསྐྱོད་ཆོག" },
-    noNinerDesc: { en: "In this variant, it is forbidden to build a stack of all nine coins.", bo: "འདིའི་ནང་དུ་ཤོ་རྡོག་དགུ་བརྩེགས་རྒྱག་མི་ཆོག" },
+    ninerDesc: { en: "In Niner mode, players are allowed to build a stack of nine coins and charge forward.", bo: "དགུ་མའི་ནང་དུ་རྡེའུ་དགུ་བརྩེགས་ནས་མདུན་དུ་བསྐྱོད་ཆོག" },
+    noNinerDesc: { en: "In this variant, it is forbidden to build a stack of all nine coins.", bo: "འདིའི་ནང་དུ་རྡེའུ་དགུ་བརྩེགས་རྒྱག་མི་ཆོག" },
     objectiveTitle: { en: "Objective", bo: "དམིགས་ཡུལ།" },
-    objectiveDesc: { en: "Sho is a race game played on a spiral of 64 shells. Each player has 9 coins. The goal is to move all your coins from your hand (start) to the end of the spiral.", bo: "ཤོ་ནི་འགྲན་བསྡུར་གྱི་རྩེད་མོ་ཞིག་ཡིན་ཞིང་། དུང་དཀར་ ༦༤ ཡི་ཐོག་ཏུ་རྩེ་དགོས། རྩེད་མོ་བ་རེར་ཤོ་རྡོག་ ༩ རེ་ཡོད། དམིགས་ཡུལ་ནི་ཤོ་རྡོག་ཚང་མ་མཇུག་བསད་སར་བསྐྱོད་རྒྱུ་དེ་ཡིན།" },
+    objectiveDesc: { en: "Sho is a race game played on a spiral of 64 shells. Each player has 9 coins. The goal is to move all your coins from your hand (start) to the end of the spiral.", bo: "ཤོ་ནི་འགྲན་བསྡུར་གྱི་རྩེད་མོ་ཞིག་ཡིན་ཞིང་། དུང་དཀར་ ༦༤ ཡི་ཐོག་ཏུ་རྩེ་དགོས། རྩེད་མོ་བ་རེར་རྡེའུ་ ༩ རེ་ཡོད། དམིགས་ཡུལ་ནི་རྡེའུ་ཚང་མ་མཇུག་བསད་སར་བསྐྱོད་རྒྱུ་དེ་ཡིན།" },
     shomoTitle: { en: "The 'Sho-mo'", bo: "ཤོ་མོ།" },
-    shomoRule1: { en: "On the very first roll of the opening round, players can place two coins. This initial stack is called the 'Sho-mo'.", bo: "འགོ་འཛུགས་སྐབས་ཤོ་ཐེངས་དང་པོ་དེར་ཤོ་རྡོག་ gnyis-'jog-chog. 'di-la-'sho-mo'-zer." },
-    shomoRule2: { en: "Killer Bonus: If an opponent lands on and kills your 'Sho-mo', they can place three coins in its place immediately (taking the extra from their hand).", bo: "གསོད་པའི་ཁེ་ཕན། གལ་ཏེ་པ་རོལ་པོས་ཁྱེད་ཀྱི་'ཤོ་མོ་'བསད་པ་ཡིན་ན། ཁོ་ཚོས་དེའི་ཚབ་ཏུ་ཤོ་རྡོག་གསུམ་འཇོག་ཆོག" },
+    shomoRule1: { en: "On the very first roll of the opening round, players can place two coins. This initial stack is called the 'Sho-mo'.", bo: "འགོ་འཛུགས་སྐབས་ཤོ་ཐེངས་དང་པོ་དེར་རྡེའུ་ gnyis-'jog-chog. 'di-la-'sho-mo'-zer." },
+    shomoRule2: { en: "Killer Bonus: If an opponent lands on and kills your 'Sho-mo', they can place three coins in its place immediately (taking the extra from their hand).", bo: "གསོད་པའི་ཁེ་ཕན། གལ་ཏེ་པ་རོལ་པོས་ཁྱེད་ཀྱི་'ཤོ་མོ་'བསད་པ་ཡིན་ན། ཁོ་ཚོས་དེའི་ཚབ་ཏུ་རྡེའུ་གསུམ་འཇོག་ཆོག" },
     paraTitle: { en: "The Pa Ra Rule", bo: "པ་རའི་སྒྲིག་གཞི།" },
     paraDesc: { en: "Rolling a 1 and 1 is called 'Pa Ra':", bo: "ཤོ་མིག་ ༡ དང་ ༡ བབས་ན་'པ་ར་'ཟེར།" },
     paraRule1: { en: "You get to roll again immediately.", bo: "དེ་མ་ཐག་ཤོ་བསྐྱར་དུ་རྒྱག་ཆོག" },
@@ -155,7 +155,7 @@ export const T = {
       },
       {
         title: { en: "Final Tip", bo: "མཐའ་མའི་བསླབ་བྱ།" },
-        text: { en: "Landing on an empty shell (Placing) ends your turn immediately, even if you have dice values left. Be aggressive to keep your turn alive!", bo: "ཤོ་རྡོག་མེད་སར་བབས་ན་ཁྱེད་ཀྱི་སྐོར་ཐེངས་དེ་མ་ཐག་མཇུག་རྫོགས་ཀྱི་རེད། དེར་བརྟེན་རྟག་ཏུ་བརྩེགས་པ་དང་གསོད་པའི་ཐབས་ཇུས་བེད་སྤྱོད་གཏོང་དགོས།" },
+        text: { en: "Landing on an empty shell (Placing) ends your turn immediately, even if you have dice values left. Be aggressive to keep your turn alive!", bo: "རྡེའུ་མེད་སར་བབས་ན་ཁྱེད་ཀྱི་སྐོར་ཐེངས་དེ་མ་ཐག་མཇུག་རྫོགས་ཀྱི་རེད། དེར་བརྟེན་རྟག་ཏུ་བརྩེགས་པ་དང་གསོད་པའི་ཐབས་ཇུས་བེད་སྤྱོད་གཏོང་དགོས།" },
         action: { en: "Finish Tutorial", bo: "མྱུར་ཁྲིད་མཇུག་བསྡུ་བའོ།" }
       }
     ]
