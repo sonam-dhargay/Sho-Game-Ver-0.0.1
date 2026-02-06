@@ -32,61 +32,45 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, isNiner
             <p>
               Sho (Tibetan: <span className="font-serif">ཤོ</span>) is a traditional Tibetan race game that remains widely played today. Its name simply means “dice” in Tibetan.
             </p>
-            <p>
-              Sho is traditionally played for money and has historically been associated with male players. The game is played by two to four players, with three players being the most common arrangement.
-            </p>
           </section>
 
           <hr className={isDarkMode ? 'border-amber-900/30' : 'border-amber-700/20'} />
 
           <section className="space-y-4">
-            <h3 className={`text-xl font-cinzel ${isDarkMode ? 'text-amber-400' : 'text-amber-800'} font-bold border-b ${isDarkMode ? 'border-amber-600/30' : 'border-amber-700/20'} pb-2`}>Equipment མཁོ་ཆས།</h3>
-            <p>
-              The Sho board is formed by a circular spiral of shells (rde’u), typically sixty-four in number.
-            </p>
-            <p>
-              Each player—or team—has nine identical playing pieces (lag kyi), traditionally old coins. These pieces must be stackable, as stacking is a central part of the game.
-            </p>
-            <p>
-              Two six-sided dice are used. They are placed inside a small wooden dice cup, which is shaken and then slammed down onto a dice pad.
-            </p>
-          </section>
-
-          <section className={`${isDarkMode ? 'bg-amber-900/10 border-amber-600/20' : 'bg-amber-100 border-amber-200'} p-6 rounded-2xl border space-y-4`}>
             <h3 className={`text-xl font-cinzel ${isDarkMode ? 'text-amber-400' : 'text-amber-800'} font-bold border-b ${isDarkMode ? 'border-amber-600/30' : 'border-amber-700/20'} pb-2`}>Basic Gameplay གཞི་རྩའི་རྩེད་སྟངས།</h3>
             <p>The first player to move all nine coins from the beginning of the board to the end wins the game.</p>
             <p>The shells are arranged in a clockwise spiral around the dice pad.</p>
-            <p>Each playing position may be occupied by coins or stacks from only one player.</p>
-            <p className="font-bold text-red-600">A stack is destroyed when it is kicked out (killed), and all of its coins are sent back to the start.</p>
+            <p className="font-bold text-red-600 italic">Movement values from dice must be used strategically. Only specific actions grant extra turns or allow you to keep moving.</p>
           </section>
 
           <section className="space-y-4">
-            <h3 className={`text-xl font-cinzel ${isDarkMode ? 'text-amber-400' : 'text-amber-800'} font-bold border-b ${isDarkMode ? 'border-amber-600/30' : 'border-amber-700/20'} pb-2`}>Possible Outcomes མཐའ་མའི་འཇུག་འབྲས།</h3>
-            <ol className="list-decimal list-inside space-y-4 ml-2">
-              <li><span className={`${isDarkMode ? 'text-amber-200' : 'text-amber-700'} font-bold`}>Vacant space (Place):</span> Occupy the new position. <span className="text-stone-500 italic">No bonus roll.</span></li>
-              <li><span className={`${isDarkMode ? 'text-amber-400' : 'text-amber-800'} font-bold`}>Same player (Stack):</span> Combine coins together. <span className="text-amber-600 font-bold">Grants a Bonus Roll!</span></li>
-              <li><span className="text-red-500 font-bold">Opponent (Kill):</span> Send opponent stack back to start if your stack is equal or larger. <span className="text-amber-600 font-bold">Grants a Bonus Roll!</span></li>
-              <li><span className="text-stone-500 font-bold">Opponent (More):</span> Move forbidden if opponent stack is larger than yours.</li>
-            </ol>
-            <div className={`${isDarkMode ? 'bg-amber-600/10 border-amber-500/30' : 'bg-amber-50 border-amber-200'} p-4 rounded-xl border`}>
-              <p className="font-bold text-amber-600">Remember: Only Stacking or Killing grants a Bonus Roll!</p>
+            <h3 className={`text-xl font-cinzel ${isDarkMode ? 'text-amber-400' : 'text-amber-800'} font-bold border-b ${isDarkMode ? 'border-amber-600/30' : 'border-amber-700/20'} pb-2`}>Move Outcomes & Bonus Rolls མཐའ་མའི་འཇུག་འབྲས།</h3>
+            <div className="space-y-6">
+                <div className={`${isDarkMode ? 'bg-red-950/20' : 'bg-red-50'} p-4 rounded-xl border border-red-900/20`}>
+                    <p className="font-bold text-red-600 uppercase text-xs mb-1">Ends Turn immediately</p>
+                    <ul className="list-disc list-inside space-y-2">
+                        <li><span className={`${isDarkMode ? 'text-stone-200' : 'text-stone-800'} font-bold`}>Vacant space (Place):</span> Occupy an empty shell. <span className="text-red-500 italic">No bonus roll. Your turn ends immediately, and any remaining movement points are lost.</span></li>
+                        <li><span className={`${isDarkMode ? 'text-stone-200' : 'text-stone-800'} font-bold`}>Goal (Finish):</span> Exiting a piece from the board. <span className="text-red-500 italic">Ends turn immediately.</span></li>
+                    </ul>
+                </div>
+
+                <div className={`${isDarkMode ? 'bg-amber-600/10' : 'bg-amber-50'} p-4 rounded-xl border border-amber-500/30`}>
+                    <p className="font-bold text-amber-600 uppercase text-xs mb-1">Grants Bonus Roll</p>
+                    <ul className="list-disc list-inside space-y-2">
+                        <li><span className={`${isDarkMode ? 'text-amber-400' : 'text-amber-800'} font-bold`}>Same player (Stack):</span> Combine coins together. <span className="text-amber-600 font-bold">Grants a Bonus Roll (Extra Turn)!</span></li>
+                        <li><span className="text-red-500 font-bold">Opponent (Kill):</span> Send opponent stack back to start if your stack is equal or larger. <span className="text-amber-600 font-bold">Grants a Bonus Roll (Extra Turn)!</span></li>
+                    </ul>
+                </div>
             </div>
           </section>
 
           <section className={`${isDarkMode ? 'bg-amber-950/20 border-amber-900/30' : 'bg-amber-50 border-amber-200'} p-6 rounded-2xl border space-y-4`}>
             <h3 className={`text-xl font-cinzel ${isDarkMode ? 'text-amber-400' : 'text-amber-800'} font-bold border-b ${isDarkMode ? 'border-amber-600/30' : 'border-amber-700/20'} pb-2`}>Pa Ra (Snake Eyes) པ་རའི་སྒྲིག་གཞི།</h3>
-            <p>The only dice roll with special significance is <strong>(1,1)</strong>, called <em>pa ra</em>.</p>
+            <p>Rolling a <strong>(1,1)</strong> is called <em>pa ra</em>. This is the only dice roll that grants a bonus roll <em>before</em> moving.</p>
             <ul className="list-disc list-inside space-y-2 ml-2">
-              <li>Rolling a Pa Ra always gives you a <strong>bonus roll</strong>.</li>
-              <li>The '2' from the Pa Ra is added to your movement pool, and you roll again immediately.</li>
+              <li>Rolling a Pa Ra gives you a <strong>bonus roll</strong> immediately.</li>
+              <li>The movement value '2' is added to your pool, and you shake the cup again.</li>
             </ul>
-            
-            <div className={`mt-4 p-4 rounded-xl ${isDarkMode ? 'bg-black/40' : 'bg-white/60'} text-xs md:text-sm space-y-3`}>
-              <h4 className="font-bold text-amber-50 uppercase tracking-tighter">Instant Win དེ་མ་ཐག་པའི་རྒྱལ་ཁ།</h4>
-              <div className="space-y-2 font-mono">
-                <p>Triple Pa Ra: If a player rolls a Pa Ra (1,1) three times in a row, they win instantly!</p>
-              </div>
-            </div>
           </section>
 
           <section className={`${isDarkMode ? 'bg-stone-800/50 border-stone-700' : 'bg-white border-stone-200'} p-6 rounded-2xl border flex flex-col md:flex-row justify-between items-center gap-4`}>
