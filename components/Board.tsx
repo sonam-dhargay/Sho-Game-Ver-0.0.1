@@ -171,7 +171,7 @@ const BoardDie: React.FC<{ value: number; x: number; y: number; rotation: number
         <div 
             className={`absolute w-10 h-10 bg-amber-50 rounded-md shadow-[4px_6px_10px_rgba(0,0,0,0.5)] border border-stone-300 flex overflow-hidden 
                 ${isRolling ? 'animate-pulse' : ''} 
-                ${isPaRa && !isRolling ? 'ring-4 ring-amber-400 ring-offset-2 ring-offset-[#291d1a] border-white scale-125' : ''}`} 
+                ${isPaRa && !isRolling ? 'ring-4 ring-amber-400 ring-offset-2 ring-offset-[#291d1a] border-white' : ''}`} 
             style={style}
         >
              <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-black/5 pointer-events-none" />
@@ -283,18 +283,16 @@ export const Board: React.FC<BoardProps> = ({ boardState, players, validMoves, o
   const isPaRa = currentRoll?.isPaRa;
 
   return (
-    <div className={`relative mx-auto select-none rounded-[4rem] overflow-hidden ${isPaRa && !isRolling ? 'animate-board-shake' : ''}`} style={{ width: 800, height: 800, touchAction: 'none' }} ref={boardRef}>
+    <div className="relative mx-auto select-none rounded-[4rem] overflow-hidden" style={{ width: 800, height: 800, touchAction: 'none' }} ref={boardRef}>
         <div className="absolute inset-0 bg-[#292524] opacity-90"></div>
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/felt.png")' }}></div>
         
         <style dangerouslySetInnerHTML={{__html: `
           @keyframes shake { 0%, 100% { transform: translate(-50%, -50%) rotate(0deg); } 15% { transform: translate(-65%, -50%) rotate(-12deg); } 30% { transform: translate(-35%, -50%) rotate(12deg); } 45% { transform: translate(-65%, -50%) rotate(-12deg); } 60% { transform: translate(-35%, -50%) rotate(12deg); } 75% { transform: translate(-55%, -50%) rotate(-6deg); } } 
-          @keyframes boardShake { 0%, 100% { transform: translate(0, 0); } 10%, 30%, 50%, 70%, 90% { transform: translate(-2px, -2px); } 20%, 40%, 60%, 80% { transform: translate(2px, 2px); } }
           @keyframes blockedFadeUp { 0% { opacity: 0; transform: translate(-50%, 0); } 15% { opacity: 1; transform: translate(-50%, -45px); } 85% { opacity: 1; transform: translate(-50%, -55px); } 100% { opacity: 0; transform: translate(-50%, -70px); } } 
           @keyframes goldFlare { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; } 20% { transform: translate(-50%, -50%) scale(1.5); opacity: 0.8; } 100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; } }
           @keyframes paraTextRise { 0% { transform: translate(-50%, -20px); opacity: 0; filter: blur(5px); } 20% { transform: translate(-50%, -80px); opacity: 1; filter: blur(0px); } 80% { transform: translate(-50%, -100px); opacity: 1; } 100% { transform: translate(-50%, -140px); opacity: 0; } }
           @keyframes padImpact { 0% { transform: translate(-50%, -50%) scale(1); } 5% { transform: translate(-50%, -49%) scale(1.02); } 100% { transform: translate(-50%, -50%) scale(1); } }
-          .animate-board-shake { animation: boardShake 0.5s cubic-bezier(.36,.07,.19,.97) both; animation-iteration-count: 1; }
           .animate-para-flare { animation: goldFlare 1s ease-out forwards; }
           .animate-para-text { animation: paraTextRise 2s ease-out forwards; }
           .animate-pad-impact { animation: padImpact 0.3s ease-out; }

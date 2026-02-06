@@ -44,23 +44,10 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, isNiner
           </section>
 
           <section className="space-y-4">
-            <h3 className={`text-xl font-cinzel ${isDarkMode ? 'text-amber-400' : 'text-amber-800'} font-bold border-b ${isDarkMode ? 'border-amber-600/30' : 'border-amber-700/20'} pb-2`}>Being Blocked & Skipping བཀག་པ་དང་སྐོར་ཐེངས་སྐྱུར་བ།</h3>
-            <div className={`${isDarkMode ? 'bg-red-950/20' : 'bg-red-50'} p-5 rounded-2xl border border-red-900/30 space-y-3`}>
-                <p className="font-bold text-red-600 uppercase text-xs">The Block Rule</p>
-                <p>You are <span className="font-bold text-red-500">blocked</span> if an opponent's stack in your path is larger than the stack you are moving.</p>
-                <p>A "Skip Turn" happens <span className="underline decoration-red-500">only</span> when a player is unable to make any valid move. This occurs when:</p>
-                <ul className="list-disc list-inside space-y-1 ml-2 italic">
-                    <li>No pieces can be placed from the hand.</li>
-                    <li>Every possible destination on the board is blocked by a larger opponent stack.</li>
-                </ul>
-            </div>
-          </section>
-
-          <section className="space-y-4">
             <h3 className={`text-xl font-cinzel ${isDarkMode ? 'text-amber-400' : 'text-amber-800'} font-bold border-b ${isDarkMode ? 'border-amber-600/30' : 'border-amber-700/20'} pb-2`}>Move Outcomes & Bonus Rolls མཐའ་མའི་འཇུག་འབྲས།</h3>
             <div className="space-y-6">
-                <div className={`${isDarkMode ? 'bg-red-950/10' : 'bg-stone-100'} p-4 rounded-xl border border-stone-300`}>
-                    <p className="font-bold text-stone-500 uppercase text-xs mb-1">Ends Turn immediately</p>
+                <div className={`${isDarkMode ? 'bg-red-950/20' : 'bg-red-50'} p-4 rounded-xl border border-red-900/20`}>
+                    <p className="font-bold text-red-600 uppercase text-xs mb-1">Ends Turn immediately</p>
                     <ul className="list-disc list-inside space-y-2">
                         <li><span className={`${isDarkMode ? 'text-stone-200' : 'text-stone-800'} font-bold`}>Vacant space (Place):</span> Occupy an empty shell. <span className="text-red-500 italic">No bonus roll. Your turn ends immediately, and any remaining movement points are lost.</span></li>
                         <li><span className={`${isDarkMode ? 'text-stone-200' : 'text-stone-800'} font-bold`}>Goal (Finish):</span> Exiting a piece from the board. <span className="text-red-500 italic">Ends turn immediately.</span></li>
