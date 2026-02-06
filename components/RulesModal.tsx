@@ -33,7 +33,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, isNiner
               Sho (Tibetan: <span className="font-serif">ཤོ</span>) is a traditional Tibetan race game that remains widely played today. Its name simply means “dice” in Tibetan.
             </p>
             <p>
-              Sho is traditionally played for money and has historically been associated with male players, although in contemporary settings anyone may participate. The game is played by two (gnyis ‘dzing) to four players (cha gzing), with three players (gsum gdzing) being the most common arrangement.
+              Sho is traditionally played for money and has historically been associated with male players. The game is played by two to four players, with three players being the most common arrangement.
             </p>
           </section>
 
@@ -56,28 +56,20 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, isNiner
             <h3 className={`text-xl font-cinzel ${isDarkMode ? 'text-amber-400' : 'text-amber-800'} font-bold border-b ${isDarkMode ? 'border-amber-600/30' : 'border-amber-700/20'} pb-2`}>Basic Gameplay གཞི་རྩའི་རྩེད་སྟངས།</h3>
             <p>The first player to move all nine coins from the beginning of the board to the end wins the game.</p>
             <p>The shells are arranged in a clockwise spiral around the dice pad.</p>
-            <p>The spaces between the shells form the playing positions, which may be occupied by coins or stacks of coins.</p>
             <p>Each playing position may be occupied by coins or stacks from only one player.</p>
-            <p className="font-bold text-red-600">A stack is destroyed when it is kicked out, and all of its coins are sent back to the start.</p>
+            <p className="font-bold text-red-600">A stack is destroyed when it is kicked out (killed), and all of its coins are sent back to the start.</p>
           </section>
 
           <section className="space-y-4">
-            <h3 className={`text-xl font-cinzel ${isDarkMode ? 'text-amber-400' : 'text-amber-800'} font-bold border-b ${isDarkMode ? 'border-amber-600/30' : 'border-amber-700/20'} pb-2`}>Moving Coins ལག་ཁྱི་གཏོང་སྟངས།</h3>
-            <p>Players take turns throwing the dice.</p>
-            <p>On a turn, the player chooses one coin or stack to move forward from its current position by a number of spaces equal to the total shown on the two dice.</p>
-            <p className={`italic ${isDarkMode ? 'text-stone-500' : 'text-stone-400'}`}>(Unlike backgammon, doubles have no special meaning here.)</p>
-          </section>
-
-          <section className="space-y-4">
-            <h3 className={`text-xl font-cinzel ${isDarkMode ? 'text-amber-400' : 'text-amber-800'} font-bold border-b ${isDarkMode ? 'border-amber-600/30' : 'border-amber-700/20'} pb-2`}>Possible Outcomes of a Move མཐའ་མའི་འཇུག་འབྲས།</h3>
+            <h3 className={`text-xl font-cinzel ${isDarkMode ? 'text-amber-400' : 'text-amber-800'} font-bold border-b ${isDarkMode ? 'border-amber-600/30' : 'border-amber-700/20'} pb-2`}>Possible Outcomes མཐའ་མའི་འཇུག་འབྲས།</h3>
             <ol className="list-decimal list-inside space-y-4 ml-2">
-              <li><span className={`${isDarkMode ? 'text-amber-200' : 'text-amber-700'} font-bold`}>Vacant space:</span> Occupy the new position.</li>
-              <li><span className={`${isDarkMode ? 'text-amber-400' : 'text-amber-800'} font-bold`}>Same player:</span> Stack coins together.</li>
-              <li><span className="text-red-500 font-bold">Opponent (Equal/Fewer):</span> Kill stack & send to start.</li>
-              <li><span className="text-stone-500 font-bold">Opponent (More):</span> Move forbidden.</li>
+              <li><span className={`${isDarkMode ? 'text-amber-200' : 'text-amber-700'} font-bold`}>Vacant space (Place):</span> Occupy the new position. <span className="text-stone-500 italic">No bonus roll.</span></li>
+              <li><span className={`${isDarkMode ? 'text-amber-400' : 'text-amber-800'} font-bold`}>Same player (Stack):</span> Combine coins together. <span className="text-amber-600 font-bold">Grants a Bonus Roll!</span></li>
+              <li><span className="text-red-500 font-bold">Opponent (Kill):</span> Send opponent stack back to start if your stack is equal or larger. <span className="text-amber-600 font-bold">Grants a Bonus Roll!</span></li>
+              <li><span className="text-stone-500 font-bold">Opponent (More):</span> Move forbidden if opponent stack is larger than yours.</li>
             </ol>
             <div className={`${isDarkMode ? 'bg-amber-600/10 border-amber-500/30' : 'bg-amber-50 border-amber-200'} p-4 rounded-xl border`}>
-              <p className="font-bold text-amber-600">Stacking or Killing grants a Bonus Roll!</p>
+              <p className="font-bold text-amber-600">Remember: Only Stacking or Killing grants a Bonus Roll!</p>
             </div>
           </section>
 
@@ -85,23 +77,14 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, isNiner
             <h3 className={`text-xl font-cinzel ${isDarkMode ? 'text-amber-400' : 'text-amber-800'} font-bold border-b ${isDarkMode ? 'border-amber-600/30' : 'border-amber-700/20'} pb-2`}>Pa Ra (Snake Eyes) པ་རའི་སྒྲིག་གཞི།</h3>
             <p>The only dice roll with special significance is <strong>(1,1)</strong>, called <em>pa ra</em>.</p>
             <ul className="list-disc list-inside space-y-2 ml-2">
-              <li>Rolling a Pa Ra gives you a <strong>bonus roll</strong>.</li>
+              <li>Rolling a Pa Ra always gives you a <strong>bonus roll</strong>.</li>
               <li>The '2' from the Pa Ra is added to your movement pool, and you roll again immediately.</li>
-              <li>Multiple Pa Ras in a row stack: each one adds exactly <strong>one</strong> '2' to the pool.</li>
             </ul>
             
-            <div className={`mt-4 pt-4 border-t ${isDarkMode ? 'border-amber-900/40' : 'border-amber-700/20'}`}>
-              <h4 className="font-bold text-amber-600 mb-2 uppercase text-xs tracking-widest">Correct Pa Ra Sequence</h4>
-              <p className="text-sm">When the chain ends, your total pool consists of one '2' for every Pa Ra rolled, plus the value of the final non-Pa Ra roll.</p>
-              <p className="text-sm mt-2 italic">Standard: 'Pa Ra' + Bonus Roll = [2, Bonus Value].</p>
-            </div>
-
             <div className={`mt-4 p-4 rounded-xl ${isDarkMode ? 'bg-black/40' : 'bg-white/60'} text-xs md:text-sm space-y-3`}>
-              <h4 className="font-bold text-amber-500 uppercase tracking-tighter">Pa Ra Example པ་རའི་དཔེར་ན།</h4>
+              <h4 className="font-bold text-amber-50 uppercase tracking-tighter">Instant Win དེ་མ་ཐག་པའི་རྒྱལ་ཁ།</h4>
               <div className="space-y-2 font-mono">
-                <p>1. Roll (1,1). Bonus roll granted! <br/><span className="text-amber-600 font-bold">Pool: [2]</span></p>
-                <p>2. Roll (4,3) = 7. Sequence ends. <br/><span className="text-amber-600 font-bold">Final Pool: [2, 7]</span></p>
-                <p className="text-stone-500 italic mt-2">Note: You now have two separate movement values to use (2 and 7). You can move one piece 9 spaces, or two pieces separately.</p>
+                <p>Triple Pa Ra: If a player rolls a Pa Ra (1,1) three times in a row, they win instantly!</p>
               </div>
             </div>
           </section>
