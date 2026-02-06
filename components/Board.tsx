@@ -84,17 +84,6 @@ const CowrieShell: React.FC<{ angle: number; isTarget: boolean; isHovered?: bool
             <stop offset="70%" stopColor="#d6d3d1" />
             <stop offset="100%" stopColor="#78716c" />
           </radialGradient>
-          <filter id="shellShadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur in="SourceAlpha" stdDeviation="3" />
-            <feOffset dx="2" dy="2" result="offsetblur" />
-            <feComponentTransfer>
-              <feFuncA type="linear" slope="0.5" />
-            </feComponentTransfer>
-            <feMerge>
-              <feMergeNode />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
         </defs>
         <ellipse 
           cx="50" cy="65" rx="45" ry="60" 
@@ -115,25 +104,50 @@ const CowrieShell: React.FC<{ angle: number; isTarget: boolean; isHovered?: bool
 const AncientCoin: React.FC<{ color: string; isSelected: boolean; opacity?: number }> = ({ color, isSelected, opacity = 1 }) => {
   return (
     <div 
-      className={`relative w-16 h-16 rounded-full shadow-[6px_8px_12px_rgba(0,0,0,0.7),inset_0px_2px_4px_rgba(255,255,255,0.3)] border border-white/20 flex items-center justify-center transition-all ${isSelected ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-stone-900 z-50 scale-110 brightness-110' : ''}`}
+      className={`relative w-16 h-16 rounded-full shadow-[inset_-2px_-2px_4px_rgba(255,255,255,0.1),inset_2px_2px_4px_rgba(0,0,0,0.5),6px_8px_16px_rgba(0,0,0,0.8)] border border-black/30 flex items-center justify-center transition-all ${isSelected ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-stone-900 z-50 scale-110 brightness-110' : ''}`}
       style={{ 
-        background: `radial-gradient(circle at 30% 30%, ${color}, #000000)`, 
+        background: `radial-gradient(circle at 35% 35%, ${color}, #000000)`, 
         touchAction: 'none',
         opacity: opacity 
       }}
     >
-      {/* Metallic Shine Overlay */}
-      <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/10 to-white/5 pointer-events-none"></div>
-      {/* Decorative Engraving */}
-      <div className="w-12 h-12 rounded-full border border-white/10 opacity-40 flex items-center justify-center">
-         <div className="w-8 h-8 rounded-full border-t-2 border-white/20"></div>
+      {/* Intricate Metal Wear and Texture */}
+      <div className="absolute inset-0 rounded-full opacity-20 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] mix-blend-overlay"></div>
+      
+      {/* Specular Rim Highlight */}
+      <div className="absolute inset-[1px] rounded-full border-t border-white/30 pointer-events-none"></div>
+      <div className="absolute inset-[1px] rounded-full border-b border-black/40 pointer-events-none"></div>
+
+      {/* Decorative Engraving Group */}
+      <div className="absolute inset-1.5 rounded-full border-[1.5px] border-white/5 opacity-40 flex items-center justify-center">
+        <svg viewBox="0 0 100 100" className="w-full h-full p-2 opacity-30 drop-shadow-[0_1px_1px_rgba(255,255,255,0.2)]">
+           <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray="2 4" />
+           {/* Endless Knot / Tibetan Style Patterns */}
+           <path d="M50 15 L85 50 L50 85 L15 50 Z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+           <circle cx="50" cy="50" r="10" fill="none" stroke="currentColor" strokeWidth="1" />
+        </svg>
       </div>
-      {/* Central Square Hole (Traditional Style) */}
-      <div className="absolute w-5 h-5 bg-stone-950/80 border border-white/5 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.8)] transform rotate-45 flex items-center justify-center">
-          <div className="w-2 h-2 bg-stone-900 rounded-sm opacity-50"></div>
+
+      {/* Central Square Hole (Traditional Style) with improved depth */}
+      <div className="absolute w-5 h-5 bg-[#0a0a0a] border border-white/10 shadow-[inset_3px_3px_5px_rgba(0,0,0,0.9),0_0_2px_rgba(255,255,255,0.1)] transform rotate-45 flex items-center justify-center overflow-hidden">
+          {/* Inner walls of the hole */}
+          <div className="absolute inset-0 bg-gradient-to-br from-black to-stone-900 pointer-events-none"></div>
+          <div className="w-2.5 h-2.5 bg-[#050505] rounded-[1px] opacity-60"></div>
       </div>
-      {/* Specular Highlight */}
-      <div className="absolute top-2.5 left-3.5 w-6 h-4 bg-white/20 rounded-full blur-[2px] pointer-events-none transform -rotate-12"></div>
+
+      {/* Specular Main Highlight */}
+      <div className="absolute top-2 left-3 w-7 h-4 bg-white/15 rounded-full blur-[3px] pointer-events-none transform -rotate-15"></div>
+      
+      {/* Secondary Reflection */}
+      <div className="absolute bottom-3 right-4 w-4 h-2 bg-white/5 rounded-full blur-[1px] pointer-events-none opacity-40"></div>
+      
+      {/* Tibetan Script Engraving (ཤོ) - Highly subtle, feels stamped into metal */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+        <span className="font-serif text-[18px] opacity-15 text-white/50 mb-0.5 ml-0.5 mix-blend-screen transform -rotate-45">ཤོ</span>
+      </div>
+
+      {/* Grime/Aging Layer */}
+      <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-black/20 via-transparent to-transparent pointer-events-none"></div>
     </div>
   );
 };
@@ -326,14 +340,6 @@ export const Board: React.FC<BoardProps> = ({ boardState, players, validMoves, o
 
         {/* Enhanced Spiral Path Graphics */}
         <svg width="100%" height="100%" className="absolute inset-0 z-0 pointer-events-none">
-            <defs>
-                <filter id="pathShadow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feGaussianBlur in="SourceAlpha" stdDeviation="10" />
-                    <feOffset dx="0" dy="5" result="offsetblur" />
-                    <feComponentTransfer><feFuncA type="linear" slope="0.8" /></feComponentTransfer>
-                    <feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge>
-                </filter>
-            </defs>
             {/* Ambient Shadow Path */}
             <path 
                 d={d3.line().curve(d3.curveCatmullRom.alpha(0.6))(shells.map(s => [s.x, s.y])) || ""} 
