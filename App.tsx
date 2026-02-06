@@ -34,6 +34,15 @@ const triggerHaptic = (pattern: number | number[]) => {
   }
 };
 
+const generateRoomCode = () => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Exclude ambiguous 0, O, 1, I
+  let result = '';
+  for (let i = 0; i < 6; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
+
 const SFX = {
   ctx: null as AudioContext | null,
   getContext: () => { if (!SFX.ctx) { SFX.ctx = new (window.AudioContext || (window as any).webkitAudioContext)(); } if (SFX.ctx.state === 'suspended') SFX.ctx.resume(); return SFX.ctx; },
@@ -171,6 +180,7 @@ const App: React.FC = () => {
   const [activeConnections, setActiveConnections] = useState<DataConnection[]>([]);
   const connectionsRef = useRef<DataConnection[]>([]);
   const [myPeerId, setMyPeerId] = useState<string>('');
+  const [joinId, setJoinId] = useState<string>('');
   const [isPeerConnecting, setIsPeerConnecting] = useState(false);
   const [onlineLobbyStatus, setOnlineLobbyStatus] = useState<'IDLE' | 'WAITING' | 'CONNECTED'>('IDLE');
   const [isMicActive, setIsMicActive] = useState(false);
@@ -212,6 +222,9 @@ const App: React.FC = () => {
   const resetToLobby = useCallback(() => {
     triggerHaptic(20);
     if (peer) peer.destroy();
+    setPeer(null);
+    setMyPeerId('');
+    setActiveConnections([]);
     setGameMode(null);
     setOnlineLobbyStatus('IDLE');
     setTutorialStep(0);
@@ -395,7 +408,8 @@ const App: React.FC = () => {
   };
 
   const startOnlineHost = () => {
-    const newPeer = new Peer();
+    const code = generateRoomCode();
+    const newPeer = new Peer(code);
     setPeer(newPeer);
     newPeer.on('open', (id) => {
       setMyPeerId(id);
@@ -414,7 +428,36 @@ const App: React.FC = () => {
     });
     newPeer.on('error', (err) => {
       console.error(err);
-      addLog("Peer connection error.", "alert");
+      if (err.type === 'unavailable-id') {
+          addLog("Code taken, trying again...", "alert");
+          startOnlineHost();
+      } else {
+          addLog("Peer connection error.", "alert");
+      }
+    });
+  };
+
+  const joinOnlineMatch = (id: string) => {
+    if (!id.trim()) return;
+    triggerHaptic(15);
+    setIsPeerConnecting(true);
+    const newPeer = new Peer();
+    setPeer(newPeer);
+    newPeer.on('open', () => {
+        const conn = newPeer.connect(id.trim().toUpperCase());
+        conn.on('open', () => {
+            setActiveConnections(prev => [...prev, conn]);
+            setOnlineLobbyStatus('CONNECTED');
+            setGameMode(GameMode.ONLINE_GUEST);
+            addLog("Connected to match!", 'info');
+            setIsPeerConnecting(false);
+        });
+        conn.on('data', (data: any) => handleNetworkPacket(data));
+        conn.on('error', (err) => {
+            console.error(err);
+            addLog("Connection failed.", "alert");
+            setIsPeerConnecting(false);
+        });
     });
   };
 
@@ -793,12 +836,44 @@ const App: React.FC = () => {
                                                     <p className="text-[11px] text-stone-500 font-serif leading-tight">{T.lobby.hostInstruction.bo}</p>
                                                 </div>
                                             </div>
-                                            <button className="w-full py-4 bg-amber-600 text-white rounded-xl font-bold uppercase tracking-widest hover:bg-amber-500 transition-colors shadow-lg text-sm" onClick={() => { triggerHaptic(20); if(!myPeerId) startOnlineHost(); else navigator.clipboard.writeText(myPeerId); }}>
-                                                {myPeerId ? `ROOM CODE: ${myPeerId} 📋` : T.lobby.hostHeader.en}
+                                            <button className="w-full py-4 bg-amber-600 text-white rounded-xl font-bold uppercase tracking-widest hover:bg-amber-500 transition-colors shadow-lg text-sm flex flex-col items-center" onClick={() => { triggerHaptic(20); if(!myPeerId) startOnlineHost(); else { navigator.clipboard.writeText(myPeerId); addLog("Copied Code!", "info"); } }}>
+                                                {myPeerId ? (
+                                                  <>
+                                                    <span className="text-2xl mb-1 tracking-[0.2em]">{myPeerId}</span>
+                                                    <span className="text-[10px] opacity-70">CLICK TO COPY CODE 📋</span>
+                                                  </>
+                                                ) : T.lobby.hostHeader.en}
+                                            </button>
+                                        </div>
+
+                                        <div className={`p-5 rounded-2xl border ${isDarkMode ? 'bg-black/40 border-stone-800' : 'bg-stone-50 border-stone-200'} flex flex-col items-center`}>
+                                            <div className="text-center mb-4">
+                                                <h4 className="text-amber-600 font-cinzel text-sm uppercase tracking-widest font-bold">
+                                                    {T.lobby.joinHeader.en} <span className="font-serif ml-1">{T.lobby.joinHeader.bo}</span>
+                                                </h4>
+                                                <div className="flex flex-col gap-1 mt-2">
+                                                    <p className="text-[10px] text-stone-400 uppercase tracking-tight leading-tight">{T.lobby.joinInstruction.en}</p>
+                                                    <p className="text-[11px] text-stone-500 font-serif leading-tight">{T.lobby.joinInstruction.bo}</p>
+                                                </div>
+                                            </div>
+                                            <input 
+                                                type="text" 
+                                                value={joinId} 
+                                                onChange={(e) => setJoinId(e.target.value.toUpperCase())}
+                                                placeholder="6-DIGIT CODE" 
+                                                className={`w-full bg-stone-950/40 border-2 border-stone-800 p-3 rounded-xl text-center text-xl font-cinzel tracking-[0.3em] mb-4 outline-none focus:border-amber-600 transition-colors ${isDarkMode ? 'text-white' : 'text-stone-900'}`}
+                                                maxLength={6}
+                                            />
+                                            <button 
+                                                disabled={isPeerConnecting || joinId.length < 6}
+                                                className="w-full py-4 bg-amber-700 text-white rounded-xl font-bold uppercase tracking-widest hover:bg-amber-600 transition-colors shadow-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed" 
+                                                onClick={() => joinOnlineMatch(joinId)}
+                                            >
+                                                {isPeerConnecting ? "CONNECTING..." : T.lobby.joinHeader.en}
                                             </button>
                                         </div>
                                     </div>
-                                    <button className="text-stone-500 hover:text-white uppercase text-[10px] tracking-widest font-bold mt-4" onClick={() => { triggerHaptic(10); if(peer) peer.destroy(); setOnlineLobbyStatus('IDLE'); }}>Cancel ཕྱིར་ལོག།</button>
+                                    <button className="text-stone-500 hover:text-white uppercase text-[10px] tracking-widest font-bold mt-4" onClick={() => { triggerHaptic(10); if(peer) peer.destroy(); setOnlineLobbyStatus('IDLE'); setMyPeerId(''); setJoinId(''); }}>Cancel ཕྱིར་ལོག།</button>
                                 </div>
                                 )}
                             </div>
