@@ -356,6 +356,27 @@ const App: React.FC = () => {
 
   const handleNetworkPacket = useCallback((packet: NetworkPacket) => {
     switch (packet.type) {
+      case 'JOIN_INFO':
+        if (gameStateRef.current.gameMode === GameMode.ONLINE_HOST) {
+          const guestInfo = packet.payload;
+          setPlayers(prev => {
+              const next = [...prev];
+              next[1] = { ...next[1], name: guestInfo.name, colorHex: guestInfo.color };
+              // Broadcast final players list back to everyone after update
+              setTimeout(() => {
+                  broadcastPacket({ 
+                      type: 'FULL_SYNC', 
+                      payload: { 
+                        ...gameStateRef.current, 
+                        players: next // Explicitly use updated players
+                      } 
+                  });
+              }, 100);
+              return next;
+          });
+          addLog(`${guestInfo.name} joined as Opponent.`, 'info');
+        }
+        break;
       case 'ROLL_REQ':
         performRoll(packet.payload);
         break;
@@ -373,7 +394,7 @@ const App: React.FC = () => {
         if (packet.payload.winner) setWinner(packet.payload.winner);
         break;
     }
-  }, [performRoll, performMove, handleSkipTurn]);
+  }, [performRoll, performMove, handleSkipTurn, broadcastPacket, addLog]);
 
   const handleAuthSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -422,7 +443,7 @@ const App: React.FC = () => {
         setGameMode(GameMode.ONLINE_HOST);
         initializeGame({ name: getSafePlayerName(), color: selectedColor }, { name: 'Opponent', color: '#3b82f6' });
         addLog("Opponent joined!", 'alert');
-        conn.send({ type: 'FULL_SYNC', payload: gameStateRef.current });
+        // We wait for JOIN_INFO before sending first full sync to ensure names are correct
       });
       conn.on('data', (data: any) => handleNetworkPacket(data));
     });
@@ -449,6 +470,11 @@ const App: React.FC = () => {
             setActiveConnections(prev => [...prev, conn]);
             setOnlineLobbyStatus('CONNECTED');
             setGameMode(GameMode.ONLINE_GUEST);
+            // Handshake: Send our name and color to the host
+            conn.send({ 
+                type: 'JOIN_INFO', 
+                payload: { name: getSafePlayerName(), color: selectedColor } 
+            });
             addLog("Connected to match!", 'info');
             setIsPeerConnecting(false);
         });
