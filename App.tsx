@@ -162,10 +162,10 @@ const App: React.FC = () => {
   const [handShake, setHandShake] = useState(false);
   const boardContainerRef = useRef<HTMLDivElement>(null);
 
-  const getSafePlayerName = () => {
+  const getSafePlayerName = useCallback(() => {
       const trimmed = `${firstName} ${lastName}`.trim();
       return trimmed.length > 0 ? trimmed : 'Player';
-  };
+  }, [firstName, lastName]);
 
   const [isSplashVisible, setIsSplashVisible] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -355,26 +355,34 @@ const App: React.FC = () => {
   }, [players, addLog, broadcastPacket]);
 
   const handleNetworkPacket = useCallback((packet: NetworkPacket) => {
+    const s = gameStateRef.current;
     switch (packet.type) {
       case 'JOIN_INFO':
-        if (gameStateRef.current.gameMode === GameMode.ONLINE_HOST) {
+        if (s.gameMode === GameMode.ONLINE_HOST) {
           const guestInfo = packet.payload;
+          const hostName = getSafePlayerName();
+          const hostColor = selectedColor;
+          
           setPlayers(prev => {
-              const next = [...prev];
-              next[1] = { ...next[1], name: guestInfo.name, colorHex: guestInfo.color };
-              // Broadcast final players list back to everyone after update
+              const updatedPlayers = [
+                  { ...prev[0], name: hostName, colorHex: hostColor },
+                  { ...prev[1], name: guestInfo.name, colorHex: guestInfo.color }
+              ];
+              
+              // Immediate broadcast of full sync with final player details
               setTimeout(() => {
                   broadcastPacket({ 
                       type: 'FULL_SYNC', 
                       payload: { 
-                        ...gameStateRef.current, 
-                        players: next // Explicitly use updated players
+                          ...gameStateRef.current, 
+                          players: updatedPlayers 
                       } 
                   });
               }, 100);
-              return next;
+              
+              return updatedPlayers;
           });
-          addLog(`${guestInfo.name} joined as Opponent.`, 'info');
+          addLog(`${guestInfo.name} joined the match.`, 'alert');
         }
         break;
       case 'ROLL_REQ':
@@ -392,9 +400,15 @@ const App: React.FC = () => {
         if (packet.payload.turnIndex !== undefined) setTurnIndex(packet.payload.turnIndex);
         if (packet.payload.phase) setPhase(packet.payload.phase);
         if (packet.payload.winner) setWinner(packet.payload.winner);
+        if (packet.payload.pendingMoveValues) setPendingMoveValues(packet.payload.pendingMoveValues);
+        if (packet.payload.isOpeningPaRa !== undefined) setIsOpeningPaRa(packet.payload.isOpeningPaRa);
         break;
     }
-  }, [performRoll, performMove, handleSkipTurn, broadcastPacket, addLog]);
+  }, [performRoll, performMove, handleSkipTurn, broadcastPacket, addLog, getSafePlayerName, selectedColor]);
+
+  // Use a Ref to provide the latest handleNetworkPacket to connection listeners
+  const packetHandlerRef = useRef(handleNetworkPacket);
+  useEffect(() => { packetHandlerRef.current = handleNetworkPacket; }, [handleNetworkPacket]);
 
   const handleAuthSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -441,11 +455,11 @@ const App: React.FC = () => {
         setActiveConnections(prev => [...prev, conn]);
         setOnlineLobbyStatus('CONNECTED');
         setGameMode(GameMode.ONLINE_HOST);
-        initializeGame({ name: getSafePlayerName(), color: selectedColor }, { name: 'Opponent', color: '#3b82f6' });
-        addLog("Opponent joined!", 'alert');
-        // We wait for JOIN_INFO before sending first full sync to ensure names are correct
+        // Host initializes with their own known identity
+        initializeGame({ name: getSafePlayerName(), color: selectedColor }, { name: 'Joining...', color: '#666' });
+        addLog("Opponent connecting...", 'info');
       });
-      conn.on('data', (data: any) => handleNetworkPacket(data));
+      conn.on('data', (data: any) => packetHandlerRef.current(data));
     });
     newPeer.on('error', (err) => {
       console.error(err);
@@ -470,15 +484,15 @@ const App: React.FC = () => {
             setActiveConnections(prev => [...prev, conn]);
             setOnlineLobbyStatus('CONNECTED');
             setGameMode(GameMode.ONLINE_GUEST);
-            // Handshake: Send our name and color to the host
+            // Shake hands immediately with identity details
             conn.send({ 
                 type: 'JOIN_INFO', 
                 payload: { name: getSafePlayerName(), color: selectedColor } 
             });
-            addLog("Connected to match!", 'info');
+            addLog("Connected! Syncing identities...", 'info');
             setIsPeerConnecting(false);
         });
-        conn.on('data', (data: any) => handleNetworkPacket(data));
+        conn.on('data', (data: any) => packetHandlerRef.current(data));
         conn.on('error', (err) => {
             console.error(err);
             addLog("Connection failed.", "alert");
