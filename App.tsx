@@ -444,9 +444,17 @@ const App: React.FC = () => {
           const guestInfo = packet.payload;
           const hostName = getSafePlayerName();
           const hostColor = selectedColor;
+          
+          // Ensure Unique Colors for Multi-player
+          let finalGuestColor = guestInfo.color;
+          if (finalGuestColor === hostColor) {
+              const alternative = COLOR_PALETTE.find(c => c.hex !== hostColor);
+              if (alternative) finalGuestColor = alternative.hex;
+          }
+
           const verifiedPlayers = [
               { id: PlayerColor.Red, name: hostName, colorHex: hostColor, coinsInHand: COINS_PER_PLAYER, coinsFinished: 0 },
-              { id: PlayerColor.Blue, name: guestInfo.name, colorHex: guestInfo.color, coinsInHand: COINS_PER_PLAYER, coinsFinished: 0 }
+              { id: PlayerColor.Blue, name: guestInfo.name, colorHex: finalGuestColor, coinsInHand: COINS_PER_PLAYER, coinsFinished: 0 }
           ];
           setPlayers(verifiedPlayers);
           addLog(`${guestInfo.name} joined! Synchronizing...`, 'alert');
@@ -654,6 +662,8 @@ const App: React.FC = () => {
           .animate-gold-pulse { animation: goldPulse 2s ease-in-out infinite; }
           @keyframes micPulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.2); } }
           .animate-mic-active { animation: micPulse 1.5s ease-in-out infinite; }
+          @keyframes colorPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); box-shadow: 0 0 15px currentColor; } }
+          .color-swatch-active { animation: colorPulse 1.5s ease-in-out infinite; border-color: white !important; }
         `}} />
         
         {/* Modals */}
@@ -743,10 +753,23 @@ const App: React.FC = () => {
                             <label className="text-stone-500 text-[10px] uppercase block mb-3 tracking-widest font-bold px-1 text-center">Your Name</label>
                             <input type="text" value={firstName} placeholder="PLAYER" onChange={(e) => setFirstName(e.target.value)} className={`w-full bg-transparent border-b-2 ${firstName.trim() ? 'border-amber-600' : 'border-stone-800/30'} focus:border-amber-500 p-3 outline-none text-center text-xl font-cinzel tracking-widest transition-all ${isDarkMode ? 'text-stone-100' : 'text-stone-900'}`} maxLength={20} />
                         </div>
+                        <div className="flex flex-col items-center">
+                            <label className="text-stone-500 text-[10px] uppercase block mb-4 tracking-widest font-bold px-1 text-center">Choose Your Color</label>
+                            <div className="flex gap-4">
+                                {COLOR_PALETTE.map(color => (
+                                    <button 
+                                        key={color.id} 
+                                        onClick={() => { triggerHaptic(10); setSelectedColor(color.hex); }}
+                                        className={`w-10 h-10 rounded-full border-4 transition-all shadow-lg ${selectedColor === color.hex ? 'color-swatch-active scale-110' : 'border-transparent'}`}
+                                        style={{ backgroundColor: color.hex, color: color.hex }}
+                                    />
+                                ))}
+                            </div>
+                        </div>
                     </div>
                     {onlineLobbyStatus === 'IDLE' ? (
                         <div className="grid grid-cols-2 gap-3 w-full px-2">
-                            <button className={`border-2 ${isDarkMode ? 'bg-stone-900/40 border-stone-800/80' : 'bg-white border-stone-200'} p-6 rounded-[2rem] hover:border-amber-600/50 transition-all flex flex-col items-center justify-center gap-2`} onClick={() => { triggerHaptic(20); setGameMode(GameMode.LOCAL); initializeGame({name: getSafePlayerName(), color: selectedColor}, {name: 'Player 2', color: '#999'}); }}>
+                            <button className={`border-2 ${isDarkMode ? 'bg-stone-900/40 border-stone-800/80' : 'bg-white border-stone-200'} p-6 rounded-[2rem] hover:border-amber-600/50 transition-all flex flex-col items-center justify-center gap-2`} onClick={() => { triggerHaptic(20); setGameMode(GameMode.LOCAL); initializeGame({name: getSafePlayerName(), color: selectedColor}, {name: 'Player 2', color: COLOR_PALETTE.find(c => c.hex !== selectedColor)?.hex || '#999'}); }}>
                                 <span className="text-2xl">👤</span>
                                 <h3 className={`text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest`}>Single-Player</h3>
                             </button>
