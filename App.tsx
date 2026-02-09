@@ -34,15 +34,6 @@ const triggerHaptic = (pattern: number | number[]) => {
   }
 };
 
-const generateRoomCode = () => {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; 
-  let result = '';
-  for (let i = 0; i < 6; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-};
-
 const SFX = {
   ctx: null as AudioContext | null,
   getContext: () => { if (!SFX.ctx) { SFX.ctx = new (window.AudioContext || (window as any).webkitAudioContext)(); } if (SFX.ctx.state === 'suspended') SFX.ctx.resume(); return SFX.ctx; },
@@ -132,7 +123,6 @@ const getAvailableMoves = (pIndex: number, pBoard: BoardState, pPlayers: Player[
 };
 
 const App: React.FC = () => {
-  // Game State
   const [players, setPlayers] = useState<Player[]>(PLAYERS_CONFIG);
   const [board, setBoard] = useState<BoardState>(new Map());
   const [turnIndex, setTurnIndex] = useState(0); 
@@ -148,11 +138,10 @@ const App: React.FC = () => {
   const [lastMove, setLastMove] = useState<MoveOption | null>(null);
   const [isNinerMode, setIsNinerMode] = useState(true);
   const [gameMode, setGameMode] = useState<GameMode | null>(null);
-  const [winner, setWinner] = useState<Player | null>(null);
   const [tutorialStep, setTutorialStep] = useState(0);
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [winner, setWinner] = useState<Player | null>(null);
   
-  // UI State
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [selectedColor, setSelectedColor] = useState(COLOR_PALETTE[0].hex);
@@ -164,12 +153,11 @@ const App: React.FC = () => {
   const [handShake, setHandShake] = useState(false);
   const boardContainerRef = useRef<HTMLDivElement>(null);
 
-  const getSafePlayerName = useCallback(() => {
+  const getSafePlayerName = () => {
       const trimmed = `${firstName} ${lastName}`.trim();
       return trimmed.length > 0 ? trimmed : 'Player';
-  }, [firstName, lastName]);
+  };
 
-  // Auth / Navigation UI State
   const [isSplashVisible, setIsSplashVisible] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'LOGIN' | 'SIGNUP'>('LOGIN');
@@ -179,12 +167,11 @@ const App: React.FC = () => {
   const [isProUpgradeOpen, setIsProUpgradeOpen] = useState(false);
   const [authForm, setAuthForm] = useState({ email: '', password: '', confirmPassword: '', firstName: '', lastName: '' });
 
-  // Networking State
   const [peer, setPeer] = useState<Peer | null>(null);
   const [activeConnections, setActiveConnections] = useState<DataConnection[]>([]);
   const connectionsRef = useRef<DataConnection[]>([]);
   const [myPeerId, setMyPeerId] = useState<string>('');
-  const [joinId, setJoinId] = useState<string>('');
+  const [joinCode, setJoinCode] = useState('');
   const [isPeerConnecting, setIsPeerConnecting] = useState(false);
   const [onlineLobbyStatus, setOnlineLobbyStatus] = useState<'IDLE' | 'WAITING' | 'CONNECTED'>('IDLE');
   const [isMicActive, setIsMicActive] = useState(false);
@@ -203,34 +190,11 @@ const App: React.FC = () => {
 
   const addLog = useCallback((msg: string, type: GameLog['type'] = 'info') => { setLogs(prev => [{ id: Date.now().toString() + Math.random(), message: msg, type }, ...prev].slice(50)); }, []);
 
-  const sanitizeSyncPayload = (payload: any) => {
-    const p = { ...payload };
-    if (p.board instanceof Map) {
-      p.board = Object.fromEntries(p.board);
-    }
-    // Remove gameMode from sync to prevent Guest from overwriting their local Guest mode
-    delete p.gameMode;
-    return p;
-  };
-
   const broadcastPacket = useCallback((packet: NetworkPacket) => {
     connectionsRef.current.forEach(conn => {
-        if (conn.open) {
-            const sanitizedPacket = { ...packet };
-            if (packet.type === 'FULL_SYNC' && packet.payload) {
-                sanitizedPacket.payload = sanitizeSyncPayload(packet.payload);
-            }
-            conn.send(sanitizedPacket);
-        }
+        if (conn.open) conn.send(packet);
     });
   }, []);
-
-  const syncGameState = useCallback(() => {
-    const s = gameStateRef.current;
-    if (s.gameMode === GameMode.ONLINE_HOST) {
-        broadcastPacket({ type: 'FULL_SYNC', payload: s });
-    }
-  }, [broadcastPacket]);
 
   useEffect(() => { 
     const growth = Math.floor((Date.now() - new Date('2024-01-01').getTime()) / (1000 * 60 * 15)); setGlobalPlayCount(prev => prev + growth); 
@@ -249,14 +213,14 @@ const App: React.FC = () => {
   const resetToLobby = useCallback(() => {
     triggerHaptic(20);
     if (peer) peer.destroy();
-    setPeer(null);
-    setMyPeerId('');
-    setActiveConnections([]);
     setGameMode(null);
     setOnlineLobbyStatus('IDLE');
     setTutorialStep(0);
     setPhase(GamePhase.ROLLING);
     setWinner(null);
+    setMyPeerId('');
+    setJoinCode('');
+    setIsPeerConnecting(false);
   }, [peer]);
 
   useEffect(() => {
@@ -268,27 +232,15 @@ const App: React.FC = () => {
     const s = gameStateRef.current;
     setPendingMoveValues([]);
     setIsOpeningPaRa(false);
-    
-    // Authorization: Only the Host dictates turn advances in Online matches
-    if (!isRemote && (gameMode === GameMode.ONLINE_HOST || gameMode === GameMode.ONLINE_GUEST)) {
-        broadcastPacket({ type: 'SKIP_REQ' });
+    if (!isRemote && (gameMode === GameMode.ONLINE_HOST || gameMode === GameMode.ONLINE_GUEST)) broadcastPacket({ type: 'SKIP_REQ' });
+    if (s.extraRolls > 0) {
+        setExtraRolls(prev => prev - 1); setPhase(GamePhase.ROLLING);
+        addLog(`${players[turnIndex].name} used an extra roll!`, 'info');
+    } else {
+        setPhase(GamePhase.ROLLING); setTurnIndex((prev) => (prev + 1) % players.length);
+        addLog(`${players[turnIndex].name} skipped their turn.`, 'info');
     }
-    
-    // Only advance turn locally if not in Guest mode or if explicitly instructed by Host (isRemote)
-    if (gameMode !== GameMode.ONLINE_GUEST || isRemote) {
-      if (s.extraRolls > 0) {
-          setExtraRolls(prev => prev - 1); setPhase(GamePhase.ROLLING);
-          addLog(`${players[turnIndex].name} used an extra roll!`, 'info');
-      } else {
-          setPhase(GamePhase.ROLLING); setTurnIndex((prev) => (prev + 1) % players.length);
-          addLog(`${players[turnIndex].name} skipped their turn.`, 'info');
-      }
-    }
-    
-    if (!isRemote && gameMode === GameMode.ONLINE_HOST) {
-        setTimeout(syncGameState, 100);
-    }
-  }, [players, turnIndex, addLog, gameMode, broadcastPacket, syncGameState]);
+  }, [players, turnIndex, addLog, gameMode, broadcastPacket]);
 
   const performRoll = useCallback(async (forcedRoll?: DiceRoll) => {
     const s = gameStateRef.current; 
@@ -300,9 +252,7 @@ const App: React.FC = () => {
     let d1, d2;
     if (forcedRoll) { d1 = forcedRoll.die1; d2 = forcedRoll.die2; }
     else { d1 = Math.floor(Math.random() * 6) + 1; d2 = Math.floor(Math.random() * 6) + 1; }
-    
-    if (s.gameMode === GameMode.TUTORIAL && s.tutorialStep === 2) { d1 = 3; d2 = 4; }
-    
+    if (s.gameMode === GameMode.TUTORIAL && s.tutorialStep === 2) { d1 = 2; d2 = 6; }
     const pos1 = forcedRoll?.visuals ? { x: forcedRoll.visuals.d1x, y: forcedRoll.visuals.d1y, r: forcedRoll.visuals.d1r } : getRandomDicePos();
     let pos2 = forcedRoll?.visuals ? { x: forcedRoll.visuals.d2x, y: forcedRoll.visuals.d2y, r: forcedRoll.visuals.d2r } : getRandomDicePos();
     if (!forcedRoll) {
@@ -311,11 +261,9 @@ const App: React.FC = () => {
     }
     const isPaRa = (d1 === 1 && d2 === 1), total = d1 + d2;
     const newRoll: DiceRoll = { die1: d1, die2: d2, isPaRa, total, visuals: { d1x: pos1.x, d1y: pos1.y, d1r: pos1.r, d2x: pos2.x, d2y: pos2.y, d2r: pos2.r } };
-    
     if (!forcedRoll && (s.gameMode === GameMode.ONLINE_HOST || s.gameMode === GameMode.ONLINE_GUEST)) {
         broadcastPacket({ type: 'ROLL_REQ', payload: newRoll });
     }
-    
     setLastRoll(newRoll); setIsRolling(false); SFX.playLand();
     if (isPaRa) { 
         SFX.playPaRa(); const newCount = s.paRaCount + 1;
@@ -323,7 +271,6 @@ const App: React.FC = () => {
             addLog(`TRIPLE PA RA! ${players[turnIndex].name} wins instantly!`, 'alert'); 
             setWinner(players[turnIndex]);
             setPhase(GamePhase.GAME_OVER); 
-            if (s.gameMode === GameMode.ONLINE_HOST) setTimeout(syncGameState, 100);
             return; 
         }
         setPaRaCount(newCount); addLog(`PA RA (1,1)! Stacked bonuses: ${newCount}. Roll again.`, 'alert'); 
@@ -334,33 +281,22 @@ const App: React.FC = () => {
         const movePool = [...Array(s.paRaCount).fill(2), total];
         setPendingMoveValues(movePool); setPaRaCount(0); setPhase(GamePhase.MOVING); 
     }
-    
     if (s.gameMode === GameMode.TUTORIAL && s.tutorialStep === 2) setTutorialStep(3);
-    if (!forcedRoll && s.gameMode === GameMode.ONLINE_HOST) {
-        setTimeout(syncGameState, 200);
-    }
-  }, [players, turnIndex, addLog, broadcastPacket, syncGameState]);
+  }, [players, turnIndex, addLog, broadcastPacket]);
 
   const performMove = useCallback((sourceIdx: number, targetIdx: number, isRemote = false) => {
     const s = gameStateRef.current;
     if (!isRemote) triggerHaptic(10);
     const currentMovesList = getAvailableMoves(s.turnIndex, s.board, s.players, s.pendingMoveValues, s.isNinerMode, s.isOpeningPaRa);
     let move = currentMovesList.find(m => m.sourceIndex === sourceIdx && m.targetIndex === targetIdx);
-    
     if (!move && isRemote) {
         const potential = calculatePotentialMoves(sourceIdx, s.pendingMoveValues, s.board, s.players[s.turnIndex], s.isNinerMode, s.isOpeningPaRa);
-        move = potential.find(m => m.targetIndex === targetIdx);
+        move = potential.find(m => m.targetIndex === targetIdx) || { sourceIndex: sourceIdx, targetIndex: targetIdx, consumedValues: [s.pendingMoveValues[0] || 0], type: MoveResultType.PLACE };
     }
-    
-    if (!move) {
-        if (!isRemote) SFX.playBlocked();
-        return;
-    }
-    
+    if (!move) return;
     if (!isRemote && (s.gameMode === GameMode.ONLINE_HOST || s.gameMode === GameMode.ONLINE_GUEST)) {
         broadcastPacket({ type: 'MOVE_REQ', payload: { sourceIdx, targetIdx } });
     }
-    
     const nb: BoardState = new Map(s.board); const player = s.players[s.turnIndex]; let localExtraRollInc = 0; let movingStackSize = 0; let newPlayers = [...s.players];
     if (move.sourceIndex === 0) { 
         const isOpening = newPlayers[s.turnIndex].coinsInHand === COINS_PER_PLAYER; 
@@ -370,7 +306,6 @@ const App: React.FC = () => {
         const source = nb.get(move.sourceIndex)!; movingStackSize = source.stackSize; 
         nb.set(move.sourceIndex, { ...source, stackSize: 0, owner: null, isShoMo: false }); 
     }
-    
     if (move.type === MoveResultType.FINISH) { 
         SFX.playFinish(); triggerHaptic([40, 30, 40, 30, 100]);
         newPlayers[s.turnIndex].coinsFinished += movingStackSize; addLog(`${player.name} finished ${movingStackSize} coin(s)!`, 'action');
@@ -390,87 +325,27 @@ const App: React.FC = () => {
             nb.set(move.targetIndex, { ...target, stackSize: movingStackSize, owner: player.id, isShoMo: (move.sourceIndex === 0 && movingStackSize >= 2) });
         }
     }
-    
     setPlayers(newPlayers); setBoard(nb); setSelectedSourceIndex(null); setLastMove({ ...move, id: Date.now() });
-    
     let nextMoves = [...s.pendingMoveValues]; 
     move.consumedValues.forEach(val => { const idx = nextMoves.indexOf(val); if (idx > -1) nextMoves.splice(idx, 1); });
-    
-    if (move.type === MoveResultType.PLACE || move.type === MoveResultType.FINISH) {
-        nextMoves = [];
-    }
-
     if (newPlayers[s.turnIndex].coinsFinished >= COINS_PER_PLAYER) { 
         setWinner(newPlayers[s.turnIndex]);
         setPhase(GamePhase.GAME_OVER); 
-        if (s.gameMode === GameMode.ONLINE_HOST) setTimeout(syncGameState, 100);
         return; 
     }
-    
-    // AUTHORITATIVE TURN SWITCH: Only Host advances the turnIndex in multi-player matches.
-    // Guest waits for FULL_SYNC.
-    if (gameMode !== GameMode.ONLINE_GUEST || isRemote) {
-        if (nextMoves.length === 0 || getAvailableMoves(s.turnIndex, nb, newPlayers, nextMoves, s.isNinerMode, s.isOpeningPaRa).length === 0) {
-            setPendingMoveValues([]); setIsOpeningPaRa(false);
-            const totalExtraRolls = s.extraRolls + localExtraRollInc;
-            if (totalExtraRolls > 0) { 
-                setExtraRolls(prev => prev - 1); 
-                setPhase(GamePhase.ROLLING); 
-                addLog(`${player.name} used an extra roll!`, 'info'); 
-            } else { 
-                setPhase(GamePhase.ROLLING); 
-                setTurnIndex((prev) => (prev + 1) % players.length); 
-            }
-        } else {
-            setPendingMoveValues(nextMoves);
-            if (localExtraRollInc > 0) setExtraRolls(prev => prev + localExtraRollInc);
-        }
-    } else {
-        // Guest mode: update locally but wait for Host's sync to potentially advance turn
-        setPendingMoveValues(nextMoves);
-    }
-    
-    if (s.gameMode === GameMode.TUTORIAL && s.tutorialStep === 4) setTutorialStep(5);
-    if (!isRemote && s.gameMode === GameMode.ONLINE_HOST) {
-        setTimeout(syncGameState, 300);
-    }
-  }, [players, addLog, broadcastPacket, syncGameState, gameMode]);
+    const movesLeft = getAvailableMoves(s.turnIndex, nb, newPlayers, nextMoves, s.isNinerMode, s.isOpeningPaRa);
+    if (localExtraRollInc > 0) setExtraRolls(prev => prev + localExtraRollInc);
+    if (nextMoves.length === 0 || movesLeft.length === 0) {
+        setPendingMoveValues([]); setIsOpeningPaRa(false);
+        const totalExtraRolls = s.extraRolls + localExtraRollInc;
+        if (totalExtraRolls > 0) { setExtraRolls(prev => prev - 1); setPhase(GamePhase.ROLLING); addLog(`${player.name} used an extra roll!`, 'info'); }
+        else { setPhase(GamePhase.ROLLING); setTurnIndex((prev) => (prev + 1) % players.length); }
+    } else setPendingMoveValues(nextMoves);
+    if (s.gameMode === GameMode.TUTORIAL && s.tutorialStep === 3) setTutorialStep(4);
+  }, [players, addLog, broadcastPacket]);
 
-  const handleNetworkPacket = useCallback((packet: NetworkPacket, senderConn?: DataConnection) => {
-    const s = gameStateRef.current;
+  const handleNetworkPacket = useCallback((packet: NetworkPacket) => {
     switch (packet.type) {
-      case 'JOIN_INFO':
-        if (s.gameMode === GameMode.ONLINE_HOST || s.gameMode === null || peer) {
-          const guestInfo = packet.payload;
-          const hostName = getSafePlayerName();
-          const hostColor = selectedColor;
-          
-          // Ensure Unique Colors for Multi-player
-          let finalGuestColor = guestInfo.color;
-          if (finalGuestColor === hostColor) {
-              const alternative = COLOR_PALETTE.find(c => c.hex !== hostColor);
-              if (alternative) finalGuestColor = alternative.hex;
-          }
-
-          const verifiedPlayers = [
-              { id: PlayerColor.Red, name: hostName, colorHex: hostColor, coinsInHand: COINS_PER_PLAYER, coinsFinished: 0 },
-              { id: PlayerColor.Blue, name: guestInfo.name, colorHex: finalGuestColor, coinsInHand: COINS_PER_PLAYER, coinsFinished: 0 }
-          ];
-          setPlayers(verifiedPlayers);
-          addLog(`${guestInfo.name} joined! Synchronizing...`, 'alert');
-          
-          const syncPayload = sanitizeSyncPayload({
-            ...s,
-            players: verifiedPlayers,
-            gameMode: GameMode.ONLINE_HOST
-          });
-
-          if (senderConn && senderConn.open) {
-            senderConn.send({ type: 'FULL_SYNC', payload: syncPayload });
-          }
-          broadcastPacket({ type: 'FULL_SYNC', payload: syncPayload });
-        }
-        break;
       case 'ROLL_REQ':
         performRoll(packet.payload);
         break;
@@ -481,27 +356,14 @@ const App: React.FC = () => {
         handleSkipTurn(true);
         break;
       case 'FULL_SYNC':
-        // GUEST receives state from Host
-        if (packet.payload.board) {
-            const boardObj = packet.payload.board;
-            const entries = Object.entries(boardObj);
-            setBoard(new Map(entries.map(([k, v]) => [Number(k), v as any])));
-        }
+        if (packet.payload.board) setBoard(new Map(Object.entries(packet.payload.board).map(([k, v]) => [Number(k), v as any])));
         if (packet.payload.players) setPlayers(packet.payload.players);
         if (packet.payload.turnIndex !== undefined) setTurnIndex(packet.payload.turnIndex);
         if (packet.payload.phase) setPhase(packet.payload.phase);
         if (packet.payload.winner) setWinner(packet.payload.winner);
-        if (packet.payload.pendingMoveValues) setPendingMoveValues(packet.payload.pendingMoveValues);
-        if (packet.payload.isOpeningPaRa !== undefined) setIsOpeningPaRa(packet.payload.isOpeningPaRa);
-        if (packet.payload.lastRoll) setLastRoll(packet.payload.lastRoll);
-        if (packet.payload.paRaCount !== undefined) setPaRaCount(packet.payload.paRaCount);
-        if (packet.payload.extraRolls !== undefined) setExtraRolls(packet.payload.extraRolls);
         break;
     }
-  }, [performRoll, performMove, handleSkipTurn, broadcastPacket, addLog, getSafePlayerName, selectedColor, peer]);
-
-  const packetHandlerRef = useRef(handleNetworkPacket);
-  useEffect(() => { packetHandlerRef.current = handleNetworkPacket; }, [handleNetworkPacket]);
+  }, [performRoll, performMove, handleSkipTurn]);
 
   const handleAuthSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -536,59 +398,86 @@ const App: React.FC = () => {
   };
 
   const startOnlineHost = () => {
-    const code = generateRoomCode();
-    const newPeer = new Peer(code);
-    setPeer(newPeer);
-    newPeer.on('open', (id) => {
-      setMyPeerId(id);
-      addLog(`Room ID: ${id}. Waiting for opponent...`, 'info');
-    });
-    newPeer.on('connection', (conn) => {
-      conn.on('data', (data: any) => packetHandlerRef.current(data, conn));
-      conn.on('open', () => {
-        setActiveConnections(prev => [...prev, conn]);
-        setOnlineLobbyStatus('CONNECTED');
-        setGameMode(GameMode.ONLINE_HOST);
-        initializeGame({ name: getSafePlayerName(), color: selectedColor }, { name: 'Joining...', color: '#666' });
+    const generateCode = () => Math.floor(100000 + Math.random() * 900000).toString();
+    const shortId = generateCode();
+    
+    const initPeer = (id: string) => {
+      const newPeer = new Peer(id);
+      setPeer(newPeer);
+      
+      newPeer.on('open', (openedId) => {
+        setMyPeerId(openedId);
+        addLog(`Room Created: ${openedId}`, 'info');
       });
-    });
-    newPeer.on('error', (err) => {
-      console.error(err);
-      if (err.type === 'unavailable-id') {
-          addLog("Code taken, trying again...", "alert");
-          startOnlineHost();
-      } else {
-          addLog("Peer connection error.", "alert");
-      }
-    });
+
+      newPeer.on('connection', (conn) => {
+        conn.on('open', () => {
+          setActiveConnections(prev => [...prev, conn]);
+          setOnlineLobbyStatus('CONNECTED');
+          setGameMode(GameMode.ONLINE_HOST);
+          initializeGame({ name: getSafePlayerName(), color: selectedColor }, { name: 'Opponent', color: '#3b82f6' });
+          addLog("Opponent joined!", 'alert');
+          conn.send({ type: 'FULL_SYNC', payload: gameStateRef.current });
+        });
+        conn.on('data', (data: any) => handleNetworkPacket(data));
+      });
+
+      newPeer.on('error', (err: any) => {
+        if (err.type === 'id-taken') {
+          newPeer.destroy();
+          initPeer(generateCode());
+        } else {
+          console.error(err);
+          addLog("Connection error.", "alert");
+          setIsPeerConnecting(false);
+        }
+      });
+    };
+
+    initPeer(shortId);
   };
 
-  const joinOnlineMatch = (id: string) => {
-    if (!id.trim()) return;
-    triggerHaptic(15);
+  const joinOnlineMatch = (code: string) => {
+    if (!code || code.length !== 6) {
+        addLog("Enter a valid 6-digit code.", "alert");
+        return;
+    }
     setIsPeerConnecting(true);
     const newPeer = new Peer();
     setPeer(newPeer);
+    
     newPeer.on('open', () => {
-        const conn = newPeer.connect(id.trim().toUpperCase());
-        conn.on('data', (data: any) => packetHandlerRef.current(data, conn));
-        conn.on('open', () => {
-            setActiveConnections(prev => [...prev, conn]);
-            setOnlineLobbyStatus('CONNECTED');
-            setGameMode(GameMode.ONLINE_GUEST);
-            conn.send({ 
-                type: 'JOIN_INFO', 
-                payload: { name: getSafePlayerName(), color: selectedColor } 
-            });
-            addLog("Connected! Syncing with host...", 'info');
-            setIsPeerConnecting(false);
-        });
-        conn.on('error', (err) => {
-            console.error(err);
-            addLog("Connection failed.", "alert");
-            setIsPeerConnecting(false);
-        });
+      const conn = newPeer.connect(code);
+      conn.on('open', () => {
+        setActiveConnections([conn]);
+        setOnlineLobbyStatus('CONNECTED');
+        setGameMode(GameMode.ONLINE_GUEST);
+        addLog("Connected to host!", "alert");
+        setIsPeerConnecting(false);
+      });
+      conn.on('data', (data: any) => handleNetworkPacket(data));
+      conn.on('error', (err) => {
+          console.error(err);
+          addLog("Could not connect to room.", "alert");
+          setIsPeerConnecting(false);
+          newPeer.destroy();
+      });
     });
+
+    newPeer.on('error', (err) => {
+        console.error(err);
+        setIsPeerConnecting(false);
+    });
+  };
+
+  const handleTutorialNext = () => {
+    setTutorialStep(prev => prev + 1);
+    triggerHaptic(10);
+  };
+  const handleTutorialClose = () => {
+    setTutorialStep(0);
+    setGameMode(null);
+    triggerHaptic(10);
   };
 
   const toggleMic = async () => {
@@ -662,16 +551,26 @@ const App: React.FC = () => {
           .animate-gold-pulse { animation: goldPulse 2s ease-in-out infinite; }
           @keyframes micPulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.2); } }
           .animate-mic-active { animation: micPulse 1.5s ease-in-out infinite; }
-          @keyframes colorPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); box-shadow: 0 0 15px currentColor; } }
-          .color-swatch-active { animation: colorPulse 1.5s ease-in-out infinite; border-color: white !important; }
+          @keyframes glowCode { 0%, 100% { text-shadow: 0 0 5px rgba(245, 158, 11, 0.4); } 50% { text-shadow: 0 0 15px rgba(245, 158, 11, 0.8); } }
+          .animate-glow-code { animation: glowCode 2s infinite; }
         `}} />
-        
-        {/* Modals */}
+        {phase === GamePhase.SETUP && gameMode !== null && <div className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center p-4 text-amber-500 font-cinzel text-xl animate-pulse">Initializing འགོ་འཛུགས་བཞིན་པ...</div>}
         <RulesModal isOpen={showRules} onClose={() => { triggerHaptic(10); setShowRules(false); }} isNinerMode={isNinerMode} onToggleNinerMode={() => { triggerHaptic(15); setIsNinerMode(prev => !prev); }} isDarkMode={isDarkMode} />
-        <MenuOverlay isOpen={showMenu} onClose={() => { triggerHaptic(10); setShowMenu(false); }} isNinerMode={isNinerMode} onToggleNinerMode={() => { triggerHaptic(15); setIsNinerMode(prev => !prev); }} isDarkMode={isDarkMode} onToggleTheme={() => { triggerHaptic(15); setIsDarkMode(prev => !prev); }} />
-        {phase === GamePhase.GAME_OVER && winner && <VictoryOverlay winner={winner} isDarkMode={isDarkMode} onRestart={resetToLobby} />}
-        
-        {/* Auth Modals */}
+        <MenuOverlay 
+          isOpen={showMenu} 
+          onClose={() => { triggerHaptic(10); setShowMenu(false); }} 
+          isNinerMode={isNinerMode}
+          onToggleNinerMode={() => { triggerHaptic(15); setIsNinerMode(prev => !prev); }}
+          isDarkMode={isDarkMode}
+          onToggleTheme={() => { triggerHaptic(15); setIsDarkMode(prev => !prev); }}
+        />
+        {phase === GamePhase.GAME_OVER && winner && (
+          <VictoryOverlay 
+            winner={winner} 
+            isDarkMode={isDarkMode} 
+            onRestart={resetToLobby} 
+          />
+        )}
         {isAuthModalOpen && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
             <div className={`${isDarkMode ? 'bg-stone-900 border-amber-600/50' : 'bg-stone-50 border-amber-800/20'} border-2 p-8 rounded-[3rem] w-full max-w-sm shadow-[0_0_50px_rgba(0,0,0,0.8)] relative`}>
@@ -682,180 +581,386 @@ const App: React.FC = () => {
               </h2>
               <form onSubmit={handleAuthSubmit} className="flex flex-col gap-4">
                 <div className="grid grid-cols-2 gap-4">
-                    <input required type="text" value={authForm.firstName} onChange={(e) => setAuthForm({ ...authForm, firstName: e.target.value })} className={`${isDarkMode ? 'bg-black/40 border-stone-800 text-stone-100' : 'bg-white border-stone-300 text-stone-900'} border p-4 rounded-xl outline-none focus:border-amber-600 transition-colors text-sm`} placeholder={T.auth.firstName.en} />
-                    <input required type="text" value={authForm.lastName} onChange={(e) => setAuthForm({ ...authForm, lastName: e.target.value })} className={`${isDarkMode ? 'bg-black/40 border-stone-800 text-stone-100' : 'bg-white border-stone-300 text-stone-900'} border p-4 rounded-xl outline-none focus:border-amber-600 transition-colors text-sm`} placeholder={T.auth.lastName.en} />
+                    <div className="flex flex-col gap-1">
+                      <input required type="text" value={authForm.firstName} onChange={(e) => setAuthForm({ ...authForm, firstName: e.target.value })} className={`${isDarkMode ? 'bg-black/40 border-stone-800 text-stone-100' : 'bg-white border-stone-300 text-stone-900'} border p-4 rounded-xl outline-none focus:border-amber-600 transition-colors text-sm`} placeholder={T.auth.firstName.en} />
+                      <span className="text-[9px] text-stone-600 font-serif ml-2">{T.auth.firstName.bo}</span>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <input required type="text" value={authForm.lastName} onChange={(e) => setAuthForm({ ...authForm, lastName: e.target.value })} className={`${isDarkMode ? 'bg-black/40 border-stone-800 text-stone-100' : 'bg-white border-stone-300 text-stone-900'} border p-4 rounded-xl outline-none focus:border-amber-600 transition-colors text-sm`} placeholder={T.auth.lastName.en} />
+                      <span className="text-[9px] text-stone-600 font-serif ml-2">{T.auth.lastName.bo}</span>
+                    </div>
                 </div>
-                <input required type="email" value={authForm.email} onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })} className={`${isDarkMode ? 'bg-black/40 border-stone-800 text-stone-100' : 'bg-white border-stone-300 text-stone-900'} border p-4 rounded-xl outline-none focus:border-amber-600 transition-colors text-sm`} placeholder={T.auth.email.en} />
-                <input required type="password" value={authForm.password} onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })} className={`${isDarkMode ? 'bg-black/40 border-stone-800 text-stone-100' : 'bg-white border-stone-300 text-stone-900'} border p-4 rounded-xl outline-none focus:border-amber-600 transition-colors text-sm`} placeholder={T.auth.password.en} />
+                <div className="flex flex-col gap-1">
+                  <input required type="email" value={authForm.email} onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })} className={`${isDarkMode ? 'bg-black/40 border-stone-800 text-stone-100' : 'bg-white border-stone-300 text-stone-900'} border p-4 rounded-xl outline-none focus:border-amber-600 transition-colors text-sm`} placeholder={T.auth.email.en} />
+                  <span className="text-[9px] text-stone-600 font-serif ml-2">{T.auth.email.bo}</span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <input required type="password" value={authForm.password} onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })} className={`${isDarkMode ? 'bg-black/40 border-stone-800 text-stone-100' : 'bg-white border-stone-300 text-stone-900'} border p-4 rounded-xl outline-none focus:border-amber-600 transition-colors text-sm`} placeholder={T.auth.password.en} />
+                  <span className="text-[9px] text-stone-600 font-serif ml-2">{T.auth.password.bo}</span>
+                </div>
+                {authMode === 'SIGNUP' && (
+                  <div className="flex flex-col gap-1">
+                    <input required type="password" value={authForm.confirmPassword} onChange={(e) => setAuthForm({ ...authForm, confirmPassword: e.target.value })} className={`${isDarkMode ? 'bg-black/40 border-stone-800 text-stone-100' : 'bg-white border-stone-300 text-stone-900'} border p-4 rounded-xl outline-none focus:border-amber-600 transition-colors text-sm`} placeholder={T.auth.confirmPassword.en} />
+                    <span className="text-[9px] text-stone-600 font-serif ml-2">{T.auth.confirmPassword.bo}</span>
+                  </div>
+                )}
                 <button type="submit" className="mt-4 w-full py-4 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl transition-all shadow-lg active:scale-95 flex flex-col items-center">
                   <span className="uppercase tracking-widest">{authMode === 'LOGIN' ? T.auth.enterGame.en : T.auth.register.en}</span>
+                  <span className="font-serif text-sm mt-0.5">{authMode === 'LOGIN' ? T.auth.enterGame.bo : T.auth.register.bo}</span>
                 </button>
               </form>
+              <div className="mt-6 text-center">
+                <button onClick={() => { triggerHaptic(10); setAuthMode(authMode === 'LOGIN' ? 'SIGNUP' : 'LOGIN'); }} className="text-stone-500 hover:text-amber-500 text-xs font-bold uppercase tracking-widest transition-colors flex flex-col items-center w-full gap-1">
+                  <span>{authMode === 'LOGIN' ? T.auth.noAccount.en : T.auth.hasAccount.en}</span>
+                  <span className="font-serif normal-case opacity-70">{authMode === 'LOGIN' ? T.auth.noAccount.bo : T.auth.hasAccount.bo}</span>
+                </button>
+              </div>
             </div>
           </div>
         )}
 
         {isLoginGateOpen && (
           <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-in fade-in zoom-in duration-300">
-            <div className={`${isDarkMode ? 'bg-stone-900 border-amber-600/30' : 'bg-white border-stone-300'} border-2 p-8 rounded-[3rem] w-full max-sm shadow-[0_0_80px_rgba(0,0,0,0.9)] text-center relative`}>
+            <div className={`${isDarkMode ? 'bg-stone-900 border-amber-600/30' : 'bg-white border-stone-300'} border-2 p-8 rounded-[3rem] w-full max-sm shadow-[0_0_80px_rgba(0,0,0,0.9)] text-center relative overflow-hidden`}>
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent opacity-50"></div>
               <h2 className="text-3xl font-cinzel text-amber-500 mb-2 font-bold tracking-widest">{T.auth.gateTitle.en}</h2>
-              <p className={`${isDarkMode ? 'text-stone-300' : 'text-stone-600'} text-sm mb-8`}>{T.auth.gateDesc.en}</p>
-              <button onClick={() => { setIsAuthModalOpen(true); setIsLoginGateOpen(false); }} className="w-full py-4 bg-amber-600 text-white font-bold rounded-2xl mb-4">Login</button>
-              <button onClick={() => setIsLoginGateOpen(false)} className="text-stone-500 uppercase text-[11px] font-bold">Cancel</button>
-            </div>
-          </div>
-        )}
-
-        {isProUpgradeOpen && (
-          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-in fade-in zoom-in duration-300">
-            <div className={`${isDarkMode ? 'bg-stone-900 border-amber-600' : 'bg-white border-amber-800'} border-2 p-1 rounded-[3.5rem] w-full max-w-md shadow-2xl`}>
-              <div className={`${isDarkMode ? 'bg-stone-950/80' : 'bg-stone-50/80'} p-8 rounded-[3.2rem] h-full flex flex-col items-center text-center`}>
-                <h2 className="text-4xl font-cinzel text-amber-600 mb-6 font-bold tracking-widest">{T.pro.title.en}</h2>
-                <p className="text-stone-400 mb-8 italic">{T.pro.desc.en}</p>
-                <button onClick={() => { setIsPro(true); setIsProUpgradeOpen(false); setOnlineLobbyStatus('WAITING'); }} className="w-full py-5 bg-amber-600 text-white font-bold rounded-2xl shadow-xl animate-gold-pulse uppercase tracking-[0.3em]">Upgrade Now</button>
-                <button onClick={() => setIsProUpgradeOpen(false)} className="mt-8 text-stone-500 uppercase text-[10px] font-bold tracking-widest">Not Now</button>
+              <div className="text-lg font-serif text-amber-600 mb-6">{T.auth.gateTitle.bo}</div>
+              <div className="flex flex-col gap-2 mb-10">
+                <p className={`${isDarkMode ? 'text-stone-300' : 'text-stone-600'} text-sm font-serif leading-relaxed px-2`}>{T.auth.gateDesc.en}</p>
+                <p className="text-stone-500 text-[13px] font-serif leading-relaxed px-2">{T.auth.gateDesc.bo}</p>
+              </div>
+              <div className="flex flex-col gap-4 mb-8">
+                <button onClick={() => { triggerHaptic(15); setAuthMode('LOGIN'); setIsAuthModalOpen(true); setIsLoginGateOpen(false); }} className="w-full py-4 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-2xl transition-all shadow-lg shadow-amber-900/20 active:scale-95 flex flex-col items-center">
+                  <span className="uppercase tracking-[0.2em]">{T.auth.loginBtn.en}</span>
+                  <span className="font-serif text-sm mt-0.5">{T.auth.loginBtn.bo}</span>
+                </button>
+                <button onClick={() => { triggerHaptic(15); setAuthMode('SIGNUP'); setIsAuthModalOpen(true); setIsLoginGateOpen(false); }} className={`w-full py-4 ${isDarkMode ? 'bg-stone-800 border-stone-700 text-stone-200' : 'bg-stone-100 border-stone-200 text-stone-700'} border hover:border-amber-600 font-bold rounded-2xl transition-all active:scale-95 flex flex-col items-center`}>
+                  <span className="uppercase tracking-[0.2em]">{T.auth.signupBtn.en}</span>
+                  <span className="font-serif text-sm mt-0.5">{T.auth.signupBtn.bo}</span>
+                </button>
+                <button onClick={() => { triggerHaptic(10); setIsLoginGateOpen(false); }} className="mt-2 text-stone-500 hover:text-amber-600 uppercase text-[11px] tracking-widest font-bold transition-colors">
+                  {T.common.cancel.en} <span className="font-serif ml-1">{T.common.cancel.bo}</span>
+                </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Lobby & Splash */}
-        {!gameMode && (
-          <div className={`fixed inset-0 z-50 ${isDarkMode ? 'bg-stone-950 text-amber-500' : 'bg-stone-50 text-amber-800'} flex flex-col items-center justify-center p-6 transition-colors duration-500`}>
-              {isSplashVisible && !isLoggedIn ? (
-                 <div className="flex flex-col items-center justify-center w-full max-w-md gap-6 animate-in fade-in duration-700 text-center">
-                      <h1 className={`font-cinzel ${isDarkMode ? 'text-amber-500' : 'text-amber-900'}`}>
-                          <span className="text-5xl md:text-7xl drop-shadow-[0_0_30px_rgba(245,158,11,0.4)] block mb-2">{T.lobby.title.bo}</span>
-                          <span className="text-3xl md:text-5xl tracking-widest">{T.lobby.title.en}</span>
-                      </h1>
-                      <p className={`${isDarkMode ? 'text-stone-400' : 'text-stone-500'} tracking-[0.3em] uppercase text-xs md:text-sm font-bold`}>{T.lobby.subtitle.en}</p>
-                      <div className="w-full flex flex-col gap-4 mt-6 px-4">
-                          <button onClick={() => { triggerHaptic(15); setIsSplashVisible(false); }} className="w-full py-4 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-2xl transition-all shadow-lg flex flex-col items-center">
-                              <span className="uppercase tracking-[0.1em] text-sm">{T.lobby.guestContinue.en}</span>
-                              <span className="font-serif text-sm mt-0.5">{T.lobby.guestContinue.bo}</span>
-                          </button>
-                          <div className="grid grid-cols-2 gap-4">
-                              <button onClick={() => { triggerHaptic(10); setAuthMode('LOGIN'); setIsAuthModalOpen(true); }} className={`py-3 ${isDarkMode ? 'bg-stone-900 border-stone-800 text-stone-300' : 'bg-white border-stone-300 text-stone-700'} border hover:border-amber-600 font-bold rounded-2xl transition-all flex flex-col items-center`}>
-                                  <span className="uppercase text-[11px]">{T.lobby.loginSplash.en}</span>
-                                  <span className="font-serif text-[12px] mt-0.5">{T.lobby.loginSplash.bo}</span>
-                              </button>
-                              <button onClick={() => { triggerHaptic(10); setAuthMode('SIGNUP'); setIsAuthModalOpen(true); }} className={`py-3 ${isDarkMode ? 'bg-stone-900 border-stone-800 text-stone-300' : 'bg-white border-stone-300 text-stone-700'} border hover:border-amber-600 font-bold rounded-2xl transition-all flex flex-col items-center`}>
-                                  <span className="uppercase text-[11px]">{T.lobby.signupSplash.en}</span>
-                                  <span className="font-serif text-[12px] mt-0.5">{T.lobby.signupSplash.bo}</span>
-                              </button>
-                          </div>
-                      </div>
-                 </div>
-              ) : (
-                 <div className="flex-grow flex flex-col items-center justify-center w-full max-w-md gap-6">
-                    <div className={`w-full ${isDarkMode ? 'bg-stone-900/30' : 'bg-white/80'} p-5 md:p-8 rounded-[3rem] border border-stone-800/20 backdrop-blur-2xl shadow-2xl`}>
-                        <div className="mb-6">
-                            <label className="text-stone-500 text-[10px] uppercase block mb-3 tracking-widest font-bold px-1 text-center">Your Name</label>
-                            <input type="text" value={firstName} placeholder="PLAYER" onChange={(e) => setFirstName(e.target.value)} className={`w-full bg-transparent border-b-2 ${firstName.trim() ? 'border-amber-600' : 'border-stone-800/30'} focus:border-amber-500 p-3 outline-none text-center text-xl font-cinzel tracking-widest transition-all ${isDarkMode ? 'text-stone-100' : 'text-stone-900'}`} maxLength={20} />
-                        </div>
-                        <div className="flex flex-col items-center">
-                            <label className="text-stone-500 text-[10px] uppercase block mb-4 tracking-widest font-bold px-1 text-center">Choose Your Color</label>
-                            <div className="flex gap-4">
-                                {COLOR_PALETTE.map(color => (
-                                    <button 
-                                        key={color.id} 
-                                        onClick={() => { triggerHaptic(10); setSelectedColor(color.hex); }}
-                                        className={`w-10 h-10 rounded-full border-4 transition-all shadow-lg ${selectedColor === color.hex ? 'color-swatch-active scale-110' : 'border-transparent'}`}
-                                        style={{ backgroundColor: color.hex, color: color.hex }}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                    {onlineLobbyStatus === 'IDLE' ? (
-                        <div className="grid grid-cols-2 gap-3 w-full px-2">
-                            <button className={`border-2 ${isDarkMode ? 'bg-stone-900/40 border-stone-800/80' : 'bg-white border-stone-200'} p-6 rounded-[2rem] hover:border-amber-600/50 transition-all flex flex-col items-center justify-center gap-2`} onClick={() => { triggerHaptic(20); setGameMode(GameMode.LOCAL); initializeGame({name: getSafePlayerName(), color: selectedColor}, {name: 'Player 2', color: COLOR_PALETTE.find(c => c.hex !== selectedColor)?.hex || '#999'}); }}>
-                                <span className="text-2xl">👤</span>
-                                <h3 className={`text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest`}>Single-Player</h3>
-                            </button>
-                            <button className={`border-2 ${isDarkMode ? 'bg-amber-900/20 border-amber-800/40' : 'bg-amber-50 border-amber-200'} p-6 rounded-[2rem] hover:border-amber-500/80 transition-all flex flex-col items-center justify-center gap-2 relative`} onClick={handleOnlineClick}>
-                                {!isPro && <span className="absolute top-2 right-2 text-[8px] bg-amber-600 text-white px-1.5 py-0.5 rounded-full font-bold">PRO</span>}
-                                <span className="text-2xl">🌐</span>
-                                <h3 className={`text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest`}>Multi-Player</h3>
-                            </button>
-                        </div>
-                    ) : (
-                        <div className={`w-full ${isDarkMode ? 'bg-stone-900/50' : 'bg-white'} border-2 border-amber-700/50 p-6 rounded-[3rem] animate-in fade-in zoom-in duration-300`}>
-                            <div className="flex flex-col items-center gap-6">
-                                <div className="w-full flex flex-col gap-4">
-                                    <button className="w-full py-4 bg-amber-600 text-white rounded-xl font-bold uppercase tracking-widest hover:bg-amber-500 transition-colors shadow-lg" onClick={() => { triggerHaptic(20); if(!myPeerId) startOnlineHost(); else { navigator.clipboard.writeText(myPeerId); addLog("Copied Code!", "info"); } }}>
-                                        {myPeerId ? `Code: ${myPeerId}` : "Generate Room Code"}
-                                    </button>
-                                    <input type="text" value={joinId} onChange={(e) => setJoinId(e.target.value.toUpperCase())} placeholder="6-DIGIT CODE" className={`w-full bg-stone-950/40 border-2 border-stone-800 p-3 rounded-xl text-center text-xl font-cinzel tracking-[0.3em] outline-none focus:border-amber-600 transition-colors ${isDarkMode ? 'text-white' : 'text-stone-900'}`} maxLength={6} />
-                                    <button disabled={isPeerConnecting || joinId.length < 6} className="w-full py-4 bg-amber-700 text-white rounded-xl font-bold uppercase tracking-widest hover:bg-amber-600 transition-colors shadow-lg" onClick={() => joinOnlineMatch(joinId)}>
-                                        {isPeerConnecting ? "Connecting..." : "Join Match"}
-                                    </button>
-                                </div>
-                                <button className="text-stone-500 hover:text-white uppercase text-[10px] tracking-widest font-bold" onClick={() => { if(peer) peer.destroy(); setOnlineLobbyStatus('IDLE'); setMyPeerId(''); setJoinId(''); }}>Cancel</button>
-                            </div>
-                        </div>
-                    )}
-                 </div>
-              )}
+        {isProUpgradeOpen && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-in fade-in slide-in-from-bottom duration-500">
+            <div className={`${isDarkMode ? 'bg-stone-900 border-amber-600' : 'bg-white border-amber-800'} border-2 p-1 rounded-[3.5rem] w-full max-w-md shadow-[0_0_80px_rgba(217,119,6,0.3)]`}>
+              <div className={`${isDarkMode ? 'bg-stone-950/80' : 'bg-stone-50/80'} p-8 md:p-12 rounded-[3.2rem] h-full flex flex-col items-center`}>
+                <div className="w-20 h-20 bg-amber-600 rounded-full flex items-center justify-center text-4xl mb-6 shadow-[0_0_30px_rgba(217,119,6,0.5)] animate-pulse">⭐</div>
+                <h2 className={`text-4xl font-cinzel ${isDarkMode ? 'text-white' : 'text-stone-900'} mb-1 font-bold tracking-[0.2em]`}>{T.pro.title.en}</h2>
+                <div className="text-lg font-serif text-amber-600 mb-2">{T.pro.title.bo}</div>
+                <div className="h-0.5 w-16 bg-amber-600 mb-6" />
+                <button onClick={() => { triggerHaptic(25); setIsPro(true); setIsProUpgradeOpen(false); setOnlineLobbyStatus('WAITING'); addLog("Upgraded to PRO! Welcome to the elite.", 'alert'); }} className="w-full py-5 bg-gradient-to-r from-amber-700 via-amber-500 to-amber-700 bg-[length:200%_auto] hover:bg-right transition-all duration-500 text-white font-bold rounded-2xl shadow-[0_0_25px_rgba(217,119,6,0.4)] animate-gold-pulse flex flex-col items-center">
+                  <span className="uppercase tracking-[0.3em]">{T.pro.upgrade.en}</span>
+                  <span className="font-serif text-sm mt-0.5">{T.pro.upgrade.bo}</span>
+                </button>
+                <button onClick={() => { triggerHaptic(10); setIsProUpgradeOpen(false); }} className={`mt-8 ${isDarkMode ? 'text-stone-500 hover:text-white' : 'text-stone-400 hover:text-stone-900'} uppercase text-[10px] tracking-widest font-bold transition-colors`}>
+                  {T.pro.notNow.en} <span className="font-serif ml-1">{T.pro.notNow.bo}</span>
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Game Layout */}
+        {!gameMode && (
+          <div className={`fixed inset-0 z-50 ${isDarkMode ? 'bg-stone-950 text-amber-500' : 'bg-stone-50 text-amber-800'} overflow-y-auto flex flex-col items-center justify-between p-6 py-6 md:py-10 transition-colors duration-500`}>
+               {isSplashVisible && !isLoggedIn ? (
+                 <>
+                   <div className="flex-grow flex flex-col items-center justify-center w-full max-w-md gap-6 animate-in fade-in duration-700">
+                      <div className="flex flex-col items-center text-center">
+                          <h1 className={`flex items-center gap-6 mb-2 font-cinzel ${isDarkMode ? 'text-amber-500' : 'text-amber-900'}`}>
+                              <span className="text-5xl md:text-7xl drop-shadow-[0_0_30px_rgba(245,158,11,0.4)]">{T.lobby.title.bo}</span>
+                              <span className="text-3xl md:text-5xl tracking-widest drop-shadow-md">{T.lobby.title.en}</span>
+                          </h1>
+                          <div className={`h-px w-32 ${isDarkMode ? 'bg-amber-900/40' : 'bg-amber-700/20'} mb-3`} />
+                      </div>
+                      <div className="w-full flex flex-col gap-4 mt-2 px-4">
+                          <button onClick={() => { triggerHaptic(15); setIsSplashVisible(false); }} className="w-full py-4 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-2xl transition-all shadow-lg flex flex-col items-center justify-center">
+                              <span className="uppercase tracking-[0.1em] text-sm leading-tight">{T.lobby.guestContinue.en}</span>
+                              <span className="font-serif text-sm leading-tight mt-0.5">{T.lobby.guestContinue.bo}</span>
+                          </button>
+                          <div className="relative flex items-center py-2">
+                              <div className={`flex-grow border-t ${isDarkMode ? 'border-stone-800/30' : 'border-stone-200'}`}></div>
+                              <div className="flex flex-col items-center mx-4 gap-0.5">
+                                  <span className="text-stone-600 text-[10px] uppercase font-bold tracking-widest">{T.common.or.en}</span>
+                                  <span className="text-stone-700 font-serif text-[11px] leading-none">{T.common.or.bo}</span>
+                              </div>
+                              <div className={`flex-grow border-t ${isDarkMode ? 'border-stone-800/30' : 'border-stone-200'}`}></div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                              <button onClick={() => { triggerHaptic(10); setAuthMode('LOGIN'); setIsAuthModalOpen(true); }} className={`py-3 ${isDarkMode ? 'bg-stone-900 border-stone-800 text-stone-300' : 'bg-white border-stone-300 text-stone-700'} border hover:border-amber-600 font-bold rounded-2xl transition-all flex flex-col items-center justify-center`}>
+                                  <span className="uppercase tracking-[0.1em] text-[11px] leading-tight">{T.lobby.loginSplash.en}</span>
+                                  <span className="font-serif text-[12px] leading-tight mt-0.5">{T.lobby.loginSplash.bo}</span>
+                              </button>
+                              <button onClick={() => { triggerHaptic(10); setAuthMode('SIGNUP'); setIsAuthModalOpen(true); }} className={`py-3 ${isDarkMode ? 'bg-stone-900 border-stone-800 text-stone-300' : 'bg-white border-stone-300 text-stone-700'} border hover:border-amber-600 font-bold rounded-2xl transition-all flex flex-col items-center justify-center`}>
+                                  <span className="uppercase tracking-[0.1em] text-[11px] leading-tight">{T.lobby.signupSplash.en}</span>
+                                  <span className="font-serif text-[12px] leading-tight mt-0.5">{T.lobby.signupSplash.bo}</span>
+                              </button>
+                          </div>
+                      </div>
+                   </div>
+                 </>
+               ) : (
+                 <>
+                    <div className={`fixed top-0 left-0 right-0 p-4 flex justify-between items-center z-[60] ${isDarkMode ? 'bg-gradient-to-b from-stone-950 via-stone-950/80 to-transparent' : 'bg-stone-50/90'}`}>
+                        <div className="flex items-center gap-2">
+                            <span className="text-amber-600/60 text-[10px] font-cinzel font-bold tracking-[0.3em] hidden sm:block uppercase">EST. 2024</span>
+                            {isPro && <span className="ml-4 bg-amber-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full tracking-widest shadow-[0_0_10px_rgba(217,119,6,0.5)]">PRO MEMBER</span>}
+                        </div>
+                        <div className="flex items-center gap-4 sm:gap-6">
+                            {isLoggedIn && (
+                                <div className="flex items-center gap-4">
+                                    <span className="text-amber-400 font-cinzel text-xs sm:text-sm tracking-widest">ཕེབས་པར་དགའ་བསུ་ཞུ། {getSafePlayerName().toUpperCase()}</span>
+                                    <button onClick={handleLogout} className={`border ${isDarkMode ? 'bg-stone-900/80 border-stone-700 text-stone-400' : 'bg-white border-stone-300 text-stone-500'} px-4 py-2 rounded-full text-[10px] uppercase font-bold hover:text-white hover:border-amber-600 transition-all`}>Logout</button>
+                                </div>
+                            )}
+                            <button onClick={() => { triggerHaptic(10); setShowMenu(true); }} className={`border p-2 rounded-xl transition-all shadow-lg flex items-center justify-center ${isDarkMode ? 'bg-stone-800 hover:bg-stone-700 border-stone-600 text-stone-100' : 'bg-white border-stone-300 text-stone-900'}`}>
+                              <span className="text-xl">☰</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div className="flex flex-col items-center flex-shrink-0 w-full max-sm:px-4 mt-16 sm:mt-12">
+                        <h1 className={`flex items-center gap-6 mb-1 font-cinzel ${isDarkMode ? 'text-amber-500' : 'text-amber-900'}`}>
+                            <span className="text-3xl md:text-5xl drop-shadow-[0_0_20px_rgba(245,158,11,0.4)]">{T.lobby.title.bo}</span>
+                            <span className="text-lg md:text-2xl tracking-widest drop-shadow-md">{T.lobby.title.en}</span>
+                        </h1>
+                    </div>
+                    <div className="flex-grow flex flex-col items-center justify-center w-full max-w-md gap-4 md:gap-8 my-2 md:my-4">
+                        <div className={`w-full ${isDarkMode ? 'bg-stone-900/30' : 'bg-white/80'} p-5 md:p-8 rounded-[3rem] border border-stone-800/20 backdrop-blur-2xl shadow-2xl`}>
+                            <div className="mb-6">
+                                <label className="text-stone-500 text-[10px] uppercase block mb-3 tracking-widest font-bold px-1 text-center">
+                                    {T.lobby.nameLabel.en} <span className="text-stone-600 font-serif ml-1">{T.lobby.nameLabel.bo}</span>
+                                </label>
+                                <input 
+                                    type="text" 
+                                    value={firstName} 
+                                    placeholder="PLAYER" 
+                                    onChange={(e) => setFirstName(e.target.value)} 
+                                    className={`w-full bg-transparent border-b-2 ${firstName.trim() ? 'border-amber-600' : 'border-stone-800/30'} focus:border-amber-500 p-3 outline-none text-center text-xl font-cinzel tracking-widest transition-all ${isDarkMode ? 'text-stone-100' : 'text-stone-900'}`} 
+                                    maxLength={20} 
+                                />
+                            </div>
+                            <div>
+                                <label className="text-stone-500 text-[10px] uppercase block mb-4 tracking-widest font-bold px-1 text-center">
+                                    {T.lobby.colorLabel.en} <span className="text-stone-600 font-serif ml-1">{T.lobby.colorLabel.bo}</span>
+                                </label>
+                                <div className="flex justify-between px-2 gap-2">
+                                {COLOR_PALETTE.map((c) => ( 
+                                    <button key={c.hex} onClick={() => { triggerHaptic(10); setSelectedColor(c.hex); }} className={`w-10 h-10 rounded-xl transition-all rotate-45 ${selectedColor === c.hex ? 'border-2 border-white scale-110 shadow-[0_0_25px_rgba(255,255,255,0.2)]' : 'opacity-40 hover:opacity-100'}`} style={{ backgroundColor: c.hex }} /> 
+                                ))}
+                                </div>
+                            </div>
+                        </div>
+                        {onlineLobbyStatus === 'IDLE' ? (
+                            <div className="grid grid-cols-2 gap-3 md:gap-6 w-full px-2">
+                                <button 
+                                    className={`border-2 ${isDarkMode ? 'bg-stone-900/40 border-stone-800/80' : 'bg-white border-stone-200'} p-4 md:p-6 rounded-[2rem] hover:border-amber-600/50 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 md:gap-2`} 
+                                    onClick={() => { triggerHaptic(20); setGameMode(GameMode.LOCAL); initializeGame({name: getSafePlayerName(), color: selectedColor}, {name: 'Player 2', color: '#999'}); }}
+                                >
+                                    <span className="text-xl md:text-2xl">👤</span>
+                                    <div className="flex flex-col items-center">
+                                        <h3 className={`text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest leading-none ${isDarkMode ? 'text-amber-100' : 'text-amber-800'}`}>{T.lobby.modeLocal.en}</h3>
+                                        <span className="text-[10px] font-serif mt-0.5">{T.lobby.modeLocal.bo}</span>
+                                    </div>
+                                </button>
+                                <button 
+                                    className={`border-2 ${isDarkMode ? 'bg-amber-900/20 border-amber-800/40' : 'bg-amber-50 border-amber-200'} p-4 md:p-6 rounded-[2rem] hover:border-amber-500/80 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 md:gap-2 relative overflow-hidden`} 
+                                    onClick={handleOnlineClick}
+                                >
+                                    {!isPro && <span className="absolute top-2 right-2 text-[8px] bg-amber-600 text-white px-1.5 py-0.5 rounded-full font-bold">PRO</span>}
+                                    <span className="text-xl md:text-2xl">🌐</span>
+                                    <div className="flex flex-col items-center">
+                                        <h3 className={`text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest leading-none ${isDarkMode ? 'text-amber-100' : 'text-amber-800'}`}>{T.lobby.modeMulti.en}</h3>
+                                        <span className="text-[10px] font-serif mt-0.5">{T.lobby.modeMulti.bo}</span>
+                                    </div>
+                                </button>
+                            </div>
+                        ) : (
+                            <div className={`w-full ${isDarkMode ? 'bg-stone-900/50' : 'bg-white'} border-2 border-amber-700/50 p-6 md:p-10 rounded-[3rem] animate-in fade-in zoom-in duration-300 max-h-[70vh] overflow-y-auto no-scrollbar`}>
+                                <div className="flex flex-col items-center gap-8">
+                                    <h3 className="text-2xl font-cinzel text-amber-500 text-center">
+                                        {T.lobby.roomLobbyTitle.en} <br/>
+                                        <span className="font-serif text-lg">{T.lobby.roomLobbyTitle.bo}</span>
+                                    </h3>
+                                    
+                                    <div className="flex flex-col gap-10 w-full">
+                                        {/* Host Section */}
+                                        <div className={`p-6 rounded-2xl border ${isDarkMode ? 'bg-black/40 border-stone-800' : 'bg-stone-50 border-stone-200'} flex flex-col items-center gap-4`}>
+                                            <div className="text-center">
+                                                <h4 className="text-amber-600 font-cinzel text-sm uppercase tracking-widest font-bold">
+                                                    {T.lobby.hostHeader.en} <span className="font-serif ml-1">{T.lobby.hostHeader.bo}</span>
+                                                </h4>
+                                            </div>
+                                            
+                                            {myPeerId ? (
+                                                <div className="flex flex-col items-center animate-in zoom-in duration-300">
+                                                    <span className="text-[10px] text-stone-500 uppercase tracking-widest mb-1">Your Room Code</span>
+                                                    <div className="text-5xl font-mono font-bold text-amber-500 tracking-wider animate-glow-code">
+                                                        {myPeerId}
+                                                    </div>
+                                                    <button 
+                                                        onClick={() => { navigator.clipboard.writeText(myPeerId); addLog("Code copied!", "info"); }}
+                                                        className="mt-3 text-[10px] uppercase font-bold text-stone-400 hover:text-white transition-colors"
+                                                    >
+                                                        Copy Code 📋
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <button 
+                                                    className="w-full py-4 bg-amber-600 text-white rounded-xl font-bold uppercase tracking-widest hover:bg-amber-500 transition-colors shadow-lg text-sm" 
+                                                    onClick={() => { triggerHaptic(20); startOnlineHost(); }}
+                                                >
+                                                    {T.lobby.hostHeader.en}
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        <div className="flex items-center gap-4">
+                                            <div className="flex-grow h-px bg-stone-800"></div>
+                                            <span className="text-stone-600 font-serif text-sm italic">or ཡང་ན།</span>
+                                            <div className="flex-grow h-px bg-stone-800"></div>
+                                        </div>
+
+                                        {/* Join Section */}
+                                        <div className={`p-6 rounded-2xl border ${isDarkMode ? 'bg-black/40 border-stone-800' : 'bg-stone-50 border-stone-200'} flex flex-col items-center gap-4`}>
+                                            <div className="text-center">
+                                                <h4 className="text-amber-600 font-cinzel text-sm uppercase tracking-widest font-bold">
+                                                    {T.lobby.joinHeader.en} <span className="font-serif ml-1">{T.lobby.joinHeader.bo}</span>
+                                                </h4>
+                                            </div>
+                                            <input 
+                                                type="number"
+                                                pattern="[0-9]*"
+                                                inputMode="numeric"
+                                                value={joinCode}
+                                                onChange={(e) => setJoinCode(e.target.value.slice(0, 6))}
+                                                placeholder="6-DIGIT CODE"
+                                                className={`w-full bg-stone-900 border-2 ${joinCode.length === 6 ? 'border-amber-600' : 'border-stone-800'} rounded-xl p-4 text-center text-2xl font-mono font-bold text-white outline-none focus:border-amber-500 transition-all`}
+                                            />
+                                            <button 
+                                                disabled={isPeerConnecting || joinCode.length !== 6}
+                                                className={`w-full py-4 rounded-xl font-bold uppercase tracking-widest transition-all text-sm ${joinCode.length === 6 ? 'bg-amber-700 text-white shadow-lg active:scale-95' : 'bg-stone-800 text-stone-600 cursor-not-allowed'}`}
+                                                onClick={() => { triggerHaptic(15); joinOnlineMatch(joinCode); }}
+                                            >
+                                                {isPeerConnecting ? "CONNECTING..." : T.lobby.joinHeader.en}
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <button className="text-stone-500 hover:text-white uppercase text-[10px] tracking-widest font-bold mt-4" onClick={() => { triggerHaptic(10); if(peer) peer.destroy(); setOnlineLobbyStatus('IDLE'); }}>Cancel ཕྱིར་ལོག།</button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    <div className="w-full flex flex-col items-center gap-6 md:gap-10 mt-2">
+                        <div className="flex gap-12 md:gap-16">
+                            <button onClick={() => { triggerHaptic(15); setGameMode(GameMode.TUTORIAL); initializeGame({name: getSafePlayerName(), color: selectedColor}, {name: 'Guide', color: '#999'}, true); }} className={`text-stone-500 hover:text-amber-500 flex flex-col items-center group transition-colors`}>
+                                <span className="font-bold uppercase text-[10px] md:text-[11px] tracking-widest font-cinzel leading-none">{T.lobby.tutorial.en}</span>
+                                <span className="text-[11px] md:text-[13px] font-serif mt-1">{T.lobby.tutorial.bo}</span>
+                            </button>
+                            <button onClick={() => { triggerHaptic(15); setShowRules(true); }} className="text-stone-500 hover:text-amber-500 flex flex-col items-center group transition-colors">
+                                <span className="font-bold uppercase text-[10px] md:text-[11px] tracking-widest font-cinzel leading-none">{T.lobby.rules.en}</span>
+                                <span className="text-[11px] md:text-[13px] font-serif mt-1">{T.lobby.rules.bo}</span>
+                            </button>
+                        </div>
+                    </div>
+                 </>
+               )}
+          </div>
+        )}
         {gameMode && (
-            <div className={`w-full min-h-screen flex flex-col md:flex-row fixed inset-0 font-sans mobile-landscape-row`}>
-                <div className={`w-full md:w-1/4 flex flex-col border-b md:border-b-0 md:border-r ${isDarkMode ? 'border-stone-800 bg-stone-950' : 'border-stone-200 bg-white'} z-20 shadow-2xl h-[45dvh] md:h-full order-1 overflow-hidden transition-colors duration-500`}>
-                    <div className="p-4 flex flex-col gap-3 flex-shrink-0">
-                        <header className="flex justify-between items-center border-b border-stone-800 pb-4">
-                            <h1 className="font-cinzel text-sm text-amber-500 cursor-pointer" onClick={resetToLobby}>Sho</h1>
-                            <div className="flex items-center gap-4">
+            <>
+                {(gameMode === GameMode.TUTORIAL || tutorialStep > 0) && tutorialStep > 0 && (
+                  <TutorialOverlay 
+                    step={tutorialStep} 
+                    onNext={handleTutorialNext} 
+                    onClose={handleTutorialClose} 
+                    isDarkMode={isDarkMode}
+                  />
+                )}
+                <div className={`w-full md:w-1/4 flex flex-col border-b md:border-b-0 md:border-r ${isDarkMode ? 'border-stone-800 bg-stone-950' : 'border-stone-200 bg-white'} z-20 shadow-2xl h-[45dvh] md:h-full order-1 overflow-hidden flex-shrink-0 mobile-landscape-sidebar transition-colors duration-500`}>
+                    <div className={`p-1.5 md:p-4 flex flex-col gap-0 md:gap-3 flex-shrink-0 ${isDarkMode ? 'bg-stone-950' : 'bg-white'} mobile-landscape-compact-stats`}>
+                        <header className={`flex justify-between items-center border-b ${isDarkMode ? 'border-stone-800' : 'border-stone-200'} pb-1 md:pb-4`}>
+                            <div className="flex items-center gap-2 cursor-pointer" onClick={resetToLobby}>
+                                <h1 className={`font-cinzel text-[10px] md:text-sm ${isDarkMode ? 'text-amber-500' : 'text-amber-900'}`}>Sho</h1>
+                            </div>
+                            <div className="flex items-center gap-2 md:gap-4">
                                 {(gameMode === GameMode.ONLINE_HOST || gameMode === GameMode.ONLINE_GUEST) && (
-                                    <button onClick={toggleMic} className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${isMicActive ? 'bg-red-600' : 'bg-stone-800'}`}>
-                                        <span className={isMicActive ? 'animate-mic-active' : ''}>{isMicActive ? '🎙️' : '🔇'}</span>
+                                    <button 
+                                        onClick={toggleMic}
+                                        className={`w-7 h-7 md:w-9 md:h-9 rounded-full flex items-center justify-center transition-all ${isMicActive ? 'bg-red-600 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)]' : (isDarkMode ? 'bg-stone-800 text-stone-500 border-stone-700' : 'bg-stone-100 text-stone-400 border-stone-200')} border`}
+                                        title={isMicActive ? "Mute Microphone" : "Enable Microphone"}
+                                    >
+                                        <span className={`text-sm md:text-base ${isMicActive ? 'animate-mic-active' : ''}`}>
+                                            {isMicActive ? '🎙️' : '🔇'}
+                                        </span>
                                     </button>
                                 )}
-                                <button onClick={() => setShowMenu(true)} className="p-2 bg-stone-800 rounded-lg">☰</button>
+                                <button onClick={() => { triggerHaptic(10); setShowMenu(true); }} className={`border p-1 md:p-2 rounded-xl transition-all shadow-lg flex items-center justify-center ${isDarkMode ? 'bg-stone-800 hover:bg-stone-700 border-stone-600 text-stone-100' : 'bg-white border-stone-300 text-stone-900'}`}>
+                                  <span className="text-sm md:text-xl">☰</span>
+                                </button>
+                                <button onClick={() => { triggerHaptic(10); setShowRules(true); }} className={`w-6 h-6 md:w-8 md:h-8 rounded-full border flex items-center justify-center text-[10px] md:text-xs ${isDarkMode ? 'border-stone-600 text-stone-400' : 'border-stone-300 text-stone-500'}`}>?</button>
                             </div>
                         </header>
-                        <div className="grid grid-cols-2 gap-2 mt-4 relative">
+                        <div className="grid grid-cols-2 gap-1 md:gap-2 mt-4 md:mt-8 relative px-1">
                             {players.map((p, i) => {
                                 const isActive = turnIndex === i;
                                 return (
-                                    <div key={p.id} className={`p-3 rounded-xl border transition-all ${isActive ? 'bg-stone-800 border-amber-500 animate-active-pulse scale-105' : 'border-stone-800 opacity-50'}`}>
+                                    <div key={p.id} className={`relative p-1.5 md:p-3 rounded-xl border transition-all duration-300 ${isActive ? (isDarkMode ? 'bg-stone-800 border-amber-500/50' : 'bg-amber-50 border-amber-200') + ' scale-[1.05] z-10 animate-active-pulse shadow-xl' : (isDarkMode ? 'border-stone-800 opacity-50' : 'border-stone-100 opacity-60')}`}>
                                         <div className="flex items-center gap-1.5 mb-1.5">
                                             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.colorHex }}></div>
-                                            <h3 className="font-bold truncate text-[10px]" style={{ color: p.colorHex }}>{p.name}</h3>
+                                            <h3 className="font-bold transparency-0 truncate text-[9px] md:text-[11px] font-serif" style={{ color: p.colorHex }}>{p.name}</h3>
                                         </div>
-                                        <div className="flex justify-between text-[12px] font-bold">
-                                            <span>{p.coinsInHand}</span>
-                                            <span className="text-amber-500">{p.coinsFinished}</span>
+                                        <div className={`flex justify-between text-[11px] md:text-[14px] font-bold font-cinzel ${isDarkMode ? 'text-stone-100' : 'text-stone-900'}`}>
+                                            <div className="flex flex-col">
+                                                <span className="text-[7px] text-stone-500 uppercase">{T.game.inHand.en} <span className="font-serif">{T.game.inHand.bo}</span></span>
+                                                <span>{p.coinsInHand}</span>
+                                            </div>
+                                            <div className="flex flex-col items-end">
+                                                <span className="text-[7px] text-stone-500 uppercase">{T.game.finished.en} <span className="font-serif">{T.game.finished.bo}</span></span>
+                                                <span className="text-amber-500">{p.coinsFinished}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 );
                             })}
                         </div>
                     </div>
-                    <div className="px-4 pb-4 flex flex-col gap-1 mt-auto">
-                        {phase !== GamePhase.GAME_OVER && (
-                            <div className="flex flex-col gap-2">
-                                <DiceArea currentRoll={lastRoll} onRoll={() => performRoll()} canRoll={(phase === GamePhase.ROLLING) && !isRolling && isLocalTurn} pendingValues={pendingMoveValues} waitingForPaRa={paRaCount > 0} paRaCount={paRaCount} extraRolls={extraRolls} flexiblePool={null} />
-                                <div className="flex gap-2">
-                                    <div onClick={handleFromHandClick} className={`flex-1 p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center justify-center ${handShake ? 'animate-hand-blocked' : (shouldHighlightHand && isLocalTurn) ? 'border-amber-500 bg-amber-900/10 animate-pulse' : 'border-stone-800 bg-stone-900/50'}`}>
-                                        <span className="font-bold uppercase text-[11px] font-cinzel">{T.game.fromHand.en}</span>
-                                        <span className="text-[11px] font-serif text-amber-500">{T.game.fromHand.bo}</span>
-                                        <span className="text-[11px] font-cinzel mt-1">({players[turnIndex].coinsInHand})</span>
+                    <div className={`px-2 md:px-4 pb-1 flex flex-col gap-1 flex-shrink-0 ${isDarkMode ? 'bg-stone-950' : 'bg-white'}`}>
+                        {phase === GamePhase.GAME_OVER ? ( 
+                            <div className={`text-center p-2 rounded-xl border animate-pulse ${isDarkMode ? 'bg-stone-800 border-amber-500' : 'bg-amber-50 border-amber-200'}`}>
+                                <h2 className="text-base text-amber-400 font-cinzel">{T.game.victory.en}</h2>
+                                <h3 className="text-lg text-amber-500 font-serif leading-none mb-2">{T.game.victory.bo}</h3>
+                                <button onClick={resetToLobby} className="bg-amber-600 text-white px-4 py-1.5 rounded-full font-bold uppercase text-[9px] transition-all hover:bg-amber-500">
+                                    {T.common.back.en} <span className="font-serif ml-1">{T.common.back.bo}</span>
+                                </button>
+                            </div> 
+                        ) : ( 
+                            <div className="flex flex-col gap-1">
+                                <DiceArea currentRoll={lastRoll} onRoll={() => { if (tutorialStep === 2) handleTutorialNext(); performRoll(); }} canRoll={(phase === GamePhase.ROLLING) && !isRolling && isLocalTurn} pendingValues={pendingMoveValues} waitingForPaRa={paRaCount > 0} paRaCount={paRaCount} extraRolls={extraRolls} flexiblePool={null} />
+                                <div className="flex gap-1">
+                                    <div onClick={handleFromHandClick} className={`flex-1 p-2 md:p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center justify-center ${handShake ? 'animate-hand-blocked' : selectedSourceIndex === 0 ? 'border-amber-500 bg-amber-900/40' : (shouldHighlightHand && isLocalTurn) ? 'border-amber-500/80 bg-amber-900/10 animate-pulse' : (isDarkMode ? 'border-stone-800 bg-stone-900/50' : 'border-stone-200 bg-stone-50')}`}>
+                                        <span className={`font-bold uppercase font-cinzel text-[11px] md:text-sm`}>{T.game.fromHand.en}</span>
+                                        <span className={`text-[11px] md:text-sm font-serif font-bold ${isDarkMode ? 'text-amber-500' : 'text-amber-900'}`}>{T.game.fromHand.bo}</span>
+                                        <span className={`text-[11px] font-cinzel mt-1 font-bold ${isDarkMode ? 'text-stone-200' : 'text-stone-700'}`}>({players[turnIndex].coinsInHand})</span>
                                     </div>
-                                    {currentValidMovesList.length === 0 && phase === GamePhase.MOVING && !isRolling && isLocalTurn && (
-                                        <button onClick={() => handleSkipTurn()} className="flex-1 bg-amber-800/50 hover:bg-amber-700 text-amber-200 border border-amber-600/50 p-2 rounded-xl font-bold uppercase text-[9px] font-cinzel">
-                                            {T.game.skipTurn.en}
-                                        </button>
+                                    {currentValidMovesList.length === 0 && phase === GamePhase.MOVING && !isRolling && paRaCount === 0 && isLocalTurn && ( 
+                                        <button onClick={() => { triggerHaptic(10); handleSkipTurn(); }} className="flex-1 bg-amber-800/50 hover:bg-amber-700 text-amber-200 border border-amber-600/50 p-1 rounded-xl font-bold flex flex-col items-center justify-center">
+                                            <span className="text-[9px] uppercase font-cinzel">{T.game.skipTurn.en}</span>
+                                            <span className="text-[10px] text-amber-500 font-serif leading-none">{T.game.skipTurn.bo}</span>
+                                        </button> 
                                     )}
                                 </div>
-                            </div>
+                            </div> 
                         )}
                     </div>
                 </div>
-                <div className={`flex-grow relative ${isDarkMode ? 'bg-[#1a1715]' : 'bg-[#fcfaf9]'} flex items-center justify-center overflow-hidden order-2 h-[55dvh] md:h-full mobile-landscape-board`} ref={boardContainerRef}>
-                    <div style={{ transform: `scale(${boardScale})`, width: 800, height: 800 }}>
+                <div className={`flex-grow relative ${isDarkMode ? 'bg-[#1a1715]' : 'bg-[#fcfaf9]'} flex items-center justify-center overflow-hidden order-2 h-[55dvh] md:h-full mobile-landscape-board transition-colors duration-500`} ref={boardContainerRef}>
+                    <div style={{ transform: `scale(${boardScale})`, width: 800, height: 800 }} className="transition-transform duration-300">
                         <Board 
                             boardState={board} players={players} validMoves={visualizedMoves} onSelectMove={(m) => { if (isLocalTurn) performMove(m.sourceIndex, m.targetIndex); }} 
                             currentPlayer={players[turnIndex].id} turnPhase={phase} onShellClick={(i) => { if (isLocalTurn) { board.get(i)?.owner === players[turnIndex].id ? setSelectedSourceIndex(i) : setSelectedSourceIndex(null) } }} 
@@ -864,7 +969,7 @@ const App: React.FC = () => {
                         />
                     </div>
                 </div>
-            </div>
+            </>
         )}
     </div>
   );
