@@ -207,7 +207,6 @@ const App: React.FC = () => {
     });
   }, []);
 
-  // Host broadcasts full state occasionally or after critical turns
   const broadcastFullSync = useCallback(() => {
     const s = gameStateRef.current;
     if (s.gameMode === GameMode.ONLINE_HOST) {
@@ -215,7 +214,7 @@ const App: React.FC = () => {
             type: 'FULL_SYNC', 
             payload: {
                 ...s,
-                board: Object.fromEntries(s.board) // Map needs conversion for JSON
+                board: Object.fromEntries(s.board) 
             }
         });
     }
@@ -390,11 +389,25 @@ const App: React.FC = () => {
         if (s.gameMode === GameMode.ONLINE_HOST) {
             setPlayers(prev => {
                 const next = [...prev];
+                // Update Guest Info
                 next[1] = { ...next[1], name: packet.payload.name, colorHex: packet.payload.color };
+                // Send Host info back to Guest for mutual handshake
+                broadcastPacket({ 
+                    type: 'JOIN_INFO', 
+                    payload: { name: next[0].name, color: next[0].colorHex } 
+                });
                 return next;
             });
             addLog(`${packet.payload.name} joined the match!`, 'info');
-            setTimeout(broadcastFullSync, 200);
+            setTimeout(broadcastFullSync, 400);
+        } else if (s.gameMode === GameMode.ONLINE_GUEST) {
+            // Guest receiving Host's name
+            setPlayers(prev => {
+                const next = [...prev];
+                next[0] = { ...next[0], name: packet.payload.name, colorHex: packet.payload.color };
+                return next;
+            });
+            addLog(`Connected to: ${packet.payload.name}`, 'info');
         }
         break;
       case 'FULL_SYNC':
@@ -410,7 +423,7 @@ const App: React.FC = () => {
         if (packet.payload.lastRoll) setLastRoll(packet.payload.lastRoll);
         break;
     }
-  }, [performRoll, performMove, handleSkipTurn, broadcastFullSync]);
+  }, [performRoll, performMove, handleSkipTurn, broadcastPacket, broadcastFullSync]);
 
   const startOnlineHost = () => {
     setIsPeerConnecting(true);
@@ -429,9 +442,10 @@ const App: React.FC = () => {
         setActiveConnections(prev => [...prev, conn]);
         setOnlineLobbyStatus('CONNECTED');
         setGameMode(GameMode.ONLINE_HOST);
-        initializeGame({ name: getSafePlayerName(), color: selectedColor }, { name: 'Guest', color: '#3b82f6' });
-        addLog("Opponent joined!", 'alert');
-        setTimeout(broadcastFullSync, 400);
+        // Initialize with Host name
+        initializeGame({ name: getSafePlayerName(), color: selectedColor }, { name: 'Opponent...', color: '#3b82f6' });
+        addLog("Opponent joining...", 'info');
+        // We wait for Guest to send JOIN_INFO before full broadcast
       });
       conn.on('data', (data: any) => handleNetworkPacket(data));
       conn.on('close', () => resetToLobby());
@@ -460,8 +474,8 @@ const App: React.FC = () => {
         setActiveConnections(prev => [...prev, conn]);
         setOnlineLobbyStatus('CONNECTED');
         setGameMode(GameMode.ONLINE_GUEST);
-        addLog("Connected to host!", 'alert');
-        // Send our local name and color to the host immediately
+        addLog("Syncing with host...", 'info');
+        // Guest sends their info immediately
         conn.send({ type: 'JOIN_INFO', payload: { name: getSafePlayerName(), color: selectedColor } });
       });
       conn.on('data', (data: any) => handleNetworkPacket(data));
@@ -487,7 +501,7 @@ const App: React.FC = () => {
     setIsAuthModalOpen(false);
     setFirstName(authForm.firstName);
     setLastName(authForm.lastName);
-    addLog(`Welcome back, ${authForm.firstName}!`, 'info');
+    addLog(`Welcome, ${authForm.firstName}!`, 'info');
   };
 
   const handleLogout = () => {
@@ -496,7 +510,7 @@ const App: React.FC = () => {
     setIsPro(false);
     setFirstName('');
     setLastName('');
-    addLog("Logged out successfully.", 'info');
+    addLog("Logged out.", 'info');
   };
 
   const handleOnlineClick = () => {
@@ -538,17 +552,16 @@ const App: React.FC = () => {
         }
         localStreamRef.current = stream;
         setIsMicActive(true);
-        addLog("Microphone enabled.", "info");
+        addLog("Mic on.", "info");
       } catch (err) {
-        console.error("Mic access error:", err);
-        addLog("Could not access microphone.", "alert");
+        console.error("Mic error:", err);
+        addLog("Could not access mic.", "alert");
       }
     }
   };
 
   const currentValidMovesList = phase === GamePhase.MOVING ? getAvailableMoves(turnIndex, board, players, pendingMoveValues, isNinerMode, isOpeningPaRa) : [];
   const visualizedMoves = selectedSourceIndex !== null ? currentValidMovesList.filter(m => m.sourceIndex === selectedSourceIndex) : [];
-  // Pulsing 'From Hand' should only happen if moves are actually available for it
   const shouldHighlightHand = phase === GamePhase.MOVING && players[turnIndex].coinsInHand > 0 && currentValidMovesList.some(m => m.sourceIndex === 0);
   
   const isLocalTurn = (() => {
@@ -720,7 +733,7 @@ const App: React.FC = () => {
                     </li>
                   ))}
                 </ul>
-                <button onClick={() => { triggerHaptic(25); setIsPro(true); setIsProUpgradeOpen(false); setOnlineLobbyStatus('WAITING'); addLog("Upgraded to PRO! Welcome to the elite.", 'alert'); }} className="w-full py-5 bg-gradient-to-r from-amber-700 via-amber-500 to-amber-700 bg-[length:200%_auto] hover:bg-right transition-all duration-500 text-white font-bold rounded-2xl shadow-[0_0_25px_rgba(217,119,6,0.4)] animate-gold-pulse flex flex-col items-center">
+                <button onClick={() => { triggerHaptic(25); setIsPro(true); setIsProUpgradeOpen(false); setOnlineLobbyStatus('WAITING'); addLog("Upgraded to PRO! Welcome.", 'alert'); }} className="w-full py-5 bg-gradient-to-r from-amber-700 via-amber-500 to-amber-700 bg-[length:200%_auto] hover:bg-right transition-all duration-500 text-white font-bold rounded-2xl shadow-[0_0_25px_rgba(217,119,6,0.4)] animate-gold-pulse flex flex-col items-center">
                   <span className="uppercase tracking-[0.3em]">{T.pro.upgrade.en}</span>
                   <span className="font-serif text-sm mt-0.5">{T.pro.upgrade.bo}</span>
                 </button>
@@ -872,7 +885,6 @@ const App: React.FC = () => {
                                     </h3>
                                     
                                     <div className="flex flex-col gap-8 w-full">
-                                        {/* Host Section */}
                                         <div className={`p-6 rounded-3xl border ${isDarkMode ? 'bg-black/40 border-stone-800' : 'bg-stone-50 border-stone-200'} flex flex-col items-center`}>
                                             <div className="text-center mb-5">
                                                 <h4 className="text-amber-600 font-cinzel text-sm uppercase tracking-widest font-bold">
@@ -890,7 +902,7 @@ const App: React.FC = () => {
                                                         <span className="text-amber-500 font-mono text-3xl font-bold tracking-[0.2em]">{myPeerId}</span>
                                                     </div>
                                                     <button 
-                                                        onClick={() => { triggerHaptic(10); navigator.clipboard.writeText(myPeerId); addLog("Code copied to clipboard!", "info"); }}
+                                                        onClick={() => { triggerHaptic(10); navigator.clipboard.writeText(myPeerId); addLog("Code copied!", "info"); }}
                                                         className="text-[10px] uppercase text-stone-500 font-bold tracking-widest hover:text-amber-500 transition-colors"
                                                     >
                                                         COPY CODE 📋
@@ -915,14 +927,12 @@ const App: React.FC = () => {
                                             )}
                                         </div>
 
-                                        {/* Divider */}
                                         <div className="flex items-center gap-4 px-4 opacity-30">
                                             <div className="flex-grow h-px bg-stone-500"></div>
                                             <span className="text-[10px] uppercase font-bold text-stone-500">OR</span>
                                             <div className="flex-grow h-px bg-stone-500"></div>
                                         </div>
 
-                                        {/* Join Section */}
                                         <div className={`p-6 rounded-3xl border ${isDarkMode ? 'bg-black/40 border-stone-800' : 'bg-stone-50 border-stone-200'} flex flex-col items-center`}>
                                             <div className="text-center mb-5">
                                                 <h4 className="text-stone-400 font-cinzel text-sm uppercase tracking-widest font-bold">
@@ -1001,12 +1011,11 @@ const App: React.FC = () => {
                                 <h1 className={`font-cinzel text-[10px] md:text-sm ${isDarkMode ? 'text-amber-500' : 'text-amber-900'}`}>Sho</h1>
                             </div>
                             <div className="flex items-center gap-2 md:gap-4">
-                                {/* Fix: Replaced 's.gameMode' with 'gameMode' to use the correct state variable. */}
                                 {(gameMode === GameMode.ONLINE_HOST || gameMode === GameMode.ONLINE_GUEST) && (
                                     <button 
                                         onClick={toggleMic}
                                         className={`w-7 h-7 md:w-9 md:h-9 rounded-full flex items-center justify-center transition-all ${isMicActive ? 'bg-red-600 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)]' : (isDarkMode ? 'bg-stone-800 text-stone-500 border-stone-700' : 'bg-stone-100 text-stone-400 border-stone-200')} border`}
-                                        title={isMicActive ? "Mute Microphone" : "Enable Microphone"}
+                                        title={isMicActive ? "Mute Mic" : "Enable Mic"}
                                     >
                                         <span className={`text-sm md:text-base ${isMicActive ? 'animate-mic-active' : ''}`}>
                                             {isMicActive ? '🎙️' : '🔇'}
@@ -1026,7 +1035,7 @@ const App: React.FC = () => {
                                     <div key={p.id} className={`relative p-1.5 md:p-3 rounded-xl border transition-all duration-300 ${isActive ? (isDarkMode ? 'bg-stone-800 border-amber-500/50' : 'bg-amber-50 border-amber-200') + ' scale-[1.05] z-10 animate-active-pulse shadow-xl' : (isDarkMode ? 'border-stone-800 opacity-50' : 'border-stone-100 opacity-60')}`}>
                                         <div className="flex items-center gap-1.5 mb-1.5">
                                             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.colorHex }}></div>
-                                            <h3 className="font-bold transparency-0 truncate text-[9px] md:text-[11px] font-serif" style={{ color: p.colorHex }}>{p.name}</h3>
+                                            <h3 className="font-bold truncate text-[9px] md:text-[11px] font-serif" style={{ color: p.colorHex }}>{p.name}</h3>
                                         </div>
                                         <div className={`flex justify-between text-[11px] md:text-[14px] font-bold font-cinzel ${isDarkMode ? 'text-stone-100' : 'text-stone-900'}`}>
                                             <div className="flex flex-col">
@@ -1061,7 +1070,6 @@ const App: React.FC = () => {
                                         <span className={`text-[11px] md:text-sm font-serif font-bold ${isDarkMode ? 'text-amber-500' : 'text-amber-900'}`}>{T.game.fromHand.bo}</span>
                                         <span className={`text-[11px] font-cinzel mt-1 font-bold ${isDarkMode ? 'text-stone-200' : 'text-stone-700'}`}>({players[turnIndex].coinsInHand})</span>
                                     </div>
-                                    {/* Fix: Replaced 's.gameMode' with 'gameMode' to use the correct state variable. */}
                                     {currentValidMovesList.length === 0 && phase === GamePhase.MOVING && !isRolling && paRaCount === 0 && isLocalTurn && gameMode !== GameMode.ONLINE_HOST && gameMode !== GameMode.ONLINE_GUEST && ( 
                                         <button onClick={() => { triggerHaptic(10); handleSkipTurn(); }} className="flex-1 bg-amber-800/50 hover:bg-amber-700 text-amber-200 border border-amber-600/50 p-1 rounded-xl font-bold flex flex-col items-center justify-center">
                                             <span className="text-[9px] uppercase font-cinzel">{T.game.skipTurn.en}</span>
