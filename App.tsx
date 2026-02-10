@@ -55,6 +55,7 @@ const SFX = {
   playStack: () => { SFX.playCoinClick(0, 1.0); SFX.playCoinClick(0.08, 1.1); },
   playKill: () => { SFX.playCoinClick(0, 0.8); SFX.playCoinClick(0.1, 0.9); SFX.playCoinClick(0.25, 0.85); },
   playFinish: () => { SFX.playCoinClick(0, 1.2); SFX.playCoinClick(0.1, 1.5); SFX.playCoinClick(0.2, 2.0); },
+  playPaRa: () => { SFX.playCoinClick(0, 2.0); SFX.playCoinClick(0.1, 2.2); },
   playBlocked: () => { 
     const ctx = SFX.getContext(); const t = ctx.currentTime;
     const osc1 = ctx.createOscillator(); const osc2 = ctx.createOscillator();
@@ -77,9 +78,7 @@ const SFX = {
     osc1.connect(gain); osc2.connect(gain); gain.connect(ctx.destination);
     osc1.start(t); osc2.start(t); noise.start(t);
     osc1.stop(t + 0.6); osc2.stop(t + 0.6); noise.stop(t + 0.6);
-  },
-  playBlockedSFX: () => { SFX.playBlocked(); },
-  playPaRa: () => { SFX.playCoinClick(0, 2.0); SFX.playCoinClick(0.1, 2.2); }
+  }
 };
 
 const getRandomDicePos = () => { const r = 35 + Math.random() * 45; const theta = Math.random() * Math.PI * 2; return { x: r * Math.cos(theta), y: r * Math.sin(theta), r: Math.random() * 360 }; };
@@ -220,6 +219,15 @@ const App: React.FC = () => {
     }
   }, [broadcastPacket]);
 
+  // Host auto-broadcast effect
+  useEffect(() => {
+    if (gameMode === GameMode.ONLINE_HOST) {
+        // Broadcast on state change to keep guest in sync
+        const timeout = setTimeout(broadcastFullSync, 50);
+        return () => clearTimeout(timeout);
+    }
+  }, [board, players, turnIndex, phase, winner, gameMode, broadcastFullSync]);
+
   useEffect(() => { 
     const growth = Math.floor((Date.now() - new Date('2024-01-01').getTime()) / (1000 * 60 * 15)); setGlobalPlayCount(prev => prev + growth); 
     const interval = setInterval(() => { if (Math.random() > 0.4) { setGlobalPlayCount(prev => prev + 1); setIsCounterPulsing(true); setTimeout(() => setIsCounterPulsing(false), 2000); } }, 60000);
@@ -264,8 +272,7 @@ const App: React.FC = () => {
         setPhase(GamePhase.ROLLING); setTurnIndex((prev) => (prev + 1) % players.length);
         addLog(`${players[turnIndex].name} skipped their turn.`, 'info');
     }
-    if (s.gameMode === GameMode.ONLINE_HOST) setTimeout(broadcastFullSync, 100);
-  }, [players, turnIndex, addLog, broadcastPacket, broadcastFullSync]);
+  }, [players, turnIndex, addLog, broadcastPacket]);
 
   const performRoll = useCallback(async (forcedRoll?: DiceRoll) => {
     const s = gameStateRef.current; 
@@ -296,7 +303,6 @@ const App: React.FC = () => {
             addLog(`TRIPLE PA RA! ${players[turnIndex].name} wins instantly!`, 'alert'); 
             setWinner(players[turnIndex]);
             setPhase(GamePhase.GAME_OVER); 
-            if (s.gameMode === GameMode.ONLINE_HOST) setTimeout(broadcastFullSync, 100);
             return; 
         }
         setPaRaCount(newCount); addLog(`PA RA (1,1)! Stacked bonuses: ${newCount}. Roll again.`, 'alert'); 
@@ -308,8 +314,7 @@ const App: React.FC = () => {
         setPendingMoveValues(movePool); setPaRaCount(0); setPhase(GamePhase.MOVING); 
     }
     if (s.gameMode === GameMode.TUTORIAL && s.tutorialStep === 2) setTutorialStep(3);
-    if (s.gameMode === GameMode.ONLINE_HOST) setTimeout(broadcastFullSync, 100);
-  }, [players, turnIndex, addLog, broadcastPacket, broadcastFullSync]);
+  }, [players, turnIndex, addLog, broadcastPacket]);
 
   const performMove = useCallback((sourceIdx: number, targetIdx: number, isRemote = false) => {
     const s = gameStateRef.current;
@@ -358,7 +363,6 @@ const App: React.FC = () => {
     if (newPlayers[s.turnIndex].coinsFinished >= COINS_PER_PLAYER) { 
         setWinner(newPlayers[s.turnIndex]);
         setPhase(GamePhase.GAME_OVER); 
-        if (s.gameMode === GameMode.ONLINE_HOST) setTimeout(broadcastFullSync, 100);
         return; 
     }
     const movesLeft = getAvailableMoves(s.turnIndex, nb, newPlayers, nextMoves, s.isNinerMode, s.isOpeningPaRa);
@@ -370,8 +374,7 @@ const App: React.FC = () => {
         else { setPhase(GamePhase.ROLLING); setTurnIndex((prev) => (prev + 1) % players.length); }
     } else setPendingMoveValues(nextMoves);
     if (s.gameMode === GameMode.TUTORIAL && s.tutorialStep === 3) setTutorialStep(4);
-    if (s.gameMode === GameMode.ONLINE_HOST) setTimeout(broadcastFullSync, 100);
-  }, [players, addLog, broadcastPacket, broadcastFullSync]);
+  }, [players, addLog, broadcastPacket]);
 
   const handleNetworkPacket = useCallback((packet: NetworkPacket) => {
     const s = gameStateRef.current;
@@ -387,32 +390,61 @@ const App: React.FC = () => {
         break;
       case 'JOIN_INFO':
         if (s.gameMode === GameMode.ONLINE_HOST) {
+            // Host receives Guest's name
+            const guestName = packet.payload.name;
+            const guestColor = packet.payload.color;
             setPlayers(prev => {
                 const next = [...prev];
-                // Update Guest Info
-                next[1] = { ...next[1], name: packet.payload.name, colorHex: packet.payload.color };
-                // Send Host info back to Guest for mutual handshake
+                next[1] = { ...next[1], name: guestName, colorHex: guestColor };
+                // Send Host info back to Guest immediately
                 broadcastPacket({ 
                     type: 'JOIN_INFO', 
                     payload: { name: next[0].name, color: next[0].colorHex } 
                 });
                 return next;
             });
-            addLog(`${packet.payload.name} joined the match!`, 'info');
-            setTimeout(broadcastFullSync, 400);
+            addLog(`${guestName} joined the match!`, 'info');
         } else if (s.gameMode === GameMode.ONLINE_GUEST) {
             // Guest receiving Host's name
+            const hostName = packet.payload.name;
+            const hostColor = packet.payload.color;
             setPlayers(prev => {
                 const next = [...prev];
-                next[0] = { ...next[0], name: packet.payload.name, colorHex: packet.payload.color };
+                next[0] = { ...next[0], name: hostName, colorHex: hostColor };
                 return next;
             });
-            addLog(`Connected to: ${packet.payload.name}`, 'info');
+            addLog(`Connected to: ${hostName}`, 'info');
         }
         break;
       case 'FULL_SYNC':
         if (packet.payload.board) setBoard(new Map(Object.entries(packet.payload.board).map(([k, v]) => [Number(k), v as any])));
-        if (packet.payload.players) setPlayers(packet.payload.players);
+        if (packet.payload.players) {
+            if (s.gameMode === GameMode.ONLINE_GUEST) {
+                setPlayers(prev => {
+                    const hostPlayer = packet.payload.players[0];
+                    const guestPlayerFromHost = packet.payload.players[1];
+                    const next = [...prev];
+                    
+                    // Always update Host's info
+                    next[0] = { ...next[0], ...hostPlayer };
+                    
+                    // Update own stats, but keep local name/color (Player 1 on Guest side is index 1)
+                    next[1] = { ...next[1], 
+                        coinsInHand: guestPlayerFromHost.coinsInHand, 
+                        coinsFinished: guestPlayerFromHost.coinsFinished 
+                    };
+                    
+                    // If Host actually has our name, update it just in case
+                    if (guestPlayerFromHost.name !== 'Opponent...' && guestPlayerFromHost.name !== 'Blue Player') {
+                        next[1].name = guestPlayerFromHost.name;
+                        next[1].colorHex = guestPlayerFromHost.colorHex;
+                    }
+                    return next;
+                });
+            } else {
+                setPlayers(packet.payload.players);
+            }
+        }
         if (packet.payload.turnIndex !== undefined) setTurnIndex(packet.payload.turnIndex);
         if (packet.payload.phase) setPhase(packet.payload.phase);
         if (packet.payload.winner) setWinner(packet.payload.winner);
@@ -423,7 +455,7 @@ const App: React.FC = () => {
         if (packet.payload.lastRoll) setLastRoll(packet.payload.lastRoll);
         break;
     }
-  }, [performRoll, performMove, handleSkipTurn, broadcastPacket, broadcastFullSync]);
+  }, [performRoll, performMove, handleSkipTurn, broadcastPacket]);
 
   const startOnlineHost = () => {
     setIsPeerConnecting(true);
@@ -444,8 +476,7 @@ const App: React.FC = () => {
         setGameMode(GameMode.ONLINE_HOST);
         // Initialize with Host name
         initializeGame({ name: getSafePlayerName(), color: selectedColor }, { name: 'Opponent...', color: '#3b82f6' });
-        addLog("Opponent joining...", 'info');
-        // We wait for Guest to send JOIN_INFO before full broadcast
+        addLog("Opponent connecting...", 'info');
       });
       conn.on('data', (data: any) => handleNetworkPacket(data));
       conn.on('close', () => resetToLobby());
@@ -474,8 +505,16 @@ const App: React.FC = () => {
         setActiveConnections(prev => [...prev, conn]);
         setOnlineLobbyStatus('CONNECTED');
         setGameMode(GameMode.ONLINE_GUEST);
+        
+        // Setup local name immediately so guest sees themselves correctly
+        setPlayers(prev => {
+            const next = [...prev];
+            next[1] = { ...next[1], name: getSafePlayerName(), colorHex: selectedColor };
+            return next;
+        });
+
         addLog("Syncing with host...", 'info');
-        // Guest sends their info immediately
+        // Guest sends their info immediately to start the handshake
         conn.send({ type: 'JOIN_INFO', payload: { name: getSafePlayerName(), color: selectedColor } });
       });
       conn.on('data', (data: any) => handleNetworkPacket(data));
