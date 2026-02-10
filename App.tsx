@@ -14,6 +14,8 @@ import { MenuOverlay } from './components/MenuOverlay';
 import { VictoryOverlay } from './components/VictoryOverlay';
 import { T } from './translations';
 
+const EXTERNAL_LOGO_URL = "https://lh3.googleusercontent.com/d/1Lyb1GJH5nupbq6Zvn1-tk9SS5K1eOJ30";
+
 const generatePlayers = (
     p1Settings: { name: string, color: string },
     p2Settings: { name: string, color: string }
@@ -699,6 +701,7 @@ const App: React.FC = () => {
                  <>
                    <div className="flex-grow flex flex-col items-center justify-center w-full max-w-md gap-6 animate-in fade-in duration-700">
                       <div className="flex flex-col items-center text-center">
+                          <img src={EXTERNAL_LOGO_URL} alt="Sho Logo" className="w-32 h-32 md:w-48 md:h-48 object-contain mb-4 drop-shadow-2xl animate-in zoom-in duration-1000" />
                           <h1 className={`flex items-center gap-6 mb-2 font-cinzel ${isDarkMode ? 'text-amber-500' : 'text-amber-900'}`}>
                               <span className="text-5xl md:text-7xl drop-shadow-[0_0_30px_rgba(245,158,11,0.4)]">{T.lobby.title.bo}</span>
                               <span className="text-3xl md:text-5xl tracking-widest drop-shadow-md">{T.lobby.title.en}</span>
@@ -755,6 +758,7 @@ const App: React.FC = () => {
                         </div>
                     </div>
                     <div className="flex flex-col items-center flex-shrink-0 w-full max-sm:px-4 mt-16 sm:mt-12">
+                        <img src={EXTERNAL_LOGO_URL} alt="Sho Logo" className="w-20 h-20 md:w-24 md:h-24 object-contain mb-2 drop-shadow-xl" />
                         <h1 className={`flex items-center gap-6 mb-1 font-cinzel ${isDarkMode ? 'text-amber-500' : 'text-amber-900'}`}>
                             <span className="text-3xl md:text-5xl drop-shadow-[0_0_20px_rgba(245,158,11,0.4)]">{T.lobby.title.bo}</span>
                             <span className="text-lg md:text-2xl tracking-widest drop-shadow-md">{T.lobby.title.en}</span>
@@ -956,6 +960,7 @@ const App: React.FC = () => {
                     <div className={`p-1.5 md:p-4 flex flex-col gap-0 md:gap-3 flex-shrink-0 ${isDarkMode ? 'bg-stone-950' : 'bg-white'} mobile-landscape-compact-stats`}>
                         <header className={`flex justify-between items-center border-b ${isDarkMode ? 'border-stone-800' : 'border-stone-200'} pb-1 md:pb-4`}>
                             <div className="flex items-center gap-2 cursor-pointer" onClick={resetToLobby}>
+                                <img src={EXTERNAL_LOGO_URL} alt="Logo" className="w-6 h-6 md:w-8 md:h-8 object-contain" />
                                 <h1 className={`font-cinzel text-[10px] md:text-sm ${isDarkMode ? 'text-amber-500' : 'text-amber-900'}`}>Sho</h1>
                             </div>
                             <div className="flex items-center gap-2 md:gap-4">
