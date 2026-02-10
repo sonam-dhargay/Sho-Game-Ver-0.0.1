@@ -26,7 +26,7 @@ export const ShoLogo: React.FC<{ className?: string }> = ({ className }) => {
           className="w-full h-auto object-contain drop-shadow-[0_15px_25px_rgba(0,0,0,0.8)]"
         />
         {/* Decorative Tibetan Character Overlay */}
-        <div className="absolute inset-0 flex items-center justify-center text-amber-900 font-cinzel text-6xl font-bold opacity-30 pointer-events-none select-none">
+        <div className="absolute inset-0 flex items-center justify-center text-amber-900 font-cinzel text-5xl font-bold opacity-30 pointer-events-none select-none">
            ཤོ
         </div>
       </div>
