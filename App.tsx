@@ -704,7 +704,7 @@ const App: React.FC = () => {
                           <img src={EXTERNAL_LOGO_URL} alt="Sho Logo" className="w-32 h-32 md:w-48 md:h-48 object-contain mb-4 drop-shadow-2xl animate-in zoom-in duration-1000" />
                           <h1 className={`flex items-center gap-6 mb-2 font-cinzel ${isDarkMode ? 'text-amber-500' : 'text-amber-900'}`}>
                               <span className="text-5xl md:text-7xl drop-shadow-[0_0_30px_rgba(245,158,11,0.4)]">{T.lobby.title.bo}</span>
-                              <span className="text-3xl md:text-5xl tracking-widest drop-shadow-md">{T.lobby.title.en}</span>
+                              <span className="text-2xl md:text-4xl tracking-widest drop-shadow-md">{T.lobby.title.en}</span>
                           </h1>
                           <div className={`h-px w-32 ${isDarkMode ? 'bg-amber-900/40' : 'bg-amber-700/20'} mb-3`} />
                           <div className="flex flex-col gap-1 mb-6">
