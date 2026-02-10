@@ -1023,7 +1023,7 @@ const App: React.FC = () => {
                                         <span className={`text-[11px] md:text-sm font-serif font-bold ${isDarkMode ? 'text-amber-500' : 'text-amber-900'}`}>{T.game.fromHand.bo}</span>
                                         <span className={`text-[11px] font-cinzel mt-1 font-bold ${isDarkMode ? 'text-stone-200' : 'text-stone-700'}`}>({players[turnIndex].coinsInHand})</span>
                                     </div>
-                                    {currentValidMovesList.length === 0 && phase === GamePhase.MOVING && !isRolling && paRaCount === 0 && isLocalTurn && ( 
+                                    {currentValidMovesList.length === 0 && phase === GamePhase.MOVING && !isRolling && paRaCount === 0 && isLocalTurn && gameMode !== GameMode.ONLINE_HOST && gameMode !== GameMode.ONLINE_GUEST && ( 
                                         <button onClick={() => { triggerHaptic(10); handleSkipTurn(); }} className="flex-1 bg-amber-800/50 hover:bg-amber-700 text-amber-200 border border-amber-600/50 p-1 rounded-xl font-bold flex flex-col items-center justify-center">
                                             <span className="text-[9px] uppercase font-cinzel">{T.game.skipTurn.en}</span>
                                             <span className="text-[10px] text-amber-500 font-serif leading-none">{T.game.skipTurn.bo}</span>
