@@ -210,7 +210,7 @@ const App: React.FC = () => {
   // Host broadcasts full state occasionally or after critical turns
   const broadcastFullSync = useCallback(() => {
     const s = gameStateRef.current;
-    if (gameMode === GameMode.ONLINE_HOST) {
+    if (s.gameMode === GameMode.ONLINE_HOST) {
         broadcastPacket({ 
             type: 'FULL_SYNC', 
             payload: {
@@ -219,7 +219,7 @@ const App: React.FC = () => {
             }
         });
     }
-  }, [gameMode, broadcastPacket]);
+  }, [broadcastPacket]);
 
   useEffect(() => { 
     const growth = Math.floor((Date.now() - new Date('2024-01-01').getTime()) / (1000 * 60 * 15)); setGlobalPlayCount(prev => prev + growth); 
@@ -257,7 +257,7 @@ const App: React.FC = () => {
     const s = gameStateRef.current;
     setPendingMoveValues([]);
     setIsOpeningPaRa(false);
-    if (!isRemote && (gameMode === GameMode.ONLINE_HOST || gameMode === GameMode.ONLINE_GUEST)) broadcastPacket({ type: 'SKIP_REQ' });
+    if (!isRemote && (s.gameMode === GameMode.ONLINE_HOST || s.gameMode === GameMode.ONLINE_GUEST)) broadcastPacket({ type: 'SKIP_REQ' });
     if (s.extraRolls > 0) {
         setExtraRolls(prev => prev - 1); setPhase(GamePhase.ROLLING);
         addLog(`${players[turnIndex].name} used an extra roll!`, 'info');
@@ -265,8 +265,8 @@ const App: React.FC = () => {
         setPhase(GamePhase.ROLLING); setTurnIndex((prev) => (prev + 1) % players.length);
         addLog(`${players[turnIndex].name} skipped their turn.`, 'info');
     }
-    if (gameMode === GameMode.ONLINE_HOST) setTimeout(broadcastFullSync, 100);
-  }, [players, turnIndex, addLog, gameMode, broadcastPacket, broadcastFullSync]);
+    if (s.gameMode === GameMode.ONLINE_HOST) setTimeout(broadcastFullSync, 100);
+  }, [players, turnIndex, addLog, broadcastPacket, broadcastFullSync]);
 
   const performRoll = useCallback(async (forcedRoll?: DiceRoll) => {
     const s = gameStateRef.current; 
@@ -375,6 +375,7 @@ const App: React.FC = () => {
   }, [players, addLog, broadcastPacket, broadcastFullSync]);
 
   const handleNetworkPacket = useCallback((packet: NetworkPacket) => {
+    const s = gameStateRef.current;
     switch (packet.type) {
       case 'ROLL_REQ':
         performRoll(packet.payload);
@@ -384,6 +385,17 @@ const App: React.FC = () => {
         break;
       case 'SKIP_REQ':
         handleSkipTurn(true);
+        break;
+      case 'JOIN_INFO':
+        if (s.gameMode === GameMode.ONLINE_HOST) {
+            setPlayers(prev => {
+                const next = [...prev];
+                next[1] = { ...next[1], name: packet.payload.name, colorHex: packet.payload.color };
+                return next;
+            });
+            addLog(`${packet.payload.name} joined the match!`, 'info');
+            setTimeout(broadcastFullSync, 200);
+        }
         break;
       case 'FULL_SYNC':
         if (packet.payload.board) setBoard(new Map(Object.entries(packet.payload.board).map(([k, v]) => [Number(k), v as any])));
@@ -398,7 +410,7 @@ const App: React.FC = () => {
         if (packet.payload.lastRoll) setLastRoll(packet.payload.lastRoll);
         break;
     }
-  }, [performRoll, performMove, handleSkipTurn]);
+  }, [performRoll, performMove, handleSkipTurn, broadcastFullSync]);
 
   const startOnlineHost = () => {
     setIsPeerConnecting(true);
@@ -419,7 +431,7 @@ const App: React.FC = () => {
         setGameMode(GameMode.ONLINE_HOST);
         initializeGame({ name: getSafePlayerName(), color: selectedColor }, { name: 'Guest', color: '#3b82f6' });
         addLog("Opponent joined!", 'alert');
-        setTimeout(broadcastFullSync, 200);
+        setTimeout(broadcastFullSync, 400);
       });
       conn.on('data', (data: any) => handleNetworkPacket(data));
       conn.on('close', () => resetToLobby());
@@ -449,6 +461,8 @@ const App: React.FC = () => {
         setOnlineLobbyStatus('CONNECTED');
         setGameMode(GameMode.ONLINE_GUEST);
         addLog("Connected to host!", 'alert');
+        // Send our local name and color to the host immediately
+        conn.send({ type: 'JOIN_INFO', payload: { name: getSafePlayerName(), color: selectedColor } });
       });
       conn.on('data', (data: any) => handleNetworkPacket(data));
       conn.on('error', (err) => {
@@ -987,6 +1001,7 @@ const App: React.FC = () => {
                                 <h1 className={`font-cinzel text-[10px] md:text-sm ${isDarkMode ? 'text-amber-500' : 'text-amber-900'}`}>Sho</h1>
                             </div>
                             <div className="flex items-center gap-2 md:gap-4">
+                                {/* Fix: Replaced 's.gameMode' with 'gameMode' to use the correct state variable. */}
                                 {(gameMode === GameMode.ONLINE_HOST || gameMode === GameMode.ONLINE_GUEST) && (
                                     <button 
                                         onClick={toggleMic}
@@ -1046,6 +1061,7 @@ const App: React.FC = () => {
                                         <span className={`text-[11px] md:text-sm font-serif font-bold ${isDarkMode ? 'text-amber-500' : 'text-amber-900'}`}>{T.game.fromHand.bo}</span>
                                         <span className={`text-[11px] font-cinzel mt-1 font-bold ${isDarkMode ? 'text-stone-200' : 'text-stone-700'}`}>({players[turnIndex].coinsInHand})</span>
                                     </div>
+                                    {/* Fix: Replaced 's.gameMode' with 'gameMode' to use the correct state variable. */}
                                     {currentValidMovesList.length === 0 && phase === GamePhase.MOVING && !isRolling && paRaCount === 0 && isLocalTurn && gameMode !== GameMode.ONLINE_HOST && gameMode !== GameMode.ONLINE_GUEST && ( 
                                         <button onClick={() => { triggerHaptic(10); handleSkipTurn(); }} className="flex-1 bg-amber-800/50 hover:bg-amber-700 text-amber-200 border border-amber-600/50 p-1 rounded-xl font-bold flex flex-col items-center justify-center">
                                             <span className="text-[9px] uppercase font-cinzel">{T.game.skipTurn.en}</span>
