@@ -207,6 +207,20 @@ const App: React.FC = () => {
     });
   }, []);
 
+  // Host broadcasts full state occasionally or after critical turns
+  const broadcastFullSync = useCallback(() => {
+    const s = gameStateRef.current;
+    if (gameMode === GameMode.ONLINE_HOST) {
+        broadcastPacket({ 
+            type: 'FULL_SYNC', 
+            payload: {
+                ...s,
+                board: Object.fromEntries(s.board) // Map needs conversion for JSON
+            }
+        });
+    }
+  }, [gameMode, broadcastPacket]);
+
   useEffect(() => { 
     const growth = Math.floor((Date.now() - new Date('2024-01-01').getTime()) / (1000 * 60 * 15)); setGlobalPlayCount(prev => prev + growth); 
     const interval = setInterval(() => { if (Math.random() > 0.4) { setGlobalPlayCount(prev => prev + 1); setIsCounterPulsing(true); setTimeout(() => setIsCounterPulsing(false), 2000); } }, 60000);
@@ -251,7 +265,8 @@ const App: React.FC = () => {
         setPhase(GamePhase.ROLLING); setTurnIndex((prev) => (prev + 1) % players.length);
         addLog(`${players[turnIndex].name} skipped their turn.`, 'info');
     }
-  }, [players, turnIndex, addLog, gameMode, broadcastPacket]);
+    if (gameMode === GameMode.ONLINE_HOST) setTimeout(broadcastFullSync, 100);
+  }, [players, turnIndex, addLog, gameMode, broadcastPacket, broadcastFullSync]);
 
   const performRoll = useCallback(async (forcedRoll?: DiceRoll) => {
     const s = gameStateRef.current; 
@@ -282,6 +297,7 @@ const App: React.FC = () => {
             addLog(`TRIPLE PA RA! ${players[turnIndex].name} wins instantly!`, 'alert'); 
             setWinner(players[turnIndex]);
             setPhase(GamePhase.GAME_OVER); 
+            if (s.gameMode === GameMode.ONLINE_HOST) setTimeout(broadcastFullSync, 100);
             return; 
         }
         setPaRaCount(newCount); addLog(`PA RA (1,1)! Stacked bonuses: ${newCount}. Roll again.`, 'alert'); 
@@ -289,12 +305,12 @@ const App: React.FC = () => {
     } else { 
         const isOpening = players[s.turnIndex].coinsInHand === COINS_PER_PLAYER;
         if (s.paRaCount > 0 && isOpening) { setIsOpeningPaRa(true); addLog(`OPENING PA RA! You can place 3 coins!`, 'alert'); }
-        // Each Pa Ra contributes exactly one '2' to the movement pool as a bonus roll value.
         const movePool = [...Array(s.paRaCount).fill(2), total];
         setPendingMoveValues(movePool); setPaRaCount(0); setPhase(GamePhase.MOVING); 
     }
     if (s.gameMode === GameMode.TUTORIAL && s.tutorialStep === 2) setTutorialStep(3);
-  }, [players, turnIndex, addLog, broadcastPacket]);
+    if (s.gameMode === GameMode.ONLINE_HOST) setTimeout(broadcastFullSync, 100);
+  }, [players, turnIndex, addLog, broadcastPacket, broadcastFullSync]);
 
   const performMove = useCallback((sourceIdx: number, targetIdx: number, isRemote = false) => {
     const s = gameStateRef.current;
@@ -343,6 +359,7 @@ const App: React.FC = () => {
     if (newPlayers[s.turnIndex].coinsFinished >= COINS_PER_PLAYER) { 
         setWinner(newPlayers[s.turnIndex]);
         setPhase(GamePhase.GAME_OVER); 
+        if (s.gameMode === GameMode.ONLINE_HOST) setTimeout(broadcastFullSync, 100);
         return; 
     }
     const movesLeft = getAvailableMoves(s.turnIndex, nb, newPlayers, nextMoves, s.isNinerMode, s.isOpeningPaRa);
@@ -354,7 +371,8 @@ const App: React.FC = () => {
         else { setPhase(GamePhase.ROLLING); setTurnIndex((prev) => (prev + 1) % players.length); }
     } else setPendingMoveValues(nextMoves);
     if (s.gameMode === GameMode.TUTORIAL && s.tutorialStep === 3) setTutorialStep(4);
-  }, [players, addLog, broadcastPacket]);
+    if (s.gameMode === GameMode.ONLINE_HOST) setTimeout(broadcastFullSync, 100);
+  }, [players, addLog, broadcastPacket, broadcastFullSync]);
 
   const handleNetworkPacket = useCallback((packet: NetworkPacket) => {
     switch (packet.type) {
@@ -373,6 +391,11 @@ const App: React.FC = () => {
         if (packet.payload.turnIndex !== undefined) setTurnIndex(packet.payload.turnIndex);
         if (packet.payload.phase) setPhase(packet.payload.phase);
         if (packet.payload.winner) setWinner(packet.payload.winner);
+        if (packet.payload.pendingMoveValues) setPendingMoveValues(packet.payload.pendingMoveValues);
+        if (packet.payload.paRaCount !== undefined) setPaRaCount(packet.payload.paRaCount);
+        if (packet.payload.extraRolls !== undefined) setExtraRolls(packet.payload.extraRolls);
+        if (packet.payload.isOpeningPaRa !== undefined) setIsOpeningPaRa(packet.payload.isOpeningPaRa);
+        if (packet.payload.lastRoll) setLastRoll(packet.payload.lastRoll);
         break;
     }
   }, [performRoll, performMove, handleSkipTurn]);
@@ -396,7 +419,7 @@ const App: React.FC = () => {
         setGameMode(GameMode.ONLINE_HOST);
         initializeGame({ name: getSafePlayerName(), color: selectedColor }, { name: 'Guest', color: '#3b82f6' });
         addLog("Opponent joined!", 'alert');
-        conn.send({ type: 'FULL_SYNC', payload: gameStateRef.current });
+        setTimeout(broadcastFullSync, 200);
       });
       conn.on('data', (data: any) => handleNetworkPacket(data));
       conn.on('close', () => resetToLobby());
@@ -406,7 +429,6 @@ const App: React.FC = () => {
       console.error(err);
       setIsPeerConnecting(false);
       if (err.type === 'unavailable-id') {
-          // If code collision, try again once
           startOnlineHost();
       } else {
           addLog("Peer connection error.", "alert");
@@ -512,7 +534,8 @@ const App: React.FC = () => {
 
   const currentValidMovesList = phase === GamePhase.MOVING ? getAvailableMoves(turnIndex, board, players, pendingMoveValues, isNinerMode, isOpeningPaRa) : [];
   const visualizedMoves = selectedSourceIndex !== null ? currentValidMovesList.filter(m => m.sourceIndex === selectedSourceIndex) : [];
-  const shouldHighlightHand = phase === GamePhase.MOVING && players[turnIndex].coinsInHand > 0;
+  // Pulsing 'From Hand' should only happen if moves are actually available for it
+  const shouldHighlightHand = phase === GamePhase.MOVING && players[turnIndex].coinsInHand > 0 && currentValidMovesList.some(m => m.sourceIndex === 0);
   
   const isLocalTurn = (() => {
     if (gameMode === GameMode.ONLINE_HOST) return turnIndex === 0;
