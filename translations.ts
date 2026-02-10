@@ -13,10 +13,6 @@ export const T = {
     settings: { en: "Settings", bo: "བཀོད་སྒྲིག" },
     developedBy: { en: "Developed by Lungta Labs.", bo: "རླུང་རྟ་ཚོད་ལྟ་ཁང་གིས་གསར་བཟོ་བྱས།" },
     copyright: { en: "© 2026 Lungta Labs. All rights reserved.", bo: "© ༢༠༢༦ རླུང་རྟ་ཚོད་ལྟ་ཁང་། བདག་དབང་ཆ་ཚང་ཡོད།" },
-    contact: { 
-      en: "Send questions and comments about this app to: lungta.labs@gmail.com", 
-      bo: "འདི་གའི་སྐོར་གྱི་དྲི་བ་དང་བསམ་འཆར་རྣམས་ lungta.labs@gmail.com ལ་བསྐུར་གནང་།" 
-    },
     version: { en: "Version 1.0.0", bo: "ཐོན་རིམ་ ༡.༠.༠" },
     released: { en: "Released 2026", bo: "༢༠༢༦ ལོར་འགྲེམས་སྤེལ་བྱས།" },
     thanks: { 
@@ -51,6 +47,7 @@ export const T = {
     hostInstruction: { en: "Click below to generate a room code, then send it to your opponent.", bo: "གཤམ་གྱི་མཐེབ་ཅི་མནན་ནས་ཁང་བའི་ཨང་གྲངས་བཟོས་རྗེས་ཁ་གཏད་ལ་ཐོང་།" },
     joinHeader: { en: "Join a Match", bo: "རྩེད་མོར་ཞུགས་པ།" },
     joinInstruction: { en: "Enter the room code shared by your opponent.", bo: "ཁ་གཏད་ཀྱྱིས་བསྐུར་བའི་ཁང་བའི་ཨང་གྲངས་དེ་འདི་རུ་བྲིས།" },
+    waiting: { en: "Waiting for Guest...", bo: "མགྲོན་པོར་སྒུག་བཞུགས་..." }
   },
   auth: {
     gateTitle: { en: "Play Multi-Player", bo: "རྩེད་མོ་བ་གྲངས་མང་གི་རྩེད་མོ་ལ་རོལ་ཅིག" },
@@ -156,7 +153,7 @@ export const T = {
       {
         title: { en: "The Pa Ra Rule", bo: "པ་རའི་སྒྲིག་གཞི།" },
         text: { en: "If you roll a 1 and 1, it's called 'Pa Ra'. You get a bonus roll immediately!", bo: "གལ་ཏེ་ཤོ་མིག་ ༡ དང་ ༡ བབས་ན་'པ་ར་'ཟེར། ཁྱེད་ལ་ཤོ་ཐེངས་གཅིག་བསྐྱར་དུ་རྒྱག་རྒྱུའི་གོ་སྐབས་ཐོབ།" },
-        action: { en: "Finish Tutorial", bo: "མྱུར་ཁྲིད་མཇུག་བསྡུ་བའོ།" }
+        action: { en: "Finish Tutorial", bo: "མྱུར་ཁྲིད་ mjug-bsdu-ba'o." }
       }
     ]
   }

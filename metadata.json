@@ -1,6 +1,6 @@
 {
   "name": "Sho -The Tibetan Dice Game",
-  "description": "A digital prototype of the traditional Tibetan dice game Sho, featuring spiral board mechanics, coin stacking, and the unique Pa Ra (Snake Eyes) rules.",
+  "description": "A digital prototype of the traditional Tibetan dice game Sho, featuring spiral board mechanics, coin stacking, and local pass-and-play multiplayer.",
   "requestFramePermissions": [
     "microphone"
   ],

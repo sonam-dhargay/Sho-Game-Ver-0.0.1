@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { T } from '../translations';
 
@@ -35,7 +34,7 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
               <h2 className={`text-2xl font-cinzel ${isDarkMode ? 'text-amber-500' : 'text-amber-700'} font-bold`}>{T.menu.about.en}</h2>
             </header>
             
-            <div className="flex flex-col items-center gap-6 text-center overflow-y-auto max-h-[60vh] no-scrollbar px-1">
+            <div className="flex flex-col items-center gap-6 text-center">
               <div className="space-y-1">
                 <h3 className={`text-xl font-cinzel ${isDarkMode ? 'text-white' : 'text-stone-900'} font-bold leading-tight`}>
                   {T.lobby.title.en} — {T.lobby.subtitle.en}
@@ -48,15 +47,6 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
               <div className="space-y-1">
                 <p className={`${isDarkMode ? 'text-stone-300' : 'text-stone-700'} text-sm font-medium`}>{T.menu.developedBy.en}</p>
                 <p className="text-stone-500 text-xs font-serif">{T.menu.developedBy.bo}</p>
-              </div>
-
-              <div className="space-y-2 py-2 border-y border-stone-800/30 w-full">
-                <p className={`${isDarkMode ? 'text-stone-400' : 'text-stone-600'} text-xs font-medium`}>
-                  {T.menu.contact.en}
-                </p>
-                <p className="text-stone-500 text-[11px] font-serif">
-                  {T.menu.contact.bo}
-                </p>
               </div>
 
               <div className="space-y-1">
@@ -73,7 +63,7 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
                 </p>
               </div>
               
-              <div className={`mt-4 pt-4 border-t ${isDarkMode ? 'border-stone-800' : 'border-stone-200'} w-full`}>
+              <div className={`mt-6 pt-6 border-t ${isDarkMode ? 'border-stone-800' : 'border-stone-200'} w-full`}>
                 <p className={`${isDarkMode ? 'text-stone-300' : 'text-stone-600'} text-sm leading-relaxed px-4 italic`}>
                   {T.menu.thanks.en}
                 </p>

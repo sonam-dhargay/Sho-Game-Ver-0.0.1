@@ -34,6 +34,15 @@ const triggerHaptic = (pattern: number | number[]) => {
   }
 };
 
+const generateShortCode = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // No confusing O, 0, I, 1
+    let result = '';
+    for (let i = 0; i < 6; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+};
+
 const SFX = {
   ctx: null as AudioContext | null,
   getContext: () => { if (!SFX.ctx) { SFX.ctx = new (window.AudioContext || (window as any).webkitAudioContext)(); } if (SFX.ctx.state === 'suspended') SFX.ctx.resume(); return SFX.ctx; },
@@ -171,7 +180,7 @@ const App: React.FC = () => {
   const [activeConnections, setActiveConnections] = useState<DataConnection[]>([]);
   const connectionsRef = useRef<DataConnection[]>([]);
   const [myPeerId, setMyPeerId] = useState<string>('');
-  const [joinCode, setJoinCode] = useState('');
+  const [joinCodeInput, setJoinCodeInput] = useState<string>('');
   const [isPeerConnecting, setIsPeerConnecting] = useState(false);
   const [onlineLobbyStatus, setOnlineLobbyStatus] = useState<'IDLE' | 'WAITING' | 'CONNECTED'>('IDLE');
   const [isMicActive, setIsMicActive] = useState(false);
@@ -215,12 +224,12 @@ const App: React.FC = () => {
     if (peer) peer.destroy();
     setGameMode(null);
     setOnlineLobbyStatus('IDLE');
+    setMyPeerId('');
+    setJoinCodeInput('');
+    setIsPeerConnecting(false);
     setTutorialStep(0);
     setPhase(GamePhase.ROLLING);
     setWinner(null);
-    setMyPeerId('');
-    setJoinCode('');
-    setIsPeerConnecting(false);
   }, [peer]);
 
   useEffect(() => {
@@ -278,6 +287,7 @@ const App: React.FC = () => {
     } else { 
         const isOpening = players[s.turnIndex].coinsInHand === COINS_PER_PLAYER;
         if (s.paRaCount > 0 && isOpening) { setIsOpeningPaRa(true); addLog(`OPENING PA RA! You can place 3 coins!`, 'alert'); }
+        // Each Pa Ra contributes exactly one '2' to the movement pool as a bonus roll value.
         const movePool = [...Array(s.paRaCount).fill(2), total];
         setPendingMoveValues(movePool); setPaRaCount(0); setPhase(GamePhase.MOVING); 
     }
@@ -365,6 +375,73 @@ const App: React.FC = () => {
     }
   }, [performRoll, performMove, handleSkipTurn]);
 
+  const startOnlineHost = () => {
+    setIsPeerConnecting(true);
+    const shortCode = generateShortCode();
+    const newPeer = new Peer(shortCode);
+    setPeer(newPeer);
+    
+    newPeer.on('open', (id) => {
+      setMyPeerId(id);
+      setIsPeerConnecting(false);
+      addLog(`Room ID: ${id}. Waiting for opponent...`, 'info');
+    });
+    
+    newPeer.on('connection', (conn) => {
+      conn.on('open', () => {
+        setActiveConnections(prev => [...prev, conn]);
+        setOnlineLobbyStatus('CONNECTED');
+        setGameMode(GameMode.ONLINE_HOST);
+        initializeGame({ name: getSafePlayerName(), color: selectedColor }, { name: 'Guest', color: '#3b82f6' });
+        addLog("Opponent joined!", 'alert');
+        conn.send({ type: 'FULL_SYNC', payload: gameStateRef.current });
+      });
+      conn.on('data', (data: any) => handleNetworkPacket(data));
+      conn.on('close', () => resetToLobby());
+    });
+    
+    newPeer.on('error', (err) => {
+      console.error(err);
+      setIsPeerConnecting(false);
+      if (err.type === 'unavailable-id') {
+          // If code collision, try again once
+          startOnlineHost();
+      } else {
+          addLog("Peer connection error.", "alert");
+      }
+    });
+  };
+
+  const joinOnlineMatch = (code: string) => {
+    if (!code || code.length < 4) return;
+    setIsPeerConnecting(true);
+    const newPeer = new Peer();
+    setPeer(newPeer);
+    
+    newPeer.on('open', () => {
+      const conn = newPeer.connect(code.toUpperCase());
+      conn.on('open', () => {
+        setActiveConnections(prev => [...prev, conn]);
+        setOnlineLobbyStatus('CONNECTED');
+        setGameMode(GameMode.ONLINE_GUEST);
+        addLog("Connected to host!", 'alert');
+      });
+      conn.on('data', (data: any) => handleNetworkPacket(data));
+      conn.on('error', (err) => {
+          console.error(err);
+          setIsPeerConnecting(false);
+          addLog("Could not connect to room.", "alert");
+      });
+      conn.on('close', () => resetToLobby());
+    });
+
+    newPeer.on('error', (err) => {
+        console.error(err);
+        setIsPeerConnecting(false);
+        addLog("Networking error.", "alert");
+    });
+  };
+
   const handleAuthSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     triggerHaptic(15);
@@ -395,79 +472,6 @@ const App: React.FC = () => {
       return;
     }
     setOnlineLobbyStatus('WAITING');
-  };
-
-  const startOnlineHost = () => {
-    const generateCode = () => Math.floor(100000 + Math.random() * 900000).toString();
-    const shortId = generateCode();
-    
-    const initPeer = (id: string) => {
-      const newPeer = new Peer(id);
-      setPeer(newPeer);
-      
-      newPeer.on('open', (openedId) => {
-        setMyPeerId(openedId);
-        addLog(`Room Created: ${openedId}`, 'info');
-      });
-
-      newPeer.on('connection', (conn) => {
-        conn.on('open', () => {
-          setActiveConnections(prev => [...prev, conn]);
-          setOnlineLobbyStatus('CONNECTED');
-          setGameMode(GameMode.ONLINE_HOST);
-          initializeGame({ name: getSafePlayerName(), color: selectedColor }, { name: 'Opponent', color: '#3b82f6' });
-          addLog("Opponent joined!", 'alert');
-          conn.send({ type: 'FULL_SYNC', payload: gameStateRef.current });
-        });
-        conn.on('data', (data: any) => handleNetworkPacket(data));
-      });
-
-      newPeer.on('error', (err: any) => {
-        if (err.type === 'id-taken') {
-          newPeer.destroy();
-          initPeer(generateCode());
-        } else {
-          console.error(err);
-          addLog("Connection error.", "alert");
-          setIsPeerConnecting(false);
-        }
-      });
-    };
-
-    initPeer(shortId);
-  };
-
-  const joinOnlineMatch = (code: string) => {
-    if (!code || code.length !== 6) {
-        addLog("Enter a valid 6-digit code.", "alert");
-        return;
-    }
-    setIsPeerConnecting(true);
-    const newPeer = new Peer();
-    setPeer(newPeer);
-    
-    newPeer.on('open', () => {
-      const conn = newPeer.connect(code);
-      conn.on('open', () => {
-        setActiveConnections([conn]);
-        setOnlineLobbyStatus('CONNECTED');
-        setGameMode(GameMode.ONLINE_GUEST);
-        addLog("Connected to host!", "alert");
-        setIsPeerConnecting(false);
-      });
-      conn.on('data', (data: any) => handleNetworkPacket(data));
-      conn.on('error', (err) => {
-          console.error(err);
-          addLog("Could not connect to room.", "alert");
-          setIsPeerConnecting(false);
-          newPeer.destroy();
-      });
-    });
-
-    newPeer.on('error', (err) => {
-        console.error(err);
-        setIsPeerConnecting(false);
-    });
   };
 
   const handleTutorialNext = () => {
@@ -551,8 +555,6 @@ const App: React.FC = () => {
           .animate-gold-pulse { animation: goldPulse 2s ease-in-out infinite; }
           @keyframes micPulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.2); } }
           .animate-mic-active { animation: micPulse 1.5s ease-in-out infinite; }
-          @keyframes glowCode { 0%, 100% { text-shadow: 0 0 5px rgba(245, 158, 11, 0.4); } 50% { text-shadow: 0 0 15px rgba(245, 158, 11, 0.8); } }
-          .animate-glow-code { animation: glowCode 2s infinite; }
         `}} />
         {phase === GamePhase.SETUP && gameMode !== null && <div className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center p-4 text-amber-500 font-cinzel text-xl animate-pulse">Initializing འགོ་འཛུགས་བཞིན་པ...</div>}
         <RulesModal isOpen={showRules} onClose={() => { triggerHaptic(10); setShowRules(false); }} isNinerMode={isNinerMode} onToggleNinerMode={() => { triggerHaptic(15); setIsNinerMode(prev => !prev); }} isDarkMode={isDarkMode} />
@@ -642,6 +644,10 @@ const App: React.FC = () => {
                   {T.common.cancel.en} <span className="font-serif ml-1">{T.common.cancel.bo}</span>
                 </button>
               </div>
+              <div className="pt-6 border-t border-stone-800">
+                <p className="text-stone-600 text-[10px] uppercase tracking-wider font-bold">{T.auth.gateHint.en}</p>
+                <p className="text-stone-700 text-[11px] font-serif mt-1">{T.auth.gateHint.bo}</p>
+              </div>
             </div>
           </div>
         )}
@@ -654,6 +660,27 @@ const App: React.FC = () => {
                 <h2 className={`text-4xl font-cinzel ${isDarkMode ? 'text-white' : 'text-stone-900'} mb-1 font-bold tracking-[0.2em]`}>{T.pro.title.en}</h2>
                 <div className="text-lg font-serif text-amber-600 mb-2">{T.pro.title.bo}</div>
                 <div className="h-0.5 w-16 bg-amber-600 mb-6" />
+                <div className="flex flex-col gap-1 text-center mb-10">
+                  <p className={`${isDarkMode ? 'text-stone-400' : 'text-stone-600'} text-sm font-serif italic`}>{T.pro.desc.en}</p>
+                  <p className="text-stone-500 text-xs font-serif">{T.pro.desc.bo}</p>
+                </div>
+                <ul className="w-full space-y-4 mb-12">
+                  {[
+                    { icon: '🌐', key: 'feat1' },
+                    { icon: '🎙️', key: 'feat2' },
+                    { icon: '☁️', key: 'feat3' },
+                    { icon: '💎', key: 'feat4' },
+                    { icon: '✨', key: 'feat5' }
+                  ].map((feat, idx) => (
+                    <li key={idx} className={`flex items-center gap-4 ${isDarkMode ? 'text-stone-200' : 'text-stone-700'} font-bold`}>
+                      <span className={`w-8 h-8 rounded-lg ${isDarkMode ? 'bg-stone-800' : 'bg-white border border-stone-200'} flex items-center justify-center flex-shrink-0`}>{feat.icon}</span>
+                      <div className="flex flex-col">
+                        <span className="uppercase tracking-widest text-[10px]">{T.pro[feat.key].en}</span>
+                        <span className="text-[11px] font-serif text-stone-500 leading-tight">{T.pro[feat.key].bo}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
                 <button onClick={() => { triggerHaptic(25); setIsPro(true); setIsProUpgradeOpen(false); setOnlineLobbyStatus('WAITING'); addLog("Upgraded to PRO! Welcome to the elite.", 'alert'); }} className="w-full py-5 bg-gradient-to-r from-amber-700 via-amber-500 to-amber-700 bg-[length:200%_auto] hover:bg-right transition-all duration-500 text-white font-bold rounded-2xl shadow-[0_0_25px_rgba(217,119,6,0.4)] animate-gold-pulse flex flex-col items-center">
                   <span className="uppercase tracking-[0.3em]">{T.pro.upgrade.en}</span>
                   <span className="font-serif text-sm mt-0.5">{T.pro.upgrade.bo}</span>
@@ -677,6 +704,10 @@ const App: React.FC = () => {
                               <span className="text-3xl md:text-5xl tracking-widest drop-shadow-md">{T.lobby.title.en}</span>
                           </h1>
                           <div className={`h-px w-32 ${isDarkMode ? 'bg-amber-900/40' : 'bg-amber-700/20'} mb-3`} />
+                          <div className="flex flex-col gap-1 mb-6">
+                              <p className={`${isDarkMode ? 'text-stone-400' : 'text-stone-500'} tracking-[0.3em] uppercase text-xs md:text-sm font-bold`}>{T.lobby.subtitle.en}</p>
+                              <p className={`${isDarkMode ? 'text-stone-500' : 'text-stone-600'} font-serif text-2xl md:text-3xl leading-tight text-center`}>{T.lobby.subtitle.bo}</p>
+                          </div>
                       </div>
                       <div className="w-full flex flex-col gap-4 mt-2 px-4">
                           <button onClick={() => { triggerHaptic(15); setIsSplashVisible(false); }} className="w-full py-4 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-2xl transition-all shadow-lg flex flex-col items-center justify-center">
@@ -728,11 +759,16 @@ const App: React.FC = () => {
                             <span className="text-3xl md:text-5xl drop-shadow-[0_0_20px_rgba(245,158,11,0.4)]">{T.lobby.title.bo}</span>
                             <span className="text-lg md:text-2xl tracking-widest drop-shadow-md">{T.lobby.title.en}</span>
                         </h1>
+                        <div className={`h-px w-32 ${isDarkMode ? 'bg-amber-900/40' : 'bg-amber-700/30'} mb-2`} />
+                        <div className="flex flex-col items-center">
+                            <p className={`${isDarkMode ? 'text-stone-400' : 'text-stone-500'} tracking-[0.3em] uppercase text-[10px] md:text-xs text-center font-bold leading-none`}>{T.lobby.subtitle.en}</p>
+                            <p className={`${isDarkMode ? 'text-stone-500' : 'text-stone-600'} font-serif text-2xl md:text-3xl mt-1 leading-tight text-center`}>{T.lobby.subtitle.bo}</p>
+                        </div>
                     </div>
                     <div className="flex-grow flex flex-col items-center justify-center w-full max-w-md gap-4 md:gap-8 my-2 md:my-4">
                         <div className={`w-full ${isDarkMode ? 'bg-stone-900/30' : 'bg-white/80'} p-5 md:p-8 rounded-[3rem] border border-stone-800/20 backdrop-blur-2xl shadow-2xl`}>
-                            <div className="mb-6">
-                                <label className="text-stone-500 text-[10px] uppercase block mb-3 tracking-widest font-bold px-1 text-center">
+                            <div className="mb-6 text-center">
+                                <label className="text-stone-500 text-[10px] uppercase block mb-3 tracking-widest font-bold px-1">
                                     {T.lobby.nameLabel.en} <span className="text-stone-600 font-serif ml-1">{T.lobby.nameLabel.bo}</span>
                                 </label>
                                 <input 
@@ -766,6 +802,10 @@ const App: React.FC = () => {
                                         <h3 className={`text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest leading-none ${isDarkMode ? 'text-amber-100' : 'text-amber-800'}`}>{T.lobby.modeLocal.en}</h3>
                                         <span className="text-[10px] font-serif mt-0.5">{T.lobby.modeLocal.bo}</span>
                                     </div>
+                                    <div className="flex flex-col items-center gap-0.5">
+                                      <span className="text-[10px] text-stone-400 font-bold uppercase tracking-widest leading-none">{T.lobby.modeLocalSub.en}</span>
+                                      <span className="text-[9px] text-stone-500 font-serif">{T.lobby.modeLocalSub.bo}</span>
+                                    </div>
                                 </button>
                                 <button 
                                     className={`border-2 ${isDarkMode ? 'bg-amber-900/20 border-amber-800/40' : 'bg-amber-50 border-amber-200'} p-4 md:p-6 rounded-[2rem] hover:border-amber-500/80 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 md:gap-2 relative overflow-hidden`} 
@@ -777,81 +817,104 @@ const App: React.FC = () => {
                                         <h3 className={`text-xs md:text-sm font-bold uppercase font-cinzel tracking-widest leading-none ${isDarkMode ? 'text-amber-100' : 'text-amber-800'}`}>{T.lobby.modeMulti.en}</h3>
                                         <span className="text-[10px] font-serif mt-0.5">{T.lobby.modeMulti.bo}</span>
                                     </div>
+                                    <div className="flex flex-col items-center gap-0.5">
+                                      <span className="text-[10px] text-stone-400 font-bold uppercase tracking-widest leading-none text-center px-1">{T.lobby.modeMultiSub.en}</span>
+                                      <span className="text-[9px] text-stone-500 font-serif">{T.lobby.modeMultiSub.bo}</span>
+                                    </div>
                                 </button>
                             </div>
                         ) : (
                             <div className={`w-full ${isDarkMode ? 'bg-stone-900/50' : 'bg-white'} border-2 border-amber-700/50 p-6 md:p-10 rounded-[3rem] animate-in fade-in zoom-in duration-300 max-h-[70vh] overflow-y-auto no-scrollbar`}>
                                 <div className="flex flex-col items-center gap-8">
-                                    <h3 className="text-2xl font-cinzel text-amber-500 text-center">
-                                        {T.lobby.roomLobbyTitle.en} <br/>
-                                        <span className="font-serif text-lg">{T.lobby.roomLobbyTitle.bo}</span>
+                                    <h3 className="text-xl md:text-2xl font-cinzel text-amber-500 text-center">
+                                        {T.lobby.roomLobbyTitle.en} <div className="font-serif text-lg mt-1">{T.lobby.roomLobbyTitle.bo}</div>
                                     </h3>
                                     
-                                    <div className="flex flex-col gap-10 w-full">
+                                    <div className="flex flex-col gap-8 w-full">
                                         {/* Host Section */}
-                                        <div className={`p-6 rounded-2xl border ${isDarkMode ? 'bg-black/40 border-stone-800' : 'bg-stone-50 border-stone-200'} flex flex-col items-center gap-4`}>
-                                            <div className="text-center">
+                                        <div className={`p-6 rounded-3xl border ${isDarkMode ? 'bg-black/40 border-stone-800' : 'bg-stone-50 border-stone-200'} flex flex-col items-center`}>
+                                            <div className="text-center mb-5">
                                                 <h4 className="text-amber-600 font-cinzel text-sm uppercase tracking-widest font-bold">
                                                     {T.lobby.hostHeader.en} <span className="font-serif ml-1">{T.lobby.hostHeader.bo}</span>
                                                 </h4>
+                                                <div className="flex flex-col gap-1 mt-2">
+                                                    <p className="text-[10px] text-stone-400 uppercase tracking-tight leading-tight">{T.lobby.hostInstruction.en}</p>
+                                                    <p className="text-[11px] text-stone-500 font-serif leading-tight">{T.lobby.hostInstruction.bo}</p>
+                                                </div>
                                             </div>
                                             
                                             {myPeerId ? (
-                                                <div className="flex flex-col items-center animate-in zoom-in duration-300">
-                                                    <span className="text-[10px] text-stone-500 uppercase tracking-widest mb-1">Your Room Code</span>
-                                                    <div className="text-5xl font-mono font-bold text-amber-500 tracking-wider animate-glow-code">
-                                                        {myPeerId}
+                                                <div className="w-full flex flex-col items-center gap-3">
+                                                    <div className="bg-stone-950 p-4 rounded-xl border border-amber-600/50 w-full text-center">
+                                                        <span className="text-amber-500 font-mono text-3xl font-bold tracking-[0.2em]">{myPeerId}</span>
                                                     </div>
                                                     <button 
-                                                        onClick={() => { navigator.clipboard.writeText(myPeerId); addLog("Code copied!", "info"); }}
-                                                        className="mt-3 text-[10px] uppercase font-bold text-stone-400 hover:text-white transition-colors"
+                                                        onClick={() => { triggerHaptic(10); navigator.clipboard.writeText(myPeerId); addLog("Code copied to clipboard!", "info"); }}
+                                                        className="text-[10px] uppercase text-stone-500 font-bold tracking-widest hover:text-amber-500 transition-colors"
                                                     >
-                                                        Copy Code 📋
+                                                        COPY CODE 📋
                                                     </button>
+                                                    <div className="flex flex-col items-center gap-1 animate-pulse mt-2">
+                                                        <div className="flex gap-1">
+                                                          <div className="w-1.5 h-1.5 bg-amber-600 rounded-full"></div>
+                                                          <div className="w-1.5 h-1.5 bg-amber-600 rounded-full delay-150"></div>
+                                                          <div className="w-1.5 h-1.5 bg-amber-600 rounded-full delay-300"></div>
+                                                        </div>
+                                                        <span className="text-[10px] text-stone-500 uppercase tracking-widest">{T.lobby.waiting.en}</span>
+                                                    </div>
                                                 </div>
                                             ) : (
                                                 <button 
-                                                    className="w-full py-4 bg-amber-600 text-white rounded-xl font-bold uppercase tracking-widest hover:bg-amber-500 transition-colors shadow-lg text-sm" 
+                                                    disabled={isPeerConnecting}
+                                                    className="w-full py-4 bg-amber-600 text-white rounded-xl font-bold uppercase tracking-widest hover:bg-amber-500 transition-colors shadow-lg text-sm flex items-center justify-center gap-3" 
                                                     onClick={() => { triggerHaptic(20); startOnlineHost(); }}
                                                 >
-                                                    {T.lobby.hostHeader.en}
+                                                    {isPeerConnecting ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : T.lobby.hostHeader.en}
                                                 </button>
                                             )}
                                         </div>
 
-                                        <div className="flex items-center gap-4">
-                                            <div className="flex-grow h-px bg-stone-800"></div>
-                                            <span className="text-stone-600 font-serif text-sm italic">or ཡང་ན།</span>
-                                            <div className="flex-grow h-px bg-stone-800"></div>
+                                        {/* Divider */}
+                                        <div className="flex items-center gap-4 px-4 opacity-30">
+                                            <div className="flex-grow h-px bg-stone-500"></div>
+                                            <span className="text-[10px] uppercase font-bold text-stone-500">OR</span>
+                                            <div className="flex-grow h-px bg-stone-500"></div>
                                         </div>
 
                                         {/* Join Section */}
-                                        <div className={`p-6 rounded-2xl border ${isDarkMode ? 'bg-black/40 border-stone-800' : 'bg-stone-50 border-stone-200'} flex flex-col items-center gap-4`}>
-                                            <div className="text-center">
-                                                <h4 className="text-amber-600 font-cinzel text-sm uppercase tracking-widest font-bold">
+                                        <div className={`p-6 rounded-3xl border ${isDarkMode ? 'bg-black/40 border-stone-800' : 'bg-stone-50 border-stone-200'} flex flex-col items-center`}>
+                                            <div className="text-center mb-5">
+                                                <h4 className="text-stone-400 font-cinzel text-sm uppercase tracking-widest font-bold">
                                                     {T.lobby.joinHeader.en} <span className="font-serif ml-1">{T.lobby.joinHeader.bo}</span>
                                                 </h4>
+                                                <div className="flex flex-col gap-1 mt-2">
+                                                    <p className="text-[10px] text-stone-500 uppercase tracking-tight leading-tight">{T.lobby.joinInstruction.en}</p>
+                                                    <p className="text-[11px] text-stone-600 font-serif leading-tight">{T.lobby.joinInstruction.bo}</p>
+                                                </div>
                                             </div>
-                                            <input 
-                                                type="number"
-                                                pattern="[0-9]*"
-                                                inputMode="numeric"
-                                                value={joinCode}
-                                                onChange={(e) => setJoinCode(e.target.value.slice(0, 6))}
-                                                placeholder="6-DIGIT CODE"
-                                                className={`w-full bg-stone-900 border-2 ${joinCode.length === 6 ? 'border-amber-600' : 'border-stone-800'} rounded-xl p-4 text-center text-2xl font-mono font-bold text-white outline-none focus:border-amber-500 transition-all`}
-                                            />
-                                            <button 
-                                                disabled={isPeerConnecting || joinCode.length !== 6}
-                                                className={`w-full py-4 rounded-xl font-bold uppercase tracking-widest transition-all text-sm ${joinCode.length === 6 ? 'bg-amber-700 text-white shadow-lg active:scale-95' : 'bg-stone-800 text-stone-600 cursor-not-allowed'}`}
-                                                onClick={() => { triggerHaptic(15); joinOnlineMatch(joinCode); }}
-                                            >
-                                                {isPeerConnecting ? "CONNECTING..." : T.lobby.joinHeader.en}
-                                            </button>
+                                            <div className="w-full space-y-4">
+                                                <input 
+                                                    type="text" 
+                                                    value={joinCodeInput} 
+                                                    onChange={(e) => setJoinCodeInput(e.target.value.toUpperCase())}
+                                                    placeholder="ENTER CODE" 
+                                                    className={`w-full ${isDarkMode ? 'bg-stone-900 border-stone-800 text-white' : 'bg-white border-stone-200 text-stone-900'} border-2 p-4 rounded-xl outline-none focus:border-amber-600 text-center font-mono text-2xl tracking-[0.2em] transition-all`}
+                                                    maxLength={6}
+                                                />
+                                                <button 
+                                                    disabled={isPeerConnecting || !joinCodeInput}
+                                                    onClick={() => { triggerHaptic(20); joinOnlineMatch(joinCodeInput); }}
+                                                    className={`w-full py-4 ${joinCodeInput ? 'bg-amber-600 hover:bg-amber-500 text-white' : 'bg-stone-800 text-stone-600'} rounded-xl font-bold uppercase tracking-widest transition-all shadow-lg text-sm flex items-center justify-center gap-3`}
+                                                >
+                                                    {isPeerConnecting ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : T.lobby.joinHeader.en}
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                     
-                                    <button className="text-stone-500 hover:text-white uppercase text-[10px] tracking-widest font-bold mt-4" onClick={() => { triggerHaptic(10); if(peer) peer.destroy(); setOnlineLobbyStatus('IDLE'); }}>Cancel ཕྱིར་ལོག།</button>
+                                    <button className="text-stone-500 hover:text-white uppercase text-[10px] tracking-widest font-bold mt-4 px-4 py-2" onClick={() => { triggerHaptic(10); if(peer) peer.destroy(); setOnlineLobbyStatus('IDLE'); setMyPeerId(''); setIsPeerConnecting(false); }}>
+                                        {T.common.back.en} <span className="font-serif ml-1">{T.common.back.bo}</span>
+                                    </button>
                                 </div>
                             </div>
                         )}
@@ -866,6 +929,13 @@ const App: React.FC = () => {
                                 <span className="font-bold uppercase text-[10px] md:text-[11px] tracking-widest font-cinzel leading-none">{T.lobby.rules.en}</span>
                                 <span className="text-[11px] md:text-[13px] font-serif mt-1">{T.lobby.rules.bo}</span>
                             </button>
+                        </div>
+                        <div className="flex flex-col items-center pb-4">
+                            <span className="text-stone-600 text-[10px] uppercase tracking-[0.4em] font-bold text-center">
+                                {T.lobby.totalPlayed.en} <br/>
+                                <span className="font-serif mt-1 block">{T.lobby.totalPlayed.bo}</span>
+                            </span>
+                            <span className={`text-amber-700/80 font-bold text-3xl md:text-4xl tabular-nums transition-all duration-700 mt-2 ${isCounterPulsing ? 'scale-110 text-amber-500' : ''}`}>{globalPlayCount.toLocaleString()}</span>
                         </div>
                     </div>
                  </>
