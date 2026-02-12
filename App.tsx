@@ -148,6 +148,7 @@ const App: React.FC = () => {
   const [lastMove, setLastMove] = useState<MoveOption | null>(null);
   const [isNinerMode, setIsNinerMode] = useState(true);
   const [gameMode, setGameMode] = useState<GameMode | null>(null);
+  const gameModeRef = useRef<GameMode | null>(null);
   const [tutorialStep, setTutorialStep] = useState(0);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [winner, setWinner] = useState<Player | null>(null);
@@ -208,7 +209,7 @@ const App: React.FC = () => {
 
   const broadcastFullSync = useCallback(() => {
     const s = gameStateRef.current;
-    if (s.gameMode === GameMode.ONLINE_HOST) {
+    if (gameModeRef.current === GameMode.ONLINE_HOST) {
         broadcastPacket({ 
             type: 'FULL_SYNC', 
             payload: {
@@ -222,8 +223,7 @@ const App: React.FC = () => {
   // Host auto-broadcast effect
   useEffect(() => {
     if (gameMode === GameMode.ONLINE_HOST) {
-        // Broadcast on state change to keep guest in sync
-        const timeout = setTimeout(broadcastFullSync, 50);
+        const timeout = setTimeout(broadcastFullSync, 100);
         return () => clearTimeout(timeout);
     }
   }, [board, players, turnIndex, phase, winner, gameMode, broadcastFullSync]);
@@ -239,13 +239,14 @@ const App: React.FC = () => {
     setBoard(newBoard);
     const initialPlayers = generatePlayers(p1Config, p2Config);
     setPlayers(initialPlayers); setTurnIndex(0); setPhase(GamePhase.ROLLING); setLastRoll(null); setIsRolling(false); setPendingMoveValues([]); setPaRaCount(0); setExtraRolls(0); setIsOpeningPaRa(false); setLastMove(null); setTutorialStep(isTutorial ? 1 : 0); setSelectedSourceIndex(null); setWinner(null);
-    addLog("New game started!", 'info');
+    addLog("Game initialized.", 'info');
   }, [addLog]);
 
   const resetToLobby = useCallback(() => {
     triggerHaptic(20);
     if (peer) peer.destroy();
     setGameMode(null);
+    gameModeRef.current = null;
     setOnlineLobbyStatus('IDLE');
     setMyPeerId('');
     setJoinCodeInput('');
@@ -264,7 +265,7 @@ const App: React.FC = () => {
     const s = gameStateRef.current;
     setPendingMoveValues([]);
     setIsOpeningPaRa(false);
-    if (!isRemote && (s.gameMode === GameMode.ONLINE_HOST || s.gameMode === GameMode.ONLINE_GUEST)) broadcastPacket({ type: 'SKIP_REQ' });
+    if (!isRemote && (gameModeRef.current === GameMode.ONLINE_HOST || gameModeRef.current === GameMode.ONLINE_GUEST)) broadcastPacket({ type: 'SKIP_REQ' });
     if (s.extraRolls > 0) {
         setExtraRolls(prev => prev - 1); setPhase(GamePhase.ROLLING);
         addLog(`${players[turnIndex].name} used an extra roll!`, 'info');
@@ -284,7 +285,7 @@ const App: React.FC = () => {
     let d1, d2;
     if (forcedRoll) { d1 = forcedRoll.die1; d2 = forcedRoll.die2; }
     else { d1 = Math.floor(Math.random() * 6) + 1; d2 = Math.floor(Math.random() * 6) + 1; }
-    if (s.gameMode === GameMode.TUTORIAL && s.tutorialStep === 2) { d1 = 2; d2 = 6; }
+    if (gameModeRef.current === GameMode.TUTORIAL && s.tutorialStep === 2) { d1 = 2; d2 = 6; }
     const pos1 = forcedRoll?.visuals ? { x: forcedRoll.visuals.d1x, y: forcedRoll.visuals.d1y, r: forcedRoll.visuals.d1r } : getRandomDicePos();
     let pos2 = forcedRoll?.visuals ? { x: forcedRoll.visuals.d2x, y: forcedRoll.visuals.d2y, r: forcedRoll.visuals.d2r } : getRandomDicePos();
     if (!forcedRoll) {
@@ -293,7 +294,7 @@ const App: React.FC = () => {
     }
     const isPaRa = (d1 === 1 && d2 === 1), total = d1 + d2;
     const newRoll: DiceRoll = { die1: d1, die2: d2, isPaRa, total, visuals: { d1x: pos1.x, d1y: pos1.y, d1r: pos1.r, d2x: pos2.x, d2y: pos2.y, d2r: pos2.r } };
-    if (!forcedRoll && (s.gameMode === GameMode.ONLINE_HOST || s.gameMode === GameMode.ONLINE_GUEST)) {
+    if (!forcedRoll && (gameModeRef.current === GameMode.ONLINE_HOST || gameModeRef.current === GameMode.ONLINE_GUEST)) {
         broadcastPacket({ type: 'ROLL_REQ', payload: newRoll });
     }
     setLastRoll(newRoll); setIsRolling(false); SFX.playLand();
@@ -313,7 +314,7 @@ const App: React.FC = () => {
         const movePool = [...Array(s.paRaCount).fill(2), total];
         setPendingMoveValues(movePool); setPaRaCount(0); setPhase(GamePhase.MOVING); 
     }
-    if (s.gameMode === GameMode.TUTORIAL && s.tutorialStep === 2) setTutorialStep(3);
+    if (gameModeRef.current === GameMode.TUTORIAL && s.tutorialStep === 2) setTutorialStep(3);
   }, [players, turnIndex, addLog, broadcastPacket]);
 
   const performMove = useCallback((sourceIdx: number, targetIdx: number, isRemote = false) => {
@@ -326,7 +327,7 @@ const App: React.FC = () => {
         move = potential.find(m => m.targetIndex === targetIdx) || { sourceIndex: sourceIdx, targetIndex: targetIdx, consumedValues: [s.pendingMoveValues[0] || 0], type: MoveResultType.PLACE };
     }
     if (!move) return;
-    if (!isRemote && (s.gameMode === GameMode.ONLINE_HOST || s.gameMode === GameMode.ONLINE_GUEST)) {
+    if (!isRemote && (gameModeRef.current === GameMode.ONLINE_HOST || gameModeRef.current === GameMode.ONLINE_GUEST)) {
         broadcastPacket({ type: 'MOVE_REQ', payload: { sourceIdx, targetIdx } });
     }
     const nb: BoardState = new Map(s.board); const player = s.players[s.turnIndex]; let localExtraRollInc = 0; let movingStackSize = 0; let newPlayers = [...s.players];
@@ -373,11 +374,10 @@ const App: React.FC = () => {
         if (totalExtraRolls > 0) { setExtraRolls(prev => prev - 1); setPhase(GamePhase.ROLLING); addLog(`${player.name} used an extra roll!`, 'info'); }
         else { setPhase(GamePhase.ROLLING); setTurnIndex((prev) => (prev + 1) % players.length); }
     } else setPendingMoveValues(nextMoves);
-    if (s.gameMode === GameMode.TUTORIAL && s.tutorialStep === 3) setTutorialStep(4);
+    if (gameModeRef.current === GameMode.TUTORIAL && s.tutorialStep === 3) setTutorialStep(4);
   }, [players, addLog, broadcastPacket]);
 
   const handleNetworkPacket = useCallback((packet: NetworkPacket) => {
-    const s = gameStateRef.current;
     switch (packet.type) {
       case 'ROLL_REQ':
         performRoll(packet.payload);
@@ -389,14 +389,13 @@ const App: React.FC = () => {
         handleSkipTurn(true);
         break;
       case 'JOIN_INFO':
-        if (s.gameMode === GameMode.ONLINE_HOST) {
-            // Host receives Guest's name
+        if (gameModeRef.current === GameMode.ONLINE_HOST) {
             const guestName = packet.payload.name;
             const guestColor = packet.payload.color;
             setPlayers(prev => {
                 const next = [...prev];
                 next[1] = { ...next[1], name: guestName, colorHex: guestColor };
-                // Send Host info back to Guest immediately
+                // Send host info back to guest for mutual sync
                 broadcastPacket({ 
                     type: 'JOIN_INFO', 
                     payload: { name: next[0].name, color: next[0].colorHex } 
@@ -404,8 +403,7 @@ const App: React.FC = () => {
                 return next;
             });
             addLog(`${guestName} joined the match!`, 'info');
-        } else if (s.gameMode === GameMode.ONLINE_GUEST) {
-            // Guest receiving Host's name
+        } else if (gameModeRef.current === GameMode.ONLINE_GUEST) {
             const hostName = packet.payload.name;
             const hostColor = packet.payload.color;
             setPlayers(prev => {
@@ -413,28 +411,19 @@ const App: React.FC = () => {
                 next[0] = { ...next[0], name: hostName, colorHex: hostColor };
                 return next;
             });
-            addLog(`Connected to: ${hostName}`, 'info');
+            addLog(`Opponent: ${hostName}`, 'info');
         }
         break;
       case 'FULL_SYNC':
         if (packet.payload.board) setBoard(new Map(Object.entries(packet.payload.board).map(([k, v]) => [Number(k), v as any])));
         if (packet.payload.players) {
-            if (s.gameMode === GameMode.ONLINE_GUEST) {
+            if (gameModeRef.current === GameMode.ONLINE_GUEST) {
                 setPlayers(prev => {
                     const hostPlayer = packet.payload.players[0];
                     const guestPlayerFromHost = packet.payload.players[1];
                     const next = [...prev];
-                    
-                    // Always update Host's info
                     next[0] = { ...next[0], ...hostPlayer };
-                    
-                    // Update own stats, but keep local name/color (Player 1 on Guest side is index 1)
-                    next[1] = { ...next[1], 
-                        coinsInHand: guestPlayerFromHost.coinsInHand, 
-                        coinsFinished: guestPlayerFromHost.coinsFinished 
-                    };
-                    
-                    // If Host actually has our name, update it just in case
+                    next[1] = { ...next[1], coinsInHand: guestPlayerFromHost.coinsInHand, coinsFinished: guestPlayerFromHost.coinsFinished };
                     if (guestPlayerFromHost.name !== 'Opponent...' && guestPlayerFromHost.name !== 'Blue Player') {
                         next[1].name = guestPlayerFromHost.name;
                         next[1].colorHex = guestPlayerFromHost.colorHex;
@@ -466,17 +455,20 @@ const App: React.FC = () => {
     newPeer.on('open', (id) => {
       setMyPeerId(id);
       setIsPeerConnecting(false);
-      addLog(`Room ID: ${id}. Waiting for opponent...`, 'info');
+      addLog(`Room code: ${id}. Share it!`, 'info');
     });
     
     newPeer.on('connection', (conn) => {
       conn.on('open', () => {
         setActiveConnections(prev => [...prev, conn]);
         setOnlineLobbyStatus('CONNECTED');
+        
+        // NOW transition to game mode
         setGameMode(GameMode.ONLINE_HOST);
-        // Initialize with Host name
+        gameModeRef.current = GameMode.ONLINE_HOST;
         initializeGame({ name: getSafePlayerName(), color: selectedColor }, { name: 'Opponent...', color: '#3b82f6' });
-        addLog("Opponent connecting...", 'info');
+        
+        addLog("Peer connected!", 'info');
       });
       conn.on('data', (data: any) => handleNetworkPacket(data));
       conn.on('close', () => resetToLobby());
@@ -488,7 +480,7 @@ const App: React.FC = () => {
       if (err.type === 'unavailable-id') {
           startOnlineHost();
       } else {
-          addLog("Peer connection error.", "alert");
+          addLog("Host connection error.", "alert");
       }
     });
   };
@@ -505,16 +497,15 @@ const App: React.FC = () => {
         setActiveConnections(prev => [...prev, conn]);
         setOnlineLobbyStatus('CONNECTED');
         setGameMode(GameMode.ONLINE_GUEST);
+        gameModeRef.current = GameMode.ONLINE_GUEST;
         
-        // Setup local name immediately so guest sees themselves correctly
         setPlayers(prev => {
             const next = [...prev];
             next[1] = { ...next[1], name: getSafePlayerName(), colorHex: selectedColor };
             return next;
         });
 
-        addLog("Syncing with host...", 'info');
-        // Guest sends their info immediately to start the handshake
+        addLog("Syncing names...", 'info');
         conn.send({ type: 'JOIN_INFO', payload: { name: getSafePlayerName(), color: selectedColor } });
       });
       conn.on('data', (data: any) => handleNetworkPacket(data));
@@ -529,7 +520,7 @@ const App: React.FC = () => {
     newPeer.on('error', (err) => {
         console.error(err);
         setIsPeerConnecting(false);
-        addLog("Networking error.", "alert");
+        addLog("Network communication error.", "alert");
     });
   };
 
@@ -572,6 +563,7 @@ const App: React.FC = () => {
   const handleTutorialClose = () => {
     setTutorialStep(0);
     setGameMode(null);
+    gameModeRef.current = null;
     triggerHaptic(10);
   };
 
@@ -586,9 +578,6 @@ const App: React.FC = () => {
     } else {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        if (localStreamRef.current) {
-            localStreamRef.current.getTracks().forEach(track => track.stop());
-        }
         localStreamRef.current = stream;
         setIsMicActive(true);
         addLog("Mic on.", "info");
@@ -604,8 +593,8 @@ const App: React.FC = () => {
   const shouldHighlightHand = phase === GamePhase.MOVING && players[turnIndex].coinsInHand > 0 && currentValidMovesList.some(m => m.sourceIndex === 0);
   
   const isLocalTurn = (() => {
-    if (gameMode === GameMode.ONLINE_HOST) return turnIndex === 0;
-    if (gameMode === GameMode.ONLINE_GUEST) return turnIndex === 1;
+    if (gameModeRef.current === GameMode.ONLINE_HOST) return turnIndex === 0;
+    if (gameModeRef.current === GameMode.ONLINE_GUEST) return turnIndex === 1;
     return true; 
   })();
 
@@ -846,18 +835,6 @@ const App: React.FC = () => {
                             </button>
                         </div>
                     </div>
-                    <div className="flex flex-col items-center flex-shrink-0 w-full max-sm:px-4 mt-16 sm:mt-12">
-                        <img src={EXTERNAL_LOGO_URL} alt="Sho Logo" className="w-20 h-20 md:w-24 md:h-24 object-contain mb-2 drop-shadow-xl" />
-                        <h1 className={`flex items-center gap-6 mb-1 font-cinzel ${isDarkMode ? 'text-amber-500' : 'text-amber-900'}`}>
-                            <span className="text-2xl md:text-4xl drop-shadow-[0_0_20px_rgba(245,158,11,0.4)]">{T.lobby.title.bo}</span>
-                            <span className="text-lg md:text-2xl tracking-widest drop-shadow-md">{T.lobby.title.en}</span>
-                        </h1>
-                        <div className={`h-px w-32 ${isDarkMode ? 'bg-amber-900/40' : 'bg-amber-700/30'} mb-2`} />
-                        <div className="flex flex-col items-center">
-                            <p className={`${isDarkMode ? 'text-stone-400' : 'text-stone-500'} tracking-[0.3em] uppercase text-[10px] md:text-xs text-center font-bold leading-none`}>{T.lobby.subtitle.en}</p>
-                            <p className={`${isDarkMode ? 'text-stone-500' : 'text-stone-600'} font-serif text-2xl md:text-3xl mt-1 leading-tight text-center`}>{T.lobby.subtitle.bo}</p>
-                        </div>
-                    </div>
                     <div className="flex-grow flex flex-col items-center justify-center w-full max-w-md gap-4 md:gap-8 my-2 md:my-4">
                         <div className={`w-full ${isDarkMode ? 'bg-stone-900/30' : 'bg-white/80'} p-5 md:p-8 rounded-[3rem] border border-stone-800/20 backdrop-blur-2xl shadow-2xl`}>
                             <div className="mb-6 text-center">
@@ -888,7 +865,7 @@ const App: React.FC = () => {
                             <div className="grid grid-cols-2 gap-3 md:gap-6 w-full px-2">
                                 <button 
                                     className={`border-2 ${isDarkMode ? 'bg-stone-900/40 border-stone-800/80' : 'bg-white border-stone-200'} p-4 md:p-6 rounded-[2rem] hover:border-amber-600/50 transition-all active:scale-95 flex flex-col items-center justify-center gap-1 md:gap-2`} 
-                                    onClick={() => { triggerHaptic(20); setGameMode(GameMode.LOCAL); initializeGame({name: getSafePlayerName(), color: selectedColor}, {name: 'Player 2', color: '#999'}); }}
+                                    onClick={() => { triggerHaptic(20); setGameMode(GameMode.LOCAL); gameModeRef.current = GameMode.LOCAL; initializeGame({name: getSafePlayerName(), color: selectedColor}, {name: 'Player 2', color: '#999'}); }}
                                 >
                                     <span className="text-xl md:text-2xl">👤</span>
                                     <div className="flex flex-col items-center">
@@ -1009,25 +986,6 @@ const App: React.FC = () => {
                             </div>
                         )}
                     </div>
-                    <div className="w-full flex flex-col items-center gap-6 md:gap-10 mt-2">
-                        <div className="flex gap-12 md:gap-16">
-                            <button onClick={() => { triggerHaptic(15); setGameMode(GameMode.TUTORIAL); initializeGame({name: getSafePlayerName(), color: selectedColor}, {name: 'Guide', color: '#999'}, true); }} className={`text-stone-500 hover:text-amber-500 flex flex-col items-center group transition-colors`}>
-                                <span className="font-bold uppercase text-[10px] md:text-[11px] tracking-widest font-cinzel leading-none">{T.lobby.tutorial.en}</span>
-                                <span className="text-[11px] md:text-[13px] font-serif mt-1">{T.lobby.tutorial.bo}</span>
-                            </button>
-                            <button onClick={() => { triggerHaptic(15); setShowRules(true); }} className="text-stone-500 hover:text-amber-500 flex flex-col items-center group transition-colors">
-                                <span className="font-bold uppercase text-[10px] md:text-[11px] tracking-widest font-cinzel leading-none">{T.lobby.rules.en}</span>
-                                <span className="text-[11px] md:text-[13px] font-serif mt-1">{T.lobby.rules.bo}</span>
-                            </button>
-                        </div>
-                        <div className="flex flex-col items-center pb-4">
-                            <span className="text-stone-600 text-[10px] uppercase tracking-[0.4em] font-bold text-center">
-                                {T.lobby.totalPlayed.en} <br/>
-                                <span className="font-serif mt-1 block">{T.lobby.totalPlayed.bo}</span>
-                            </span>
-                            <span className={`text-amber-700/80 font-bold text-3xl md:text-4xl tabular-nums transition-all duration-700 mt-2 ${isCounterPulsing ? 'scale-110 text-amber-500' : ''}`}>{globalPlayCount.toLocaleString()}</span>
-                        </div>
-                    </div>
                  </>
                )}
           </div>
@@ -1109,7 +1067,7 @@ const App: React.FC = () => {
                                         <span className={`text-[11px] md:text-sm font-serif font-bold ${isDarkMode ? 'text-amber-500' : 'text-amber-900'}`}>{T.game.fromHand.bo}</span>
                                         <span className={`text-[11px] font-cinzel mt-1 font-bold ${isDarkMode ? 'text-stone-200' : 'text-stone-700'}`}>({players[turnIndex].coinsInHand})</span>
                                     </div>
-                                    {currentValidMovesList.length === 0 && phase === GamePhase.MOVING && !isRolling && paRaCount === 0 && isLocalTurn && gameMode !== GameMode.ONLINE_HOST && gameMode !== GameMode.ONLINE_GUEST && ( 
+                                    {currentValidMovesList.length === 0 && phase === GamePhase.MOVING && !isRolling && paRaCount === 0 && isLocalTurn && gameModeRef.current !== GameMode.ONLINE_HOST && gameModeRef.current !== GameMode.ONLINE_GUEST && ( 
                                         <button onClick={() => { triggerHaptic(10); handleSkipTurn(); }} className="flex-1 bg-amber-800/50 hover:bg-amber-700 text-amber-200 border border-amber-600/50 p-1 rounded-xl font-bold flex flex-col items-center justify-center">
                                             <span className="text-[9px] uppercase font-cinzel">{T.game.skipTurn.en}</span>
                                             <span className="text-[10px] text-amber-500 font-serif leading-none">{T.game.skipTurn.bo}</span>
